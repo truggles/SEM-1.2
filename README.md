@@ -76,7 +76,9 @@ Check the installation with
 
 		> nosetests cvxpy 
 
-9. Download and run python3 version of the Simple Energy Model -- SEM-1.2: https://github.com/ClabEnergyProject/SEM-1.2
+9. Download and run python3 version of the Simple Energy Model
+-- SEM-1.2: https://github.com/ClabEnergyProject/SEM-1.2
+-- To verify Gurobi, cvxpy, and everything else is running properly see `Validation Instructions` at the bottom of this document.
 -- Open case_input.xlsx in excel. Make the cases you want (by altering base case or ratios to base case), and then save sheet as case_input.csv.
 -- Open Spyder and then within Spyder navigate to the folder that was cloned from github and open and run Simple_Energy_Model.py
 
@@ -121,4 +123,21 @@ This command should automatically download / install the right packages needed f
 
 If you did not remove old Gurobi license and installed a new one, you might see error in this step. You need to delete the old Gurobi licencse and install the new one for your current Gurobi version
 
-11. Download and run python3 version of the Simple Energy Model -- SEM-1.2: https://github.com/ClabEnergyProject/SEM-1.2 -- Open case_input.xlsx in excel. Make the cases you want (by altering base case or ratios to base case), and then save sheet as case_input.csv. -- Open Spyder and then within Spyder navigate to the folder that was cloned from github and open and run Simple_Energy_Model.py
+11. Download and run python3 version of the Simple Energy Model
+-- SEM-1.2: https://github.com/ClabEnergyProject/SEM-1.2
+-- To verify Gurobi, cvxpy, and everything else is running properly see `Validation Instructions` at the bottom of this document.
+-- Open case_input.xlsx in excel. Make the cases you want (by altering base case or ratios to base case), and then save sheet as case_input.csv. 
+-- Open Spyder and then within Spyder navigate to the folder that was cloned from github and open and run Simple_Energy_Model.py
+
+# Validation Instructions
+Run SEM 1.2's provided `validation_test_inputs.csv` which runs a single month optimization. Compare your `system cost` for the `EIAtest` and `EIAbase` cases.
+
+    > python Simple_Energy_Model.py validation_test_inputs.csv 
+
+Printouts will provide you the `system cost` for both cases. They should be VERY close these values within one or two significant digits:
+
+```
+EIAtest: system cost  0.06048776346987663
+
+EIAbase: system cost  0.03713718951241985
+```
