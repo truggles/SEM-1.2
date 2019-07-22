@@ -14,13 +14,14 @@ B. Reconfigure model to allow running more cases without needing more memory.
 
 C. Automate some checks on aberrant usage of storage (?)
 
-D. Make version with specified capacities.
+D. Make some test cases and output files. (Ideally automate.)
 
 E. Add inter-case comparisons to Quick_Look.py
 
 F. Do a runtime analysis to speed up execution of Quick_Look.py
 
 G. Make version that can be spread across CEES-Mazama.
+
 
 <br>
 <b>=====  WINDOWS 10 INSTALLATION INSTRUCTIONS  ===== </b>
@@ -50,7 +51,7 @@ Copy that text and paste in in an Anaconda window. (You might start these Anacon
 	       
 (Note: the above line must call python and not python3, at least on Ken Caldeira's system.)
 
-If this install fails on installingm try the following line in an Anaconda window:
+If this install fails on installing, try the following line in an Anaconda window:
 
 		> conda config --add channels http://conda.anaconda.org/gurobi
 		> conda install gurobi

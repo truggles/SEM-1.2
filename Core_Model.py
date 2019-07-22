@@ -13,8 +13,9 @@ This is the heart of the Simple Energy Model. It reads in the case dictionary
 that was created in Preprocess_Input.py, and then executes all of the cases.
 
 Technology:
-    Generation: natural gas, wind, solar, nuclear
+    Generation: natural gas, wind, solar, nuclear, wind2, solar2, solar_csp
     Energy storage: one generic (a pre-determined round-trip efficiency)
+                    plus PGP,
     Curtailment: Yes (free)
     Unmet demand: No
 
@@ -101,6 +102,9 @@ def core_model (global_dic, case_dic):
     demand_series = np.array(case_dic['DEMAND_SERIES'])*numerics_demand_scaling
     solar_series = case_dic['SOLAR_SERIES'] # Assumed to be normalized per kW capacity
     wind_series = case_dic['WIND_SERIES'] # Assumed to be normalized per kW capacity
+    solar2_series = case_dic['SOLAR2_SERIES'] # Assumed to be normalized per kW capacity
+    wind2_series = case_dic['WIND2_SERIES'] # Assumed to be normalized per kW capacity
+    csp_series = case_dic['CSP_SERIES'] # Assumed to be normalized per kW capacity
 
 
     # Fixed costs are assumed to be per time period (1 hour)
@@ -108,30 +112,48 @@ def core_model (global_dic, case_dic):
     fixed_cost_natgas_ccs = case_dic['FIXED_COST_NATGAS_CCS']*numerics_cost_scaling
     fixed_cost_solar = case_dic['FIXED_COST_SOLAR']*numerics_cost_scaling
     fixed_cost_wind = case_dic['FIXED_COST_WIND']*numerics_cost_scaling
+    fixed_cost_solar2 = case_dic['FIXED_COST_SOLAR2']*numerics_cost_scaling
+    fixed_cost_wind2 = case_dic['FIXED_COST_WIND2']*numerics_cost_scaling
     fixed_cost_nuclear = case_dic['FIXED_COST_NUCLEAR']*numerics_cost_scaling
     fixed_cost_storage = case_dic['FIXED_COST_STORAGE']*numerics_cost_scaling
+    fixed_cost_storage2 = case_dic['FIXED_COST_STORAGE2']*numerics_cost_scaling
     fixed_cost_pgp_storage = case_dic['FIXED_COST_PGP_STORAGE']*numerics_cost_scaling
     fixed_cost_to_pgp_storage = case_dic['FIXED_COST_TO_PGP_STORAGE']*numerics_cost_scaling
     fixed_cost_from_pgp_storage = case_dic['FIXED_COST_FROM_PGP_STORAGE']*numerics_cost_scaling
+    fixed_cost_csp = case_dic['FIXED_COST_CSP']*numerics_cost_scaling
+    fixed_cost_csp_storage = case_dic['FIXED_COST_CSP_STORAGE']*numerics_cost_scaling
 
     # Variable costs are assumed to be kWh
     var_cost_natgas = case_dic['VAR_COST_NATGAS']*numerics_cost_scaling
     var_cost_natgas_ccs = case_dic['VAR_COST_NATGAS_CCS']*numerics_cost_scaling
     var_cost_solar = case_dic['VAR_COST_SOLAR']*numerics_cost_scaling
     var_cost_wind = case_dic['VAR_COST_WIND']*numerics_cost_scaling
+    var_cost_solar2 = case_dic['VAR_COST_SOLAR2']*numerics_cost_scaling
+    var_cost_wind2 = case_dic['VAR_COST_WIND2']*numerics_cost_scaling
     var_cost_nuclear = case_dic['VAR_COST_NUCLEAR']*numerics_cost_scaling
     var_cost_unmet_demand = case_dic['VAR_COST_UNMET_DEMAND']*numerics_cost_scaling
     var_cost_to_storage = case_dic['VAR_COST_TO_STORAGE']*numerics_cost_scaling
     var_cost_from_storage = case_dic['VAR_COST_FROM_STORAGE']*numerics_cost_scaling
+    var_cost_to_storage2 = case_dic['VAR_COST_TO_STORAGE2']*numerics_cost_scaling
+    var_cost_from_storage2 = case_dic['VAR_COST_FROM_STORAGE2']*numerics_cost_scaling
     var_cost_to_pgp_storage = case_dic['VAR_COST_TO_PGP_STORAGE']*numerics_cost_scaling #to pgp storage
     var_cost_from_pgp_storage = case_dic['VAR_COST_FROM_PGP_STORAGE']*numerics_cost_scaling  # from pgp storage
+    var_cost_csp = case_dic['VAR_COST_CSP']*numerics_cost_scaling
+    var_cost_csp_storage = case_dic['VAR_COST_CSP_STORAGE']*numerics_cost_scaling
 
-
-    storage_charging_efficiency = case_dic['STORAGE_CHARGING_EFFICIENCY']
-    storage_charging_time       = case_dic['STORAGE_CHARGING_TIME']
-    storage_decay_rate          = case_dic['STORAGE_DECAY_RATE'] # fraction of stored electricity lost each hour
-    pgp_storage_charging_efficiency = case_dic['PGP_STORAGE_CHARGING_EFFICIENCY']
-    pgp_storage_decay_rate = case_dic['PGP_STORAGE_DECAY_RATE']
+    charging_efficiency_storage = case_dic['CHARGING_EFFICIENCY_STORAGE']
+    charging_time_storage       = case_dic['CHARGING_TIME_STORAGE']
+    decay_rate_storage          = case_dic['DECAY_RATE_STORAGE'] # fraction of stored electricity lost each hour
+    
+    charging_efficiency_storage2 = case_dic['CHARGING_EFFICIENCY_STORAGE2']
+    charging_time_storage2       = case_dic['CHARGING_TIME_STORAGE2']
+    decay_rate_storage2          = case_dic['DECAY_RATE_STORAGE2'] # fraction of stored electricity lost each hour
+    
+    charging_efficiency_pgp_storage = case_dic['CHARGING_EFFICIENCY_PGP_STORAGE']
+    decay_rate_pgp_storage = case_dic['DECAY_RATE_PGP_STORAGE']
+    
+    charging_efficiency_csp_storage = case_dic['CHARGING_EFFICIENCY_CSP_STORAGE']
+    decay_rate_csp_storage = case_dic['DECAY_RATE_CSP_STORAGE']
 
     system_components = case_dic['SYSTEM_COMPONENTS']
 
@@ -170,7 +192,7 @@ def core_model (global_dic, case_dic):
     fcn2min = 0
     constraints = []
 
-#---------------------- natural gas ------------------------------------------
+#%%-------------------- natural gas ------------------------------------------
     if 'NATGAS' in system_components:
         if(case_dic['CAPACITY_NATGAS']<0):
             capacity_natgas = cvx.Variable(1) # calculate natgas capacity
@@ -190,7 +212,7 @@ def core_model (global_dic, case_dic):
         capacity_natgas = 0
         dispatch_natgas = np.zeros(num_time_periods)
 
-#---------------------- natural gas with CCS -----------------------------------
+#%%-------------------- natural gas with CCS -----------------------------------
     if 'NATGAS_CCS' in system_components:
         if(case_dic['CAPACITY_NATGAS_CCS']<0):
             capacity_natgas_ccs = cvx.Variable(1) # calculate natgas capacity
@@ -210,7 +232,7 @@ def core_model (global_dic, case_dic):
         capacity_natgas_ccs = 0
         dispatch_natgas_ccs = np.zeros(num_time_periods)
 
-#---------------------- solar ------------------------------------------
+#%%-------------------- solar ------------------------------------------
     if 'SOLAR' in system_components:
         if(case_dic['CAPACITY_SOLAR']<0):
             capacity_solar = cvx.Variable(1) # calculate SOLAR capacity
@@ -229,10 +251,10 @@ def core_model (global_dic, case_dic):
         capacity_solar = 0
         dispatch_solar = np.zeros(num_time_periods)
 
-#---------------------- wind ------------------------------------------
+#%%-------------------- wind ------------------------------------------
     if 'WIND' in system_components:
         if(case_dic['CAPACITY_WIND']<0):
-            capacity_wind = cvx.Variable(1) # calculate SOLAR capacity
+            capacity_wind = cvx.Variable(1) # calculate wind capacity
             constraints += [
                 capacity_wind >= 0]
         else:
@@ -248,7 +270,46 @@ def core_model (global_dic, case_dic):
         capacity_wind = 0
         dispatch_wind = np.zeros(num_time_periods)
 
-#---------------------- nuclear ------------------------------------------
+
+#%%-------------------- solar2 ------------------------------------------
+    if 'SOLAR2' in system_components:
+        if(case_dic['CAPACITY_SOLAR2']<0):
+            capacity_solar2 = cvx.Variable(1) # calculate SOLAR2 capacity
+            constraints += [
+                capacity_solar2 >= 0]
+        else:
+            capacity_solar2 = case_dic['CAPACITY_SOLAR2'] * numerics_demand_scaling
+
+        dispatch_solar2 = cvx.Variable(num_time_periods)
+        constraints += [
+                dispatch_solar2 >= 0,
+                dispatch_solar2 <= capacity_solar2 * solar2_series
+                ]
+        fcn2min += capacity_solar2 * fixed_cost_solar2 + cvx.sum(dispatch_solar2 * var_cost_solar2)/num_time_periods
+    else:
+        capacity_solar2 = 0
+        dispatch_solar2 = np.zeros(num_time_periods)
+
+#%%-------------------- wind2 ------------------------------------------
+    if 'WIND2' in system_components:
+        if(case_dic['CAPACITY_WIND2']<0):
+            capacity_wind2 = cvx.Variable(1) # calculate SOLAR capacity
+            constraints += [
+                capacity_wind2 >= 0]
+        else:
+            capacity_wind2 = case_dic['CAPACITY_WIND2'] * numerics_demand_scaling
+
+        dispatch_wind2 = cvx.Variable(num_time_periods)
+        constraints += [
+                dispatch_wind2 >= 0,
+                dispatch_wind2 <= capacity_wind2 * wind2_series
+                ]
+        fcn2min += capacity_wind2 * fixed_cost_wind2 + cvx.sum(dispatch_wind2 * var_cost_wind2)/num_time_periods
+    else:
+        capacity_wind2 = 0
+        dispatch_wind2 = np.zeros(num_time_periods)
+
+#%%-------------------- nuclear ------------------------------------------
     if 'NUCLEAR' in system_components:
         if(case_dic['CAPACITY_NUCLEAR']<0):
             capacity_nuclear = cvx.Variable(1) # calculate SOLAR capacity
@@ -268,7 +329,7 @@ def core_model (global_dic, case_dic):
         capacity_nuclear = 0
         dispatch_nuclear = np.zeros(num_time_periods)
 
-#---------------------- storage ------------------------------------------
+#%%-------------------- storage ------------------------------------------
     if 'STORAGE' in system_components:
         if(case_dic['CAPACITY_STORAGE']<0):
             capacity_storage = cvx.Variable(1) # calculate SOLAR capacity
@@ -282,10 +343,10 @@ def core_model (global_dic, case_dic):
         energy_storage = cvx.Variable(num_time_periods)
         constraints += [
                 dispatch_to_storage >= 0,
-                dispatch_to_storage <= capacity_storage / storage_charging_time,
+                dispatch_to_storage <= capacity_storage / charging_time_storage,
                 dispatch_from_storage >= 0, # dispatch_to_storage is negative value
-                dispatch_from_storage <= capacity_storage / storage_charging_time,
-                dispatch_from_storage <= energy_storage * (1 - storage_decay_rate), # you can't dispatch more from storage in a time step than is in the battery
+                dispatch_from_storage <= capacity_storage / charging_time_storage,
+                dispatch_from_storage <= energy_storage * (1 - decay_rate_storage), # you can't dispatch more from storage in a time step than is in the battery
                                                                                     # This constraint is redundant
                 energy_storage >= 0,
                 energy_storage <= capacity_storage
@@ -299,8 +360,8 @@ def core_model (global_dic, case_dic):
 
             constraints += [
                     energy_storage[(i+1) % num_time_periods] ==
-                        energy_storage[i] + storage_charging_efficiency * dispatch_to_storage[i]
-                        - dispatch_from_storage[i] - energy_storage[i]*storage_decay_rate
+                        energy_storage[i] + charging_efficiency_storage * dispatch_to_storage[i]
+                        - dispatch_from_storage[i] - energy_storage[i]*decay_rate_storage
                     ]
 
     else:
@@ -309,7 +370,48 @@ def core_model (global_dic, case_dic):
         dispatch_from_storage = np.zeros(num_time_periods)
         energy_storage = np.zeros(num_time_periods)
 
-#---------------------- PGP storage (power to gas to power) -------------------
+#%%-------------------- storage ------------------------------------------
+    if 'STORAGE2' in system_components:
+        if(case_dic['CAPACITY_STORAGE2']<0):
+            capacity_storage2 = cvx.Variable(1) # calculate SOLAR capacity
+            constraints += [
+                capacity_storage2 >= 0]
+        else:
+            capacity_storage2 = case_dic['CAPACITY_STORAGE2'] * numerics_demand_scaling
+
+        dispatch_to_storage2 = cvx.Variable(num_time_periods)
+        dispatch_from_storage2 = cvx.Variable(num_time_periods)
+        energy_storage2 = cvx.Variable(num_time_periods)
+        constraints += [
+                dispatch_to_storage2 >= 0,
+                dispatch_to_storage2 <= capacity_storage2 / charging_time_storage2,
+                dispatch_from_storage2 >= 0, # dispatch_to_storage2 is negative value
+                dispatch_from_storage2 <= capacity_storage2 / charging_time_storage2,
+                dispatch_from_storage2 <= energy_storage2 * (1 - decay_rate_storage2), # you can't dispatch more from storage2 in a time step than is in the battery
+                                                                                    # This constraint is redundant
+                energy_storage2 >= 0,
+                energy_storage2 <= capacity_storage2
+                ]
+
+        fcn2min += capacity_storage2 * fixed_cost_storage2 +  \
+            cvx.sum(dispatch_to_storage2 * var_cost_to_storage2)/num_time_periods + \
+            cvx.sum(dispatch_from_storage2 * var_cost_from_storage2)/num_time_periods
+
+        for i in range(num_time_periods):
+
+            constraints += [
+                    energy_storage2[(i+1) % num_time_periods] ==
+                        energy_storage2[i] + charging_efficiency_storage2 * dispatch_to_storage2[i]
+                        - dispatch_from_storage2[i] - energy_storage2[i]*decay_rate_storage2
+                    ]
+
+    else:
+        capacity_storage2 = 0
+        dispatch_to_storage2 = np.zeros(num_time_periods)
+        dispatch_from_storage2 = np.zeros(num_time_periods)
+        energy_storage2 = np.zeros(num_time_periods)
+
+#%%-------------------- PGP storage (power to gas to power) -------------------
 # For PGP storage, there are three capacity decisions:
 #   1.  to_storage (power):capacity_to_pgp_storage
 #   2.  storage (energy):  capacity_pgp_storage
@@ -349,7 +451,7 @@ def core_model (global_dic, case_dic):
                 dispatch_to_pgp_storage <= capacity_to_pgp_storage,
                 dispatch_from_pgp_storage >= 0, # dispatch_to_storage is negative value
                 dispatch_from_pgp_storage <= capacity_from_pgp_storage,
-                dispatch_from_pgp_storage <= energy_pgp_storage * (1 - pgp_storage_decay_rate), # you can't dispatch more from storage in a time step than is in the battery
+                dispatch_from_pgp_storage <= energy_pgp_storage * (1 - decay_rate_pgp_storage), # you can't dispatch more from storage in a time step than is in the battery
                                                                                     # This constraint is redundant
                 energy_pgp_storage >= 0,
                 energy_pgp_storage <= capacity_pgp_storage
@@ -364,8 +466,8 @@ def core_model (global_dic, case_dic):
 
             constraints += [
                     energy_pgp_storage[(i+1) % num_time_periods] == energy_pgp_storage[i]
-                    + pgp_storage_charging_efficiency * dispatch_to_pgp_storage[i]
-                    - dispatch_from_pgp_storage[i]- energy_pgp_storage[i]*pgp_storage_decay_rate
+                    + charging_efficiency_pgp_storage * dispatch_to_pgp_storage[i]
+                    - dispatch_from_pgp_storage[i]- energy_pgp_storage[i]*decay_rate_pgp_storage
                     ]
 
     else:
@@ -376,7 +478,71 @@ def core_model (global_dic, case_dic):
         dispatch_from_pgp_storage = np.zeros(num_time_periods)
         energy_pgp_storage = np.zeros(num_time_periods) # amount of energy currently stored in tank
 
-#---------------------- unmet demand ------------------------------------------
+#%%S------------------- Concentrated solar power (CSP) -------------------  
+# For CSP, the capacity components are:
+#     1. CSP generator (capacity_csp)
+#     2. Storage (capacity_csp_storage)
+#
+# For CSP, the dispatch components are:
+#     1. CSP generator to grid (dispatch_csp)
+#     2. CSP generator to storage (when dispatch demand met) (dispatch_csp_to_storage)
+#     3. Storage to dispatch (when no/low generation) (DISPATCH_FROM_CSP)
+
+    if 'CSP' in system_components:
+        if(case_dic['CAPACITY_CSP']<0):
+            capacity_csp = cvx.Variable(1) # calculate CSP capacity
+            constraints += [
+                capacity_csp >= 0]
+        else:
+            capacity_csp = case_dic['CAPACITY_CSP'] * numerics_demand_scaling
+            
+        if(case_dic['CAPACITY_CSP_STORAGE']<0):
+            capacity_csp_storage = cvx.Variable(1) # calculate CSP storage capacity
+            constraints += [
+                capacity_csp_storage >= 0]
+        else:
+            capacity_csp_storage = case_dic['CAPACITY_CSP_STORAGE'] * numerics_demand_scaling
+        
+        dispatch_to_csp_storage = cvx.Variable(num_time_periods)
+        dispatch_from_csp = cvx.Variable(num_time_periods)
+        energy_csp_storage = cvx.Variable(num_time_periods) # amount of energy currently stored in CSP storage
+        constraints += [
+                dispatch_to_csp_storage >= 0, 
+                dispatch_to_csp_storage <= capacity_csp * csp_series,  ######### might need to be changed to direct solar radiation??
+
+                dispatch_from_csp >= 0,
+                dispatch_from_csp <= energy_csp_storage * (1 - decay_rate_csp_storage) + \
+                     charging_efficiency_storage * dispatch_to_csp_storage, 
+                     # you can't dispatch more from storage in a time step than is
+                     # in storage plus what you are adding now
+                                                     
+                energy_csp_storage >= 0,
+                energy_csp_storage <= capacity_csp_storage
+                ]
+        
+        fcn2min += capacity_csp * fixed_cost_csp + \
+            capacity_csp_storage * fixed_cost_csp_storage +  \
+            cvx.sum(dispatch_from_csp * var_cost_csp)/num_time_periods + \
+            cvx.sum(energy_csp_storage * var_cost_csp_storage)/num_time_periods
+
+        for i in range(num_time_periods):
+
+            constraints += [
+                    energy_csp_storage[(i+1) % num_time_periods] == 
+                        energy_csp_storage[i]  \
+                        + charging_efficiency_csp_storage * dispatch_to_csp_storage[i]  \
+                        - dispatch_from_csp[i] \
+                        - energy_csp_storage[i]*decay_rate_csp_storage
+                    ]
+    else:
+        capacity_csp = 0
+        capacity_csp_storage = 0
+        dispatch_csp = np.zeros(num_time_periods)
+        dispatch_to_csp_storage = np.zeros(num_time_periods)
+        dispatch_from_csp = np.zeros(num_time_periods)
+        energy_csp_storage = np.zeros(num_time_periods)
+        
+#%%------------------ unmet demand ------------------------------------------
     if 'UNMET_DEMAND' in system_components:
         dispatch_unmet_demand = cvx.Variable(num_time_periods)
         constraints += [
@@ -387,17 +553,21 @@ def core_model (global_dic, case_dic):
         dispatch_unmet_demand = np.zeros(num_time_periods)
 
 
-#---------------------- dispatch energy balance constraint ------------------------------------------
+#%%------------------- dispatch energy balance constraint ------------------------------------------
     constraints += [
             dispatch_natgas
             + dispatch_natgas_ccs
             + dispatch_solar
             + dispatch_wind
+            + dispatch_solar2
+            + dispatch_wind2
             + dispatch_nuclear
             + dispatch_from_storage
+            + dispatch_from_storage2
             + dispatch_from_pgp_storage
+            + dispatch_from_csp
             + dispatch_unmet_demand
-            == demand_series + dispatch_to_storage + dispatch_to_pgp_storage
+            == demand_series + dispatch_to_storage + dispatch_to_storage2 + dispatch_to_pgp_storage
             ]
 
     # -----------------------------------------------------------------------------
@@ -445,27 +615,51 @@ def core_model (global_dic, case_dic):
         result['CAPACITY_NATGAS_CCS'] = -1
         result['CAPACITY_SOLAR'] = -1
         result['CAPACITY_WIND'] = -1
+        result['CAPACITY_SOLAR2'] = -1
+        result['CAPACITY_WIND2'] = -1
         result['CAPACITY_NUCLEAR'] = -1
         result['CAPACITY_STORAGE'] = -1
+        result['CAPACITY_STORAGE2'] = -1
         result['CAPACITY_PGP_STORAGE'] = -1
         result['CAPACITY_TO_PGP_STORAGE'] = -1
         result['CAPACITY_FROM_PGP_STORAGE'] = -1
-
+        result['CAPACITY_CSP'] = -1
+        result['CAPACITY_CSP_STORAGE'] = -1
+        
         result['PRICE'] = -1 * np.ones(demand_series.size)
+        
         result['DISPATCH_NATGAS'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_NATGAS_CCS'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_SOLAR'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_WIND'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_SOLAR2'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_WIND2'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_NUCLEAR'] = -1 * np.ones(demand_series.size)
+
         result['CURTAILMENT_SOLAR'] = -1 * np.ones(demand_series.size)
         result['CURTAILMENT_WIND'] = -1 * np.ones(demand_series.size)
+        result['CURTAILMENT_SOLAR2'] = -1 * np.ones(demand_series.size)
+        result['CURTAILMENT_WIND2'] = -1 * np.ones(demand_series.size)
         result['CURTAILMENT_NUCLEAR'] = -1 * np.ones(demand_series.size)
+ 
         result['DISPATCH_TO_STORAGE'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_FROM_STORAGE'] = -1 * np.ones(demand_series.size)
         result['ENERGY_STORAGE'] = -1 * np.ones(demand_series.size)
+        
+        result['DISPATCH_TO_STORAGE2'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_FROM_STORAGE2'] = -1 * np.ones(demand_series.size)
+        result['ENERGY_STORAGE2'] = -1 * np.ones(demand_series.size)
+        
         result['DISPATCH_TO_PGP_STORAGE'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_FROM_PGP_STORAGE'] = -1 * np.ones(demand_series.size)
         result['ENERGY_PGP_STORAGE'] = -1 * np.ones(demand_series.size)
+        
+        result['DISPATCH_CSP'] = -1 * np.ones(demand_series.size) 
+        result['CURTAILMENT_CSP'] = -1 * np.ones(demand_series.size) 
+        result['DISPATCH_TO_CSP_STORAGE'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_FROM_CSP'] = -1 * np.ones(demand_series.size)
+        result['ENERGY_CSP_STORAGE'] = -1 * np.ones(demand_series.size)
+        
         result['DISPATCH_UNMET_DEMAND'] = -1 * np.ones(demand_series.size)
 
     else:
@@ -532,6 +726,30 @@ def core_model (global_dic, case_dic):
             result['DISPATCH_WIND'] = dispatch_wind/numerics_demand_scaling
             result['CURTAILMENT_WIND'] = (capacity_wind-dispatch_wind)/numerics_demand_scaling
 
+        if 'SOLAR2' in system_components:
+            if case_dic['CAPACITY_SOLAR2'] < 0:
+                result['CAPACITY_SOLAR2'] = np.asscalar(capacity_solar2.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_SOLAR2'] = case_dic['CAPACITY_SOLAR2']
+            result['DISPATCH_SOLAR2'] = np.array(dispatch_solar2.value).flatten()/numerics_demand_scaling
+            result['CURTAILMENT_SOLAR2'] = result['CAPACITY_SOLAR2'] * solar2_series - result['DISPATCH_SOLAR2']
+        else:
+            result['CAPACITY_SOLAR2'] = capacity_solar2/numerics_demand_scaling
+            result['DISPATCH_SOLAR2'] = dispatch_solar2/numerics_demand_scaling
+            result['CURTAILMENT_SOLAR2'] = (capacity_solar2-dispatch_solar2)/numerics_demand_scaling
+
+        if 'WIND2' in system_components:
+            if case_dic['CAPACITY_WIND2'] < 0:
+                result['CAPACITY_WIND2'] = np.asscalar(capacity_wind2.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_WIND2'] = case_dic['CAPACITY_WIND2']
+            result['DISPATCH_WIND2'] = np.array(dispatch_wind2.value).flatten()/numerics_demand_scaling
+            result['CURTAILMENT_WIND2'] = result['CAPACITY_WIND2'] * wind2_series - result['DISPATCH_WIND2']
+        else:
+            result['CAPACITY_WIND2'] = capacity_wind2/numerics_demand_scaling
+            result['DISPATCH_WIND2'] = dispatch_wind2/numerics_demand_scaling
+            result['CURTAILMENT_WIND2'] = (capacity_wind2-dispatch_wind2)/numerics_demand_scaling
+
         if 'NUCLEAR' in system_components:
             if case_dic['CAPACITY_NUCLEAR'] < 0:
                 result['CAPACITY_NUCLEAR'] = np.asscalar(capacity_nuclear.value)/numerics_demand_scaling
@@ -558,6 +776,20 @@ def core_model (global_dic, case_dic):
             result['DISPATCH_FROM_STORAGE'] = dispatch_from_storage/numerics_demand_scaling
             result['ENERGY_STORAGE'] = energy_storage/numerics_demand_scaling
 
+        if 'STORAGE2' in system_components:
+            if case_dic['CAPACITY_STORAGE2'] < 0:
+                result['CAPACITY_STORAGE2'] = np.asscalar(capacity_storage2.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_STORAGE2'] = case_dic['CAPACITY_STORAGE2']
+            result['DISPATCH_TO_STORAGE2'] = np.array(dispatch_to_storage2.value).flatten()/numerics_demand_scaling
+            result['DISPATCH_FROM_STORAGE2'] = np.array(dispatch_from_storage2.value).flatten()/numerics_demand_scaling
+            result['ENERGY_STORAGE2'] = np.array(energy_storage2.value).flatten()/numerics_demand_scaling
+        else:
+            result['CAPACITY_STORAGE2'] = capacity_storage2/numerics_demand_scaling
+            result['DISPATCH_TO_STORAGE2'] = dispatch_to_storage2/numerics_demand_scaling
+            result['DISPATCH_FROM_STORAGE2'] = dispatch_from_storage2/numerics_demand_scaling
+            result['ENERGY_STORAGE2'] = energy_storage2/numerics_demand_scaling
+
         if 'PGP_STORAGE' in system_components:
             if case_dic['CAPACITY_PGP_STORAGE'] < 0:
                 result['CAPACITY_PGP_STORAGE'] = np.asscalar(capacity_pgp_storage.value)/numerics_demand_scaling
@@ -581,6 +813,27 @@ def core_model (global_dic, case_dic):
             result['DISPATCH_TO_PGP_STORAGE'] = dispatch_to_pgp_storage/numerics_demand_scaling
             result['DISPATCH_FROM_PGP_STORAGE'] = dispatch_from_pgp_storage/numerics_demand_scaling
             result['ENERGY_PGP_STORAGE'] = energy_pgp_storage/numerics_demand_scaling
+
+        if 'CSP' in system_components:
+            if case_dic['CAPACITY_CSP'] < 0:
+                result['CAPACITY_CSP'] = np.asscalar(capacity_csp.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_CSP'] = case_dic['CAPACITY_CSP']
+            if case_dic['CAPACITY_CSP_STORAGE'] < 0:
+                result['CAPACITY_CSP_STORAGE'] = np.asscalar(capacity_csp_storage.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_CSP_STORAGE'] = case_dic['CAPACITY_CSP_STORAGE']
+            result['DISPATCH_TO_CSP_STORAGE'] = np.array(dispatch_to_csp_storage.value).flatten()/numerics_demand_scaling
+            result['DISPATCH_FROM_CSP'] = np.array(dispatch_from_csp.value).flatten()/numerics_demand_scaling
+            result['ENERGY_CSP_STORAGE'] = np.array(energy_csp_storage.value).flatten()/numerics_demand_scaling
+            result['CURTAILMENT_CSP'] = result['CAPACITY_CSP'] * csp_series - result['DISPATCH_TO_CSP_STORAGE']
+        else:
+            result['CAPACITY_CSP'] = capacity_csp/numerics_demand_scaling
+            result['CURTAILMENT_CSP'] = (capacity_csp-dispatch_csp)/numerics_demand_scaling 
+            result['CAPACITY_CSP_STORAGE'] = capacity_csp_storage/numerics_demand_scaling
+            result['DISPATCH_TO_CSP_STORAGE'] = dispatch_to_csp_storage/numerics_demand_scaling
+            result['DISPATCH_FROM_CSP'] = dispatch_from_csp/numerics_demand_scaling
+            result['ENERGY_CSP_STORAGE'] = energy_csp_storage/numerics_demand_scaling
 
         if 'UNMET_DEMAND' in system_components:
             result['DISPATCH_UNMET_DEMAND'] = np.array(dispatch_unmet_demand.value).flatten()/numerics_demand_scaling
