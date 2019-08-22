@@ -182,6 +182,9 @@ def preprocess_input(case_input_path_filename):
 
             'FIXED_COST_CSP','VAR_COST_CSP',
             'FIXED_COST_CSP_STORAGE','VAR_COST_CSP_STORAGE',
+
+            'FIXED_COST_FUEL','VAR_COST_FUEL',
+            'FUEL_VALUE','TOTAL_FUEL_CONVERSION_EFFICIENCY',
             
             'VAR_COST_UNMET_DEMAND'
 
@@ -219,6 +222,8 @@ def preprocess_input(case_input_path_filename):
 
             'CAPACITY_CSP','CAPACITY_CSP_STORAGE',
             'DECAY_RATE_CSP_STORAGE','CHARGING_EFFICIENCY_CSP_STORAGE',
+
+            'CAPACITY_FUEL',
             
             'SYSTEM_RELIABILITY'
             ]
@@ -401,6 +406,10 @@ def preprocess_input(case_input_path_filename):
                 case_list_dic['FIXED_COST_CSP_STORAGE'][case_index] >= 0 and case_list_dic['VAR_COST_CSP_STORAGE'][case_index] >= 0 and 
                 case_list_dic['CHARGING_EFFICIENCY_CSP_STORAGE'][case_index] >= 0):
                 component_list.append('CSP')
+                
+        if 'FIXED_COST_FUEL' in have_keys:
+            if case_list_dic['FIXED_COST_FUEL'][case_index] >= 0 and case_list_dic['VAR_COST_FUEL'][case_index] >= 0 :
+                component_list.append('FUEL')
                 
         if 'VAR_COST_UNMET_DEMAND' in have_keys:
             if case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] >= 0:

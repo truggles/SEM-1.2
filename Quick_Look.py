@@ -119,6 +119,7 @@ def quick_look(global_dic, case_dic_list):
     color_WIND    = 'blue' # not explicitly referenced but referenced through eval()
     color_WIND2    = 'darkblue' # not explicitly referenced but referenced through eval()
     color_NUCLEAR = 'green' # not explicitly referenced but referenced through eval()
+    color_FUEL = 'magenta'
     color_STORAGE = 'purple'
     color_STORAGE2 = 'violet'
     color_PGP_STORAGE =  'pink'
@@ -127,7 +128,7 @@ def quick_look(global_dic, case_dic_list):
     color_CSP = 'yellow'
     
     num_cases = len (case_dic_list) # number of cases
-    # 'SYSTEM_COMPONENTS' -- LIST OF COMPONENTS, CHOICES ARE: 'WIND','SOLAR', 'NATGAS','NATGAS_CCS','NUCLEAR','STORAGE', 'PGP_STORAGE', 'UNMET'    
+    # 'SYSTEM_COMPONENTS' -- LIST OF COMPONENTS, CHOICES ARE: 'WIND','SOLAR', 'NATGAS','NATGAS_CCS','NUCLEAR','FUEL','STORAGE', 'PGP_STORAGE', 'UNMET'    
     # Loop around and make output for individual cases  
     
     # ============= CREATE LIST OF input_data DICTIONARIES FOR PLOTTING PROGRAMS =========
@@ -161,6 +162,8 @@ def quick_look(global_dic, case_dic_list):
             addfrom = ''
             if component == 'STORAGE' or component == 'STORAGE2' or component == 'PGP_STORAGE' or component == 'CSP': 
                 addfrom = 'FROM_'
+            if component == 'FUEL': 
+                addfrom = 'TO_'
             results_matrix_dispatch.append(result_dic['DISPATCH_' + addfrom + component ])
             legend_list_dispatch.append( 'DISPATCH_' + addfrom + component +' kW' )
             color_list_dispatch.append(eval('color_' + component))
