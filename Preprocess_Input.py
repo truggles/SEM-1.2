@@ -335,6 +335,7 @@ def preprocess_input(case_input_path_filename):
             case_list_dic[input_key] = input_values
         elif input_key in keywords_real:
             if input_key in keywords_real_notscaled:
+                print(input_key, input_values)
                 setNegToM1 = np.array(list(map(float,input_values)))
             else:
                 setNegToM1 = case_list_dic[input_key] * np.array(list(map(float,input_values)))
@@ -422,6 +423,10 @@ def preprocess_input(case_input_path_filename):
                 component_list.append('UNMET_DEMAND')
                                 
         list_of_component_lists.append(component_list)
+
+        if verbose:
+            print("Technologies in component_list:", component_list)
+
     case_list_dic['SYSTEM_COMPONENTS'] = list_of_component_lists
 
 #%%    

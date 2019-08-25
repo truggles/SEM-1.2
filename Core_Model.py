@@ -44,6 +44,8 @@ from Storage_Analysis import storage_analysis
 from Save_Basic_Results import save_vector_results_as_csv
 from Save_Basic_Results import pickle_raw_results
 
+import os
+
 # Core function
 #   Linear programming
 #   Output postprocessing
@@ -545,9 +547,20 @@ def core_model (global_dic, case_dic):
 #%%------------------ unmet demand ------------------------------------------
     if 'UNMET_DEMAND' in system_components:
         dispatch_unmet_demand = cvx.Variable(num_time_periods)
-        constraints += [
-                dispatch_unmet_demand >= 0
-                ]
+        UNMET_DEMAND_SET_VALUE = float(os.environ['UNMET_DEMAND_SET_VALUE'])
+        print("\nUsing unmet demand value of {:.5f}\n".format(UNMET_DEMAND_SET_VALUE))
+
+        if UNMET_DEMAND_SET_VALUE >= 0 and UNMET_DEMAND_SET_VALUE != 999:
+            constraints += [
+                    # For Step 1
+                    dispatch_unmet_demand >= 0,
+                    cvx.sum(dispatch_unmet_demand) == UNMET_DEMAND_SET_VALUE * numerics_demand_scaling * num_time_periods
+                    ]
+        else:
+            constraints += [
+                    # For all other steps
+                    dispatch_unmet_demand >= 0
+                    ]
         fcn2min += cvx.sum(dispatch_unmet_demand * var_cost_unmet_demand)/num_time_periods
     else:
         dispatch_unmet_demand = np.zeros(num_time_periods)
