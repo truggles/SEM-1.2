@@ -152,8 +152,11 @@ def save_vector_results_as_csv( global_dic, case_dic, result_dic ):
     header_list += ['dispatch nuclear (kW)']
     series_list.append( result_dic['DISPATCH_NUCLEAR'].flatten() )
     
-    header_list += ['dispatch to fuel (kW)']
-    series_list.append( result_dic['DISPATCH_TO_FUEL'].flatten() )
+    header_list += ['dispatch to fuel h2 storage (kW)']
+    series_list.append( result_dic['DISPATCH_TO_FUEL_H2_STORAGE'].flatten() )
+    
+    header_list += ['dispatch from fuel h2 storage (kW)']
+    series_list.append( result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten() )
     
     header_list += ['dispatch to storage (kW)']
     series_list.append( result_dic['DISPATCH_TO_STORAGE'].flatten() )
@@ -369,11 +372,23 @@ def save_basic_results( global_dic, case_dic_list ):
 
     # Input: FUEL
     if 'FUEL' in components: 
-        header_list += ['fixed cost fuel ($/kW/h)']
-        series_list.append( case_list_dic['FIXED_COST_FUEL'] )
+        header_list += ['fixed cost fuel electrolyzer ($/kW/h)']
+        series_list.append( case_list_dic['FIXED_COST_FUEL_ELECTROLYZER'] )
     
-        header_list += ['var cost fuel ($/kW/h)']
-        series_list.append( case_list_dic['VAR_COST_FUEL'] )
+        header_list += ['fixed cost fuel chem plant ($/kW/h)']
+        series_list.append( case_list_dic['FIXED_COST_FUEL_CHEM_PLANT'] )
+    
+        header_list += ['fixed cost fuel h2 storage ($/kW/h)']
+        series_list.append( case_list_dic['FIXED_COST_FUEL_H2_STORAGE'] )
+    
+        header_list += ['var cost fuel electrolyzer ($/kW/h)']
+        series_list.append( case_list_dic['VAR_COST_FUEL_ELECTROLYZER'] )
+
+        header_list += ['var cost fuel chem plant ($/kW/h)']
+        series_list.append( case_list_dic['VAR_COST_FUEL_CHEM_PLANT'] )
+
+        header_list += ['var cost fuel co2 ($/kW/h)']
+        series_list.append( case_list_dic['VAR_COST_FUEL_CO2'] )
 
     # Input: STORAGE
     if 'STORAGE' in components: 
@@ -492,12 +507,10 @@ def save_basic_results( global_dic, case_dic_list ):
     if 'SOLAR' in components: 
         header_list += ['capacity solar (kW)']
         series_list.append(  case_list_dic['CAPACITY_SOLAR'])
+        print('capacity solar (kW) {}'.format(result_dic['CAPACITY_SOLAR']))
     
         header_list += ['dispatch solar (kW)']
         series_list.append( case_list_dic['DISPATCH_SOLAR'])
-        f_len = len(result_dic['DISPATCH_SOLAR'].flatten())
-        f_sum = sum(result_dic['DISPATCH_SOLAR'].flatten())
-        print('dispatch to solar (kW) {} from n entries {} = {} / hour'.format(f_sum, f_len, f_sum/f_len))
     
         header_list += ['curtailment solar (kW)']
         series_list.append( case_list_dic['CURTAILMENT_SOLAR'])
@@ -517,12 +530,10 @@ def save_basic_results( global_dic, case_dic_list ):
     if 'WIND' in components: 
         header_list += ['capacity wind (kW)']
         series_list.append(  case_list_dic['CAPACITY_WIND'])
+        print('capacity wind (kW) {}'.format(result_dic['CAPACITY_WIND']))
     
         header_list += ['dispatch wind (kW)']
         series_list.append( case_list_dic['DISPATCH_WIND'])
-        f_len = len(result_dic['DISPATCH_WIND'].flatten())
-        f_sum = sum(result_dic['DISPATCH_WIND'].flatten())
-        print('dispatch to wind (kW) {} from n entries {} = {} / hour'.format(f_sum, f_len, f_sum/f_len))
     
         header_list += ['curtailment wind (kW)']
         series_list.append( case_list_dic['CURTAILMENT_WIND'])
@@ -542,6 +553,7 @@ def save_basic_results( global_dic, case_dic_list ):
     if 'NUCLEAR' in components: 
         header_list += ['capacity nuclear (kW)']
         series_list.append(  case_list_dic['CAPACITY_NUCLEAR'])
+        print('capacity nuclear (kW) {}'.format(result_dic['CAPACITY_NUCLEAR']))
     
         header_list += ['dispatch nuclear (kW)']
         series_list.append( case_list_dic['DISPATCH_NUCLEAR'])
@@ -551,15 +563,27 @@ def save_basic_results( global_dic, case_dic_list ):
     
     # Results: FUEL
     if 'FUEL' in components: 
-        header_list += ['capacity fuel (kW)']
-        series_list.append(  case_list_dic['CAPACITY_FUEL'])
-        print('capacity fuel (kW) {}'.format(result_dic['CAPACITY_FUEL']))
+        header_list += ['capacity fuel electrolyzer (kW)']
+        series_list.append(  case_list_dic['CAPACITY_FUEL_ELECTROLYZER'])
+        print('capacity fuel electrolyzer (kW) {}'.format(result_dic['CAPACITY_FUEL_ELECTROLYZER']))
+        header_list += ['capacity fuel chem plant (kW)']
+        series_list.append(  case_list_dic['CAPACITY_FUEL_CHEM_PLANT'])
+        print('capacity fuel chem plant (kW) {}'.format(result_dic['CAPACITY_FUEL_CHEM_PLANT']))
+        header_list += ['capacity fuel h2 storage (kW)']
+        series_list.append(  case_list_dic['CAPACITY_FUEL_H2_STORAGE'])
+        print('capacity fuel h2 storage (kW) {}'.format(result_dic['CAPACITY_FUEL_H2_STORAGE']))
     
-        header_list += ['dispatch to fuel (kW)']
-        series_list.append( case_list_dic['DISPATCH_TO_FUEL'])
-        f_len = len(result_dic['DISPATCH_TO_FUEL'].flatten())
-        f_sum = sum(result_dic['DISPATCH_TO_FUEL'].flatten())
+        header_list += ['dispatch to fuel h2 storage (kW)']
+        series_list.append( case_list_dic['DISPATCH_TO_FUEL_H2_STORAGE'])
+        f_len = len(result_dic['DISPATCH_TO_FUEL_H2_STORAGE'].flatten())
+        f_sum = sum(result_dic['DISPATCH_TO_FUEL_H2_STORAGE'].flatten())
         print('dispatch to fuel (kW) {} from n entries {} = {} / hour'.format(f_sum, f_len, f_sum/f_len))
+
+        header_list += ['dispatch from fuel h2 storage (kW)']
+        series_list.append( case_list_dic['DISPATCH_FROM_FUEL_H2_STORAGE'])
+        f_len = len(result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten())
+        f_sum = sum(result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten())
+        print('dispatch from fuel (kW) {} from n entries {} = {} / hour'.format(f_sum, f_len, f_sum/f_len))
     
     # Results: STORAGE
     if 'STORAGE' in components: 

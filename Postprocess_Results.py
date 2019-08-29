@@ -43,14 +43,18 @@ def get_dimension_info(case_dic_list):
     FIXED_COST_SOLAR = []
     FIXED_COST_WIND = []
     FIXED_COST_NUCLEAR = []
-    FIXED_COST_FUEL = []
+    FIXED_COST_FUEL_ELECTROLYZER = []
+    FIXED_COST_FUEL_CHEM_PLANT = []
+    FIXED_COST_FUEL_H2_STORAGE = []
     FIXED_COST_STORAGE = []
     
     VAR_COST_NATGAS = []
     VAR_COST_SOLAR = []
     VAR_COST_WIND = []
     VAR_COST_NUCLEAR = []
-    VAR_COST_FUEL = []
+    VAR_COST_FUEL_ELECTROLYZER = []
+    VAR_COST_FUEL_CHEM_PLANT = []
+    VAR_COST_FUEL_CO2 = []
     DECAY_RATE_STORAGE = []
     
     CHARGING_TIME_STORAGE = []
@@ -61,14 +65,18 @@ def get_dimension_info(case_dic_list):
         FIXED_COST_SOLAR   = np.r_[FIXED_COST_SOLAR,   case_dic_list[idx]['FIXED_COST_SOLAR']]
         FIXED_COST_WIND    = np.r_[FIXED_COST_WIND,    case_dic_list[idx]['FIXED_COST_WIND']]
         FIXED_COST_NUCLEAR = np.r_[FIXED_COST_NUCLEAR, case_dic_list[idx]['FIXED_COST_NUCLEAR']]
-        FIXED_COST_FUEL = np.r_[FIXED_COST_FUEL, case_dic_list[idx]['FIXED_COST_FUEL']]
+        FIXED_COST_FUEL_ELECTROLYZER = np.r_[FIXED_COST_FUEL_ELECTROLYZER, case_dic_list[idx]['FIXED_COST_FUEL_ELECTROLYZER']]
+        FIXED_COST_FUEL_CHEM_PLANT = np.r_[FIXED_COST_FUEL_CHEM_PLANT, case_dic_list[idx]['FIXED_COST_FUEL_CHEM_PLANT']]
+        FIXED_COST_FUEL_H2_STORAGE = np.r_[FIXED_COST_FUEL_H2_STORAGE, case_dic_list[idx]['FIXED_COST_FUEL_H2_STORAGE']]
         FIXED_COST_STORAGE = np.r_[FIXED_COST_STORAGE, case_dic_list[idx]['FIXED_COST_STORAGE']]
     
         VAR_COST_NATGAS  = np.r_[VAR_COST_NATGAS,  case_dic_list[idx]['VAR_COST_NATGAS']]
         VAR_COST_SOLAR   = np.r_[VAR_COST_SOLAR,   case_dic_list[idx]['VAR_COST_SOLAR']]
         VAR_COST_WIND    = np.r_[VAR_COST_WIND,    case_dic_list[idx]['VAR_COST_WIND']]
         VAR_COST_NUCLEAR = np.r_[VAR_COST_NUCLEAR, case_dic_list[idx]['VAR_COST_NUCLEAR']]
-        VAR_COST_FUEL = np.r_[VAR_COST_FUEL, case_dic_list[idx]['VAR_COST_FUEL']]
+        VAR_COST_FUEL_ELECTROLYZER = np.r_[VAR_COST_FUEL_ELECTROLYZER, case_dic_list[idx]['VAR_COST_FUEL_ELECTROLYZER']]
+        VAR_COST_FUEL_CHEM_PLANT = np.r_[VAR_COST_FUEL_CHEM_PLANT, case_dic_list[idx]['VAR_COST_FUEL_CHEM_PLANT']]
+        VAR_COST_FUEL_CO2 = np.r_[VAR_COST_FUEL_CO2, case_dic_list[idx]['VAR_COST_FUEL_CO2']]
         DECAY_RATE_STORAGE = np.r_[DECAY_RATE_STORAGE, case_dic_list[idx]['DECAY_RATE_STORAGE']]
         
         CHARGING_TIME_STORAGE = np.r_[CHARGING_TIME_STORAGE, case_dic_list[idx]['CHARGING_TIME_STORAGE']]
@@ -77,14 +85,18 @@ def get_dimension_info(case_dic_list):
     FIXED_COST_SOLAR_list   = np.unique(FIXED_COST_SOLAR)
     FIXED_COST_WIND_list    = np.unique(FIXED_COST_WIND)
     FIXED_COST_NUCLEAR_list = np.unique(FIXED_COST_NUCLEAR)
-    FIXED_COST_FUEL_list = np.unique(FIXED_COST_FUEL)
+    FIXED_COST_FUEL_ELECTROLYZER_list = np.unique(FIXED_COST_FUEL_ELECTROLYZER)
+    FIXED_COST_FUEL_CHEM_PLANT_list = np.unique(FIXED_COST_FUEL_CHEM_PLANT)
+    FIXED_COST_FUEL_H2_STORAGE_list = np.unique(FIXED_COST_FUEL_H2_STORAGE)
     FIXED_COST_STORAGE_list = np.unique(FIXED_COST_STORAGE)
     
     VAR_COST_NATGAS_list  = np.unique(VAR_COST_NATGAS)
     VAR_COST_SOLAR_list   = np.unique(VAR_COST_SOLAR)
     VAR_COST_WIND_list    = np.unique(VAR_COST_WIND)
     VAR_COST_NUCLEAR_list = np.unique(VAR_COST_NUCLEAR)
-    VAR_COST_FUEL_list = np.unique(VAR_COST_FUEL)
+    VAR_COST_FUEL_ELECTROLYZER_list = np.unique(VAR_COST_FUEL_ELECTROLYZER)
+    VAR_COST_FUEL_CHEM_PLANT_list = np.unique(VAR_COST_FUEL_CHEM_PLANT)
+    VAR_COST_FUEL_CO2_list = np.unique(VAR_COST_FUEL_CO2)
     DECAY_RATE_STORAGE_list = np.unique(DECAY_RATE_STORAGE)
     
     CHARGING_TIME_STORAGE_list = np.unique(CHARGING_TIME_STORAGE)
@@ -93,26 +105,34 @@ def get_dimension_info(case_dic_list):
                  'FIXED_COST_SOLAR':FIXED_COST_SOLAR_list,
                  'FIXED_COST_WIND':FIXED_COST_WIND_list,
                  'FIXED_COST_NUCLEAR':FIXED_COST_NUCLEAR_list,
-                 'FIXED_COST_FUEL':FIXED_COST_FUEL_list,
+                 'FIXED_COST_FUEL_ELECTROLYZER':FIXED_COST_FUEL_ELECTROLYZER_list,
+                 'FIXED_COST_FUEL_CHEM_PLANT':FIXED_COST_FUEL_CHEM_PLANT_list,
+                 'FIXED_COST_FUEL_H2_STORAGE':FIXED_COST_FUEL_H2_STORAGE_list,
                  'FIXED_COST_STORAGE':FIXED_COST_STORAGE_list,
                  'VAR_COST_NATGAS':VAR_COST_NATGAS_list,
                  'VAR_COST_SOLAR':VAR_COST_SOLAR_list,
                  'VAR_COST_WIND':VAR_COST_WIND_list,
                  'VAR_COST_NUCLEAR':VAR_COST_NUCLEAR_list,
-                 'VAR_COST_FUEL':VAR_COST_FUEL_list,
+                 'VAR_COST_FUEL_ELECTROLYZER':VAR_COST_FUEL_ELECTROLYZER_list,
+                 'VAR_COST_FUEL_CHEM_PLANT':VAR_COST_FUEL_CHEM_PLANT_list,
+                 'VAR_COST_FUEL_CO2':VAR_COST_FUEL_CO2_list,
                  'DECAY_RATE_STORAGE':DECAY_RATE_STORAGE_list,
                  'CHARGING_TIME_STORAGE':CHARGING_TIME_STORAGE_list}
     var_list = ['FIXED_COST_NATGAS',
                 'FIXED_COST_SOLAR',
                 'FIXED_COST_WIND',
                 'FIXED_COST_NUCLEAR',
-                'FIXED_COST_FUEL',
+                'FIXED_COST_FUEL_ELECTROLYZER',
+                'FIXED_COST_FUEL_CHEM_PLANT',
+                'FIXED_COST_FUEL_H2_STORAGE',
                 'FIXED_COST_STORAGE',
                 'VAR_COST_NATGAS',
                 'VAR_COST_SOLAR',
                 'VAR_COST_WIND',
                 'VAR_COST_NUCLEAR',
-                'VAR_COST_FUEL',
+                'VAR_COST_FUEL_ELECTROLYZER',
+                'VAR_COST_FUEL_CHEM_PLANT',
+                'VAR_COST_FUEL_CO2',
                 'DECAY_RATE_STORAGE',
                 'CHARGING_TIME_STORAGE']
     
@@ -136,13 +156,17 @@ def prepare_scalar_variables (global_dic, case_dic_list, result_list ):
         tmp['FIXED_COST_SOLAR']   = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_SOLAR']))
         tmp['FIXED_COST_WIND']    = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_WIND']))
         tmp['FIXED_COST_NUCLEAR'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_NUCLEAR']))
-        tmp['FIXED_COST_FUEL'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_FUEL']))
+        tmp['FIXED_COST_FUEL_ELECTROLYZER'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_FUEL_ELECTROLYZER']))
+        tmp['FIXED_COST_FUEL_CHEM_PLANT'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_FUEL_CHEM_PLANT']))
+        tmp['FIXED_COST_FUEL_H2_STORAGE'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_FUEL_H2_STORAGE']))
         tmp['FIXED_COST_STORAGE'] = np.array(np.squeeze(case_dic_list[idx]['FIXED_COST_STORAGE']))
         tmp['VAR_COST_NATGAS']        = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_NATGAS']))
         tmp['VAR_COST_SOLAR']         = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_SOLAR']))
         tmp['VAR_COST_WIND']          = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_WIND']))
         tmp['VAR_COST_NUCLEAR']       = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_NUCLEAR']))
-        tmp['VAR_COST_FUEL']       = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_FUEL']))
+        tmp['VAR_COST_FUEL_ELECTROLYZER']       = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_FUEL_ELECTROLYZER']))
+        tmp['VAR_COST_FUEL_CHEM_PLANT']       = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_FUEL_CHEM_PLANT']))
+        tmp['VAR_COST_FUEL_CO2']       = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_FUEL_CO2']))
         tmp['DECAY_RATE_STORAGE']       = np.array(np.squeeze(case_dic_list[idx]['DECAY_RATE_STORAGE']))
         tmp['VAR_COST_TO_STORAGE']    = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_TO_STORAGE']))
         tmp['VAR_COST_FROM_STORAGE']  = np.array(np.squeeze(case_dic_list[idx]['VAR_COST_FROM_STORAGE']))
@@ -151,13 +175,17 @@ def prepare_scalar_variables (global_dic, case_dic_list, result_list ):
         tmp['CAPACITY_SOLAR']   = np.array(np.squeeze(result_list[idx]['CAPACITY_SOLAR']))
         tmp['CAPACITY_WIND']    = np.array(np.squeeze(result_list[idx]['CAPACITY_WIND']))
         tmp['CAPACITY_NUCLEAR'] = np.array(np.squeeze(result_list[idx]['CAPACITY_NUCLEAR']))
-        tmp['CAPACITY_FUEL'] = np.array(np.squeeze(result_list[idx]['CAPACITY_FUEL']))
+        tmp['CAPACITY_FUEL_ELECTROLYZER'] = np.array(np.squeeze(result_list[idx]['CAPACITY_FUEL_ELECTROLYZER']))
+        tmp['CAPACITY_FUEL_CHEM_PLANT'] = np.array(np.squeeze(result_list[idx]['CAPACITY_FUEL_CHEM_PLANT']))
+        tmp['CAPACITY_FUEL_H2_STORAGE'] = np.array(np.squeeze(result_list[idx]['CAPACITY_FUEL_H2_STORAGE']))
         tmp['CAPACITY_STORAGE'] = np.array(np.squeeze(result_list[idx]['CAPACITY_STORAGE']))
         tmp['DISPATCH_NATGAS']        = np.array(np.squeeze(result_list[idx]['DISPATCH_NATGAS']))       #/ num_time_periods
         tmp['DISPATCH_SOLAR']         = np.array(np.squeeze(result_list[idx]['DISPATCH_SOLAR']))        #/ num_time_periods
         tmp['DISPATCH_WIND']          = np.array(np.squeeze(result_list[idx]['DISPATCH_WIND']))         #/ num_time_periods
         tmp['DISPATCH_NUCLEAR']       = np.array(np.squeeze(result_list[idx]['DISPATCH_NUCLEAR']))      #/ num_time_periods
-        tmp['DISPATCH_TO_FUEL']       = np.array(np.squeeze(result_list[idx]['DISPATCH_TO_FUEL']))      #/ num_time_periods
+        tmp['DISPATCH_TO_FUEL_H2_STORAGE']       = np.array(np.squeeze(result_list[idx]['DISPATCH_TO_FUEL_H2_STORAGE']))      #/ num_time_periods
+        tmp['DISPATCH_FROM_FUEL_H2_STORAGE']       = np.array(np.squeeze(result_list[idx]['DISPATCH_FROM_FUEL_H2_STORAGE']))      #/ num_time_periods
+        tmp['FUEL_H2_STORAGE']       = np.array(np.squeeze(result_list[idx]['FUEL_H2_STORAGE']))      #/ num_time_periods
         tmp['DISPATCH_TO_STORAGE']    = np.array(np.squeeze(result_list[idx]['DISPATCH_TO_STORAGE']))   #/ num_time_periods
         tmp['DISPATCH_FROM_STORAGE']  = np.array(np.squeeze(result_list[idx]['DISPATCH_FROM_STORAGE'])) #/ num_time_periods
         tmp['DISPATCH_UNMET_DEMAND']  = np.array(np.squeeze(result_list[idx]['DISPATCH_UNMET_DEMAND'])) #/ num_time_periods
@@ -302,19 +330,25 @@ def stack_plot1(
     CAPACITY_SOLAR    = get_multicases_results(res, num_case , 'CAPACITY_SOLAR')
     CAPACITY_WIND     = get_multicases_results(res, num_case , 'CAPACITY_WIND')
     CAPACITY_NUCLEAR  = get_multicases_results(res, num_case , 'CAPACITY_NUCLEAR')
-    CAPACITY_FUEL  = get_multicases_results(res, num_case , 'CAPACITY_FUEL')
+    CAPACITY_FUEL_ELECTROLYZER  = get_multicases_results(res, num_case , 'CAPACITY_FUEL_ELECTROLYZER')
+    CAPACITY_FUEL_CHEM_PLANT  = get_multicases_results(res, num_case , 'CAPACITY_FUEL_CHEM_PLANT')
+    CAPACITY_FUEL_H2_STORAGE  = get_multicases_results(res, num_case , 'CAPACITY_FUEL_H2_STORAGE')
     CAPACITY_STORAGE  = get_multicases_results(res, num_case , 'CAPACITY_STORAGE')    
     FIXED_COST_NATGAS  = get_multicases_results(res, num_case, 'FIXED_COST_NATGAS')
     FIXED_COST_SOLAR   = get_multicases_results(res, num_case, 'FIXED_COST_SOLAR')
     FIXED_COST_WIND    = get_multicases_results(res, num_case, 'FIXED_COST_WIND')
     FIXED_COST_NUCLEAR = get_multicases_results(res, num_case, 'FIXED_COST_NUCLEAR')
-    FIXED_COST_FUEL = get_multicases_results(res, num_case, 'FIXED_COST_FUEL')
+    FIXED_COST_FUEL_ELECTROLYZER = get_multicases_results(res, num_case, 'FIXED_COST_FUEL_ELECTROLYZER')
+    FIXED_COST_FUEL_CHEM_PLANT = get_multicases_results(res, num_case, 'FIXED_COST_FUEL_CHEM_PLANT')
+    FIXED_COST_FUEL_H2_STORAGE = get_multicases_results(res, num_case, 'FIXED_COST_FUEL_H2_STORAGE')
     FIXED_COST_STORAGE = get_multicases_results(res, num_case, 'FIXED_COST_STORAGE')    
     VAR_COST_NATGAS  = get_multicases_results(res, num_case, 'VAR_COST_NATGAS')
     VAR_COST_SOLAR   = get_multicases_results(res, num_case, 'VAR_COST_SOLAR')
     VAR_COST_WIND    = get_multicases_results(res, num_case, 'VAR_COST_WIND')
     VAR_COST_NUCLEAR = get_multicases_results(res, num_case, 'VAR_COST_NUCLEAR')
-    VAR_COST_FUEL = get_multicases_results(res, num_case, 'VAR_COST_FUEL')
+    VAR_COST_FUEL_ELECTROLYZER = get_multicases_results(res, num_case, 'VAR_COST_FUEL_ELECTROLYZER')
+    VAR_COST_FUEL_CHEM_PLANT = get_multicases_results(res, num_case, 'VAR_COST_FUEL_CHEM_PLANT')
+    VAR_COST_FUEL_CO2 = get_multicases_results(res, num_case, 'VAR_COST_FUEL_CO2')
     DECAY_RATE_STORAGE    = get_multicases_results(res, num_case, 'DECAY_RATE_STORAGE') 
     VAR_COST_TO_STORAGE   = get_multicases_results(res, num_case, 'VAR_COST_TO_STORAGE') 
     VAR_COST_FROM_STORAGE = get_multicases_results(res, num_case, 'VAR_COST_FROM_STORAGE')     
@@ -322,7 +356,9 @@ def stack_plot1(
     DISPATCH_SOLAR        = get_multicases_results(res, num_case, 'DISPATCH_SOLAR')         / num_time_periods
     DISPATCH_WIND         = get_multicases_results(res, num_case, 'DISPATCH_WIND')          / num_time_periods
     DISPATCH_NUCLEAR      = get_multicases_results(res, num_case, 'DISPATCH_NUCLEAR')       / num_time_periods
-    DISPATCH_TO_FUEL      = get_multicases_results(res, num_case, 'DISPATCH_TO_FUEL')       / num_time_periods
+    DISPATCH_TO_FUEL_H2_STORAGE      = get_multicases_results(res, num_case, 'DISPATCH_TO_FUEL_H2_STORAGE')       / num_time_periods
+    DISPATCH_FROM_FUEL_H2_STORAGE      = get_multicases_results(res, num_case, 'DISPATCH_FROM_FUEL_H2_STORAGE')       / num_time_periods
+    FUEL_H2_STORAGE      = get_multicases_results(res, num_case, 'FUEL_H2_STORAGE')       / num_time_periods
     DISPATCH_TO_STORAGE   = get_multicases_results(res, num_case, 'DISPATCH_TO_STORAGE')    / num_time_periods
     DISPATCH_FROM_STORAGE = get_multicases_results(res, num_case, 'DISPATCH_FROM_STORAGE')  / num_time_periods
     ENERGY_STORAGE        = get_multicases_results(res, num_case, 'ENERGY_STORAGE')         / num_time_periods
@@ -337,7 +373,7 @@ def stack_plot1(
                                    CAPACITY_SOLAR[order_list], 
                                    CAPACITY_WIND[order_list],
                                    CAPACITY_NUCLEAR[order_list],
-                                   CAPACITY_FUEL[order_list],
+                                   CAPACITY_FUEL_ELECTROLYZER[order_list],
                                    ]) #CAPACITY_STORAGE[order_list]
     labels_capacity = ["natgas", "solar", "wind", "nuclear", 'fuel', "storage"]
     colors_capacity = [color_natgas[1], color_solar[1], color_wind[1], color_nuclear[1], color_fuel[1], color_storage[1]]
@@ -352,7 +388,7 @@ def stack_plot1(
     dispatch_tot_solar   = np.sum(DISPATCH_SOLAR,axis=1)
     dispatch_tot_wind    = np.sum(DISPATCH_WIND,axis=1)
     dispatch_tot_nuclear = np.sum(DISPATCH_NUCLEAR,axis=1)
-    dispatch_tot_fuel = np.sum(DISPATCH_TO_FUEL,axis=1)
+    dispatch_tot_fuel = np.sum(DISPATCH_TO_FUEL_H2_STORAGE,axis=1)
     dispatch_tot_to_storage   = np.sum(DISPATCH_TO_STORAGE,axis=1)
     dispatch_tot_from_storage = np.sum(DISPATCH_FROM_STORAGE,axis=1)
     
@@ -386,7 +422,7 @@ def stack_plot1(
     cost_solar   = cal_cost(FIXED_COST_SOLAR,   CAPACITY_SOLAR,   VAR_COST_SOLAR,   DISPATCH_SOLAR,   num_case, num_time_periods)
     cost_wind    = cal_cost(FIXED_COST_WIND,    CAPACITY_WIND,    VAR_COST_WIND,    DISPATCH_WIND,    num_case, num_time_periods)
     cost_nuclear = cal_cost(FIXED_COST_NUCLEAR, CAPACITY_NUCLEAR, VAR_COST_NUCLEAR, DISPATCH_NUCLEAR, num_case, num_time_periods)
-    cost_fuel = cal_cost(FIXED_COST_FUEL, CAPACITY_FUEL, VAR_COST_FUEL, DISPATCH_TO_FUEL, num_case, num_time_periods)
+    cost_fuel = cal_cost(FIXED_COST_FUEL_ELECTROLYZER, CAPACITY_FUEL_ELECTROLYZER, VAR_COST_FUEL_ELECTROLYZER, DISPATCH_TO_FUEL_H2_STORAGE, num_case, num_time_periods)
     cost_storage = cal_cost(FIXED_COST_STORAGE, CAPACITY_STORAGE, DECAY_RATE_STORAGE,    ENERGY_STORAGE   ,num_case, num_time_periods, 
                             VAR_COST_TO_STORAGE,  DISPATCH_TO_STORAGE,
                             VAR_COST_FROM_STORAGE,DISPATCH_FROM_STORAGE)  # now dispatch_to/from is free    
@@ -553,7 +589,7 @@ def stack_plot2(
     CAPACITY_SOLAR    = get_multicases_results(res, num_case , 'CAPACITY_SOLAR')[case_idx]
     CAPACITY_WIND     = get_multicases_results(res, num_case , 'CAPACITY_WIND')[case_idx]
     CAPACITY_NUCLEAR  = get_multicases_results(res, num_case , 'CAPACITY_NUCLEAR')[case_idx]
-    CAPACITY_FUEL  = get_multicases_results(res, num_case , 'CAPACITY_FUEL')[case_idx]
+    CAPACITY_FUEL_ELECTROLYZER  = get_multicases_results(res, num_case , 'CAPACITY_FUEL_ELECTROLYZER')[case_idx]
     demand_yr = get_multicases_results(res, num_case , 'DEMAND'   ,1,num_time_periods,24,1)[case_idx]
     demand_week1 = get_multicases_results(res, num_case , 'DEMAND'   ,week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]
     demand_week2 = get_multicases_results(res, num_case , 'DEMAND'   ,week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]  
@@ -570,21 +606,21 @@ def stack_plot2(
     DISPATCH_SOLAR_yr   = get_multicases_results(res, num_case,      'DISPATCH_SOLAR',       1,num_time_periods,24,1)[case_idx]     
     DISPATCH_WIND_yr    = get_multicases_results(res, num_case,      'DISPATCH_WIND',        1,num_time_periods,24,1)[case_idx]          
     DISPATCH_NUCLEAR_yr = get_multicases_results(res, num_case,      'DISPATCH_NUCLEAR',     1,num_time_periods,24,1)[case_idx]  
-    DISPATCH_TO_FUEL_yr = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL',     1,num_time_periods,24,1)[case_idx]  
+    DISPATCH_TO_FUEL_H2_STORAGE_yr = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL_H2_STORAGE',     1,num_time_periods,24,1)[case_idx]  
     DISPATCH_FROM_STORAGE_yr = get_multicases_results(res, num_case, 'DISPATCH_FROM_STORAGE',1,num_time_periods,24,1)[case_idx]
 
     DISPATCH_NATGAS_week1  = get_multicases_results(res, num_case,      'DISPATCH_NATGAS',      week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]     
     DISPATCH_SOLAR_week1   = get_multicases_results(res, num_case,      'DISPATCH_SOLAR',       week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]     
     DISPATCH_WIND_week1    = get_multicases_results(res, num_case,      'DISPATCH_WIND',        week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]          
     DISPATCH_NUCLEAR_week1 = get_multicases_results(res, num_case,      'DISPATCH_NUCLEAR',     week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]  
-    DISPATCH_TO_FUEL_week1 = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL',     week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]  
+    DISPATCH_TO_FUEL_H2_STORAGE_week1 = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL_H2_STORAGE',     week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]  
     DISPATCH_FROM_STORAGE_week1 = get_multicases_results(res, num_case, 'DISPATCH_FROM_STORAGE',week1start,week1start+num_periods_week-1,num_periods_week,2)[case_idx]    
 
     DISPATCH_NATGAS_week2  = get_multicases_results(res, num_case,      'DISPATCH_NATGAS',      week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]     
     DISPATCH_SOLAR_week2   = get_multicases_results(res, num_case,      'DISPATCH_SOLAR',       week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]     
     DISPATCH_WIND_week2    = get_multicases_results(res, num_case,      'DISPATCH_WIND',        week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]          
     DISPATCH_NUCLEAR_week2 = get_multicases_results(res, num_case,      'DISPATCH_NUCLEAR',     week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]  
-    DISPATCH_TO_FUEL_week2 = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL',     week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]  
+    DISPATCH_TO_FUEL_H2_STORAGE_week2 = get_multicases_results(res, num_case,      'DISPATCH_TO_FUEL_H2_STORAGE',     week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx]  
     DISPATCH_FROM_STORAGE_week2 = get_multicases_results(res, num_case, 'DISPATCH_FROM_STORAGE',week2start,week2start+num_periods_week-1,num_periods_week,2)[case_idx] 
 
     curtail_natgas_yr  = CAPACITY_NATGAS                    - DISPATCH_NATGAS_yr
@@ -616,7 +652,7 @@ def stack_plot2(
                              DISPATCH_SOLAR_yr,
                              DISPATCH_WIND_yr,
                              DISPATCH_NUCLEAR_yr,
-                             DISPATCH_TO_FUEL_yr,
+                             DISPATCH_TO_FUEL_H2_STORAGE_yr,
                              DISPATCH_FROM_STORAGE_yr
                              ]) 
     
@@ -642,7 +678,7 @@ def stack_plot2(
                                DISPATCH_SOLAR_week1,
                                DISPATCH_WIND_week1,
                                DISPATCH_NUCLEAR_week1,
-                               DISPATCH_TO_FUEL_week1,
+                               DISPATCH_TO_FUEL_H2_STORAGE_week1,
                                DISPATCH_FROM_STORAGE_week1
                                ]) 
     info_week1 = {
@@ -661,7 +697,7 @@ def stack_plot2(
                                DISPATCH_SOLAR_week2,
                                DISPATCH_WIND_week2,
                                DISPATCH_NUCLEAR_week2,
-                               DISPATCH_TO_FUEL_week2,
+                               DISPATCH_TO_FUEL_H2_STORAGE_week2,
                                DISPATCH_FROM_STORAGE_week2
                                ]) 
     info_week2 = {
