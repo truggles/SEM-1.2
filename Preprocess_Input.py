@@ -183,8 +183,11 @@ def preprocess_input(case_input_path_filename):
             'FIXED_COST_CSP','VAR_COST_CSP',
             'FIXED_COST_CSP_STORAGE','VAR_COST_CSP_STORAGE',
 
-            'FIXED_COST_FUEL','VAR_COST_FUEL',
-            'FUEL_VALUE','TOTAL_FUEL_CONVERSION_EFFICIENCY',
+            'FIXED_COST_FUEL_ELECTROLYZER', 'FIXED_COST_FUEL_CHEM_PLANT',
+            'FIXED_COST_FUEL_H2_STORAGE',
+            'VAR_COST_FUEL_ELECTROLYZER', 'VAR_COST_FUEL_CHEM_PLANT', 'VAR_COST_FUEL_CO2',
+            'EFFICIENCY_FUEL_ELECTROLYZER', 'EFFICIENCY_FUEL_CHEM_PLANT',
+            'FUEL_VALUE',
             
             'VAR_COST_UNMET_DEMAND'
 
@@ -223,7 +226,10 @@ def preprocess_input(case_input_path_filename):
             'CAPACITY_CSP','CAPACITY_CSP_STORAGE',
             'DECAY_RATE_CSP_STORAGE','CHARGING_EFFICIENCY_CSP_STORAGE',
 
-            'CAPACITY_FUEL',
+            'CAPACITY_FUEL_ELECTROLYZER',
+            'CAPACITY_FUEL_H2_STORAGE',
+            'CAPACITY_FUEL_CHEM_PLANT',
+            'DECAY_RATE_FUEL_H2_STORAGE',
             
             'SYSTEM_RELIABILITY'
             ]
@@ -407,8 +413,8 @@ def preprocess_input(case_input_path_filename):
                 case_list_dic['CHARGING_EFFICIENCY_CSP_STORAGE'][case_index] >= 0):
                 component_list.append('CSP')
                 
-        if 'FIXED_COST_FUEL' in have_keys:
-            if case_list_dic['FIXED_COST_FUEL'][case_index] >= 0 and case_list_dic['VAR_COST_FUEL'][case_index] >= 0 :
+        if 'FIXED_COST_FUEL_ELECTROLYZER' in have_keys:
+            if case_list_dic['FIXED_COST_FUEL_ELECTROLYZER'][case_index] >= 0 and case_list_dic['VAR_COST_FUEL_ELECTROLYZER'][case_index] >= 0 :
                 component_list.append('FUEL')
                 
         if 'VAR_COST_UNMET_DEMAND' in have_keys:
@@ -422,6 +428,8 @@ def preprocess_input(case_input_path_filename):
                     component_list.append('UNMET_DEMAND')
                     case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] = 0
                                 
+        print("Included components:")
+        print(component_list)
         list_of_component_lists.append(component_list)
     case_list_dic['SYSTEM_COMPONENTS'] = list_of_component_lists
 
