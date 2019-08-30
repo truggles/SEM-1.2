@@ -384,12 +384,11 @@ def core_model (global_dic, case_dic):
                 dispatch_from_fuel_h2_storage >= 0,
                 dispatch_from_fuel_h2_storage <= capacity_fuel_chem_plant / efficiency_fuel_chem_plant,
                 fuel_h2_storage >= 0,
-                fuel_h2_storage <= capacity_fuel_h2_storage * 1000 # This factor is from D.H. Konig et al./Fuel 159 (2015) 289-297
-                # and scales the the storage size appropriately with electrolyzer size.  See table 3, cavern size = 971 GWh
-                # leading to a scaling of approx 1000x between electrolyzer and storage.
+                fuel_h2_storage <= capacity_fuel_h2_storage 
                 ]
 
 
+        # The negative in the final line is
         # from the cost function because we are "selling" it into the fuels market
         # at a fixed price
         fcn2min += \
@@ -398,14 +397,14 @@ def core_model (global_dic, case_dic):
             capacity_fuel_h2_storage * fixed_cost_fuel_h2_storage +  \
             cvx.sum(dispatch_to_fuel_h2_storage * efficiency_fuel_electrolyzer * var_cost_fuel_electrolyzer)/num_time_periods + \
             cvx.sum(dispatch_from_fuel_h2_storage * (efficiency_fuel_chem_plant * var_cost_fuel_chem_plant + var_cost_fuel_co2))/num_time_periods - \
-            cvx.sum(dispatch_from_fuel_h2_storage) * efficiency_fuel_chem_plant * fuel_value 
+            cvx.sum(dispatch_from_fuel_h2_storage)/num_time_periods * efficiency_fuel_chem_plant * fuel_value 
 
         for i in range(num_time_periods):
 
             constraints += [
                     fuel_h2_storage[(i+1) % num_time_periods] == fuel_h2_storage[i]
                     + efficiency_fuel_electrolyzer * dispatch_to_fuel_h2_storage[i]
-                    - dispatch_from_fuel_h2_storage[i]- fuel_h2_storage[i]*decay_rate_fuel_h2_storage
+                    - dispatch_from_fuel_h2_storage[i] - fuel_h2_storage[i]*decay_rate_fuel_h2_storage
                     ]
 
         print ('done with FUEL')
