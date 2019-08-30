@@ -56,7 +56,7 @@ def set_fuel_cost(cfg, fuel_cost_multiplier):
             fuel_value_position = line.index('FUEL_VALUE')
             print("fuel_value_position {} will be set to {}".format(fuel_value_position, fuel_cost_multiplier))
         if cnt == 168:
-            line[0] = line[0]+'_'+str(round(fuel_cost_multiplier,4)).replace('.','p')+'X'
+            line[0] = line[0]+'_'+str(round(fuel_cost_multiplier,6)).replace('.','p')+'X'
             line[fuel_value_position] = fuel_cost_multiplier
         cnt += 1
         new_cfg.append(line)
@@ -79,6 +79,7 @@ def get_output_file_names(path):
 
     print("Looking here for csv files: {}".format(path))
     files = glob(path+'*.csv')
+    files.sort()
     if len(files) > 1:
         print("This many files were found matching {}*.csv: {}".format(path, len(files)))
     return files
@@ -160,36 +161,40 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
 
 if '__main__' in __name__:
 
-    fuel_multipliers = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    fuel_multipliers = []
+    for i in np.linspace(1, 10, 50):
+        fuel_multipliers.append(i)
+    for i in np.linspace(10.5, 20, 19):
+        fuel_multipliers.append(i)
 
-    input_file = 'yFuels_case_input_test_190827.csv'
-    path = 'Output_Data/test_190829_v1/'
+    input_file = 'yyFuels_case_input_test_190827.csv'
+    path = 'Output_Data/test_190829_v5/'
     results = path+'results/'
 
-    #for fuel_multiplier in fuel_multipliers:
+    for fuel_multiplier in fuel_multipliers:
 
-    #    fuel_str = 'fuel_'+str(round(fuel_multiplier,4)).replace('.','p')+'X'
+        fuel_str = 'fuel_'+str(round(fuel_multiplier,6)).replace('.','p')+'X'
 
-    #    # 1st Step
-    #    cfg = get_SEM_csv_file(input_file)
-    #    case_name = fuel_str
-    #    case_file = case_name+'.csv'
-    #    cfg = set_fuel_cost(cfg, fuel_multiplier)
-    #    write_file(case_file, cfg)
-    #    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+        # 1st Step
+        cfg = get_SEM_csv_file(input_file)
+        case_name = fuel_str
+        case_file = case_name+'.csv'
+        cfg = set_fuel_cost(cfg, fuel_multiplier)
+        write_file(case_file, cfg)
+        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-    #    files = get_output_file_names(path+'test_190829_v1_2019')
+        files = get_output_file_names(path+'test_190829_v5_2019')
 
-    #    # Copy output file
-    #    if not os.path.exists(results):
-    #        os.makedirs(results)
-    #    move(files[-1], results)
+        # Copy output file
+        if not os.path.exists(results):
+            os.makedirs(results)
+        move(files[-1], results)
 
 
     base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
     results = base+results
-    #files = get_output_file_names(results+'test_190829_v1_2019')
-    #results = get_results(files)
+    files = get_output_file_names(results+'test_190829_v5_2019')
+    results = get_results(files)
 
     import matplotlib.pyplot as plt
     df = pd.read_csv('Results.csv', index_col=False)
@@ -198,4 +203,5 @@ if '__main__' in __name__:
     plt.xlabel('fuel cost multiplier')
     plt.ylabel('hourly dispatch from fuel h2 storage (kW)')
     plt.xscale('log', nonposx='clip')
+    plt.grid()
     fig.savefig('plot.png')
