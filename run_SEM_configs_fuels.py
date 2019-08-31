@@ -171,35 +171,35 @@ if '__main__' in __name__:
     path = 'Output_Data/test_190829_v5/'
     results = path+'results/'
 
-    for fuel_multiplier in fuel_multipliers:
+    #for fuel_multiplier in fuel_multipliers:
 
-        fuel_str = 'fuel_'+str(round(fuel_multiplier,6)).replace('.','p')+'X'
+    #    fuel_str = 'fuel_'+str(round(fuel_multiplier,6)).replace('.','p')+'X'
 
-        # 1st Step
-        cfg = get_SEM_csv_file(input_file)
-        case_name = fuel_str
-        case_file = case_name+'.csv'
-        cfg = set_fuel_cost(cfg, fuel_multiplier)
-        write_file(case_file, cfg)
-        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+    #    # 1st Step
+    #    cfg = get_SEM_csv_file(input_file)
+    #    case_name = fuel_str
+    #    case_file = case_name+'.csv'
+    #    cfg = set_fuel_cost(cfg, fuel_multiplier)
+    #    write_file(case_file, cfg)
+    #    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-        files = get_output_file_names(path+'test_190829_v5_2019')
+    #    files = get_output_file_names(path+'test_190829_v5_2019')
 
-        # Copy output file
-        if not os.path.exists(results):
-            os.makedirs(results)
-        move(files[-1], results)
+    #    # Copy output file
+    #    if not os.path.exists(results):
+    #        os.makedirs(results)
+    #    move(files[-1], results)
 
 
     base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
     results = base+results
-    files = get_output_file_names(results+'test_190829_v5_2019')
-    results = get_results(files)
+    #files = get_output_file_names(results+'test_190829_v5_2019')
+    #results = get_results(files)
 
     import matplotlib.pyplot as plt
     df = pd.read_csv('Results.csv', index_col=False)
     fig, ax = plt.subplots()
-    ax.plot(df['fuel cost multiplier'], df['dispatch from fuel h2 storage (kW)'])
+    ax.scatter(df['fuel cost multiplier'].values, df['dispatch from fuel h2 storage (kW)'].values)
     plt.xlabel('fuel cost multiplier')
     plt.ylabel('hourly dispatch from fuel h2 storage (kW)')
     plt.xscale('log', nonposx='clip')
