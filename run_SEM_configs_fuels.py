@@ -20,6 +20,8 @@ def get_all_cap_and_costs_fuels(file_name):
                    dtype={
                         'case name':np.str,
                         'problem status':np.str,
+                        'fuel cost ($/GGE)':np.float64,
+                        'fuel demand (kWh)':np.float64,
                         'system cost ($/kW/h)':np.float64,
                         'capacity nuclear (kW)':np.float64,
                         'capacity solar (kW)':np.float64,
@@ -44,20 +46,34 @@ def get_SEM_csv_file(file_name):
 
 
 
-
-def set_fuel_cost(cfg, fuel_cost_multiplier):
+# Multiplier is either applied to fuel cost or fuel demand
+# based on 'do_demand_constraint'
+def set_fuel_info(cfg, fuel_str, multiplier, do_demand_constraint):
 
     new_cfg = []
 
     cnt = 1
-    fuel_value_position = 0
+    case_data_line = -999 # Starts really negative so the 2nd 'if' is never triggered until ready
+    fuel_value_position = -999
+    fuel_demand_position = -999
     for line in cfg:
-        if cnt == 166:
+
+        if line[0] == 'CASE_NAME':
+            case_data_line = cnt
             fuel_value_position = line.index('FUEL_VALUE')
-            print("fuel_value_position {} will be set to {}".format(fuel_value_position, fuel_cost_multiplier))
-        if cnt == 168:
-            line[0] = line[0]+'_'+str(round(fuel_cost_multiplier,6)).replace('.','p')+'X'
-            line[fuel_value_position] = fuel_cost_multiplier
+            fuel_demand_position = line.index('FUEL_DEMAND')
+            print("fuel info --- demand at position {}, value at position {}, multiplier {}x, do_demand_constraint {}".format(
+                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint))
+        
+        if cnt == case_data_line+2:
+            # Set case name
+            line[0] = fuel_str
+            if do_demand_constraint:
+                line[fuel_value_position] = 0
+                line[fuel_demand_position] = multiplier
+            else:
+                line[fuel_value_position] = multiplier
+                line[fuel_demand_position] = 0
         cnt += 1
         new_cfg.append(line)
 
@@ -95,7 +111,8 @@ def get_results(files):
         keys.append(info['case name'].values[0])
         results[info['case name'].values[0]] = [
                        info['problem status'].values[0],
-                       float(info['case name'].values[0].split('_')[1].replace('X','').replace('p','.')), # reliability value
+                       info['fuel cost ($/GGE)'].values[0],
+                       info['fuel demand (kWh)'].values[0],
                        info['system cost ($ or $/kWh)'].values[0],
                        info['capacity nuclear (kW)'].values[0],
                        info['capacity solar (kW)'].values[0],
@@ -111,7 +128,7 @@ def get_results(files):
     print('Writing results to "Results.csv"')
     ofile = open('Results.csv', 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost multiplier,system cost ($/kW/h),capacity natgas (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity natgas (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -161,46 +178,60 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
 
 if '__main__' in __name__:
 
-    fuel_multipliers = []
-    for i in np.linspace(1, 10, 50):
-        fuel_multipliers.append(i)
-    for i in np.linspace(10.5, 20, 19):
-        fuel_multipliers.append(i)
+    do_demand_constraint = True
 
-    input_file = 'yyFuels_case_input_test_190827.csv'
-    path = 'Output_Data/test_190829_v5/'
+    multipliers = []
+    multipliers = [1e12,]
+    for i in range(10):
+        multipliers.append(multipliers[0]*(2**i))
+    #for i in np.linspace(1, 10, 50):
+    #    multipliers.append(i)
+    #for i in np.linspace(10.5, 20, 19):
+    #    multipliers.append(i)
+
+    input_file = 'zFuels_case_input_test_190827.csv'
+    path = 'Output_Data/test_190829_v6/'
     results = path+'results/'
 
-    #for fuel_multiplier in fuel_multipliers:
+    for multiplier in multipliers:
 
-    #    fuel_str = 'fuel_'+str(round(fuel_multiplier,6)).replace('.','p')+'X'
+        if do_demand_constraint:
+            fuel_str = 'fuel_demand_'+str(multiplier)+'MWh'
+        else:
+            fuel_str = 'fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
 
-    #    # 1st Step
-    #    cfg = get_SEM_csv_file(input_file)
-    #    case_name = fuel_str
-    #    case_file = case_name+'.csv'
-    #    cfg = set_fuel_cost(cfg, fuel_multiplier)
-    #    write_file(case_file, cfg)
-    #    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+        # 1st Step
+        cfg = get_SEM_csv_file(input_file)
+        case_name = fuel_str
+        case_file = case_name+'.csv'
+        cfg = set_fuel_info(cfg, fuel_str, multiplier, do_demand_constraint)
+        write_file(case_file, cfg)
+        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-    #    files = get_output_file_names(path+'test_190829_v5_2019')
+        files = get_output_file_names(path+'test_190829_v6_2019')
 
-    #    # Copy output file
-    #    if not os.path.exists(results):
-    #        os.makedirs(results)
-    #    move(files[-1], results)
+        # Copy output file
+        if not os.path.exists(results):
+            os.makedirs(results)
+        move(files[-1], results)
 
 
     base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
     results = base+results
-    #files = get_output_file_names(results+'test_190829_v5_2019')
-    #results = get_results(files)
+    files = get_output_file_names(results+'test_190829_v6_2019')
+    results = get_results(files)
 
     import matplotlib.pyplot as plt
     df = pd.read_csv('Results.csv', index_col=False)
     fig, ax = plt.subplots()
-    ax.scatter(df['fuel cost multiplier'].values, df['dispatch from fuel h2 storage (kW)'].values)
-    plt.xlabel('fuel cost multiplier')
+    if do_demand_constraint:
+        ax.scatter(df['fuel demand (kWh)'].values, df['dispatch from fuel h2 storage (kW)'].values+1)
+        plt.xlabel('fuel demand (kWh)')
+        #plt.yscale('log', nonposy='clip')
+        plt.yscale('log', nonposy='clip')
+    else:
+        ax.scatter(df['fuel cost ($/kWh)'].values, df['dispatch from fuel h2 storage (kW)'].values)
+        plt.xlabel('fuel cost ($/kWh)')
     plt.ylabel('hourly dispatch from fuel h2 storage (kW)')
     plt.xscale('log', nonposx='clip')
     plt.grid()

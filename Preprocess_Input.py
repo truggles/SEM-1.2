@@ -187,7 +187,7 @@ def preprocess_input(case_input_path_filename):
             'FIXED_COST_FUEL_H2_STORAGE',
             'VAR_COST_FUEL_ELECTROLYZER', 'VAR_COST_FUEL_CHEM_PLANT', 'VAR_COST_FUEL_CO2',
             'EFFICIENCY_FUEL_ELECTROLYZER', 'EFFICIENCY_FUEL_CHEM_PLANT',
-            'FUEL_VALUE',
+            'FUEL_VALUE', 'FUEL_DEMAND',
             
             'VAR_COST_UNMET_DEMAND'
 

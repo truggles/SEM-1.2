@@ -390,6 +390,12 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['var cost fuel co2 ($/kW/h)']
         series_list.append( case_list_dic['VAR_COST_FUEL_CO2'] )
 
+        header_list += ['fuel cost ($/GGE)']
+        series_list.append( case_list_dic['FUEL_VALUE'] )
+
+        header_list += ['fuel demand (kWh)']
+        series_list.append( case_list_dic['FUEL_DEMAND'] )
+
     # Input: STORAGE
     if 'STORAGE' in components: 
         header_list += ['fixed cost storage ($/kWh/h)']
