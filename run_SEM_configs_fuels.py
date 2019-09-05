@@ -48,7 +48,7 @@ def get_SEM_csv_file(file_name):
 
 # Multiplier is either applied to fuel cost or fuel demand
 # based on 'do_demand_constraint'
-def set_fuel_info(cfg, fuel_str, multiplier, do_demand_constraint):
+def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
 
     new_cfg = []
 
@@ -57,6 +57,9 @@ def set_fuel_info(cfg, fuel_str, multiplier, do_demand_constraint):
     fuel_value_position = -999
     fuel_demand_position = -999
     for line in cfg:
+
+        if line[0] == 'GLOBAL_NAME':
+            line[1] = global_name
 
         if line[0] == 'CASE_NAME':
             case_data_line = cnt
@@ -100,7 +103,7 @@ def get_output_file_names(path):
         print("This many files were found matching {}*.csv: {}".format(path, len(files)))
     return files
 
-def get_results(files):
+def get_results(files, global_name):
 
     results = {}
 
@@ -125,8 +128,8 @@ def get_results(files):
                        info['dispatch unmet demand (kW)'].values[0]
         ]
 
-    print('Writing results to "Results.csv"')
-    ofile = open('Results.csv', 'w')
+    print('Writing results to "Results_{}.csv"'.format(global_name))
+    ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
     ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity natgas (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
     for key in keys:
@@ -176,27 +179,61 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
     return simp
 
 
+def simple_plot(x, y, x_label, y_label, title, save, add_one=False):
+
+    print("Plotting x,y = {},{}".format(x_label,y_label))
+
+    if add_one:
+        y = y + 1.
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    plt.title(title)
+
+    ax.scatter(x, y)
+
+    plt.yscale('log', nonposy='clip')
+    plt.xscale('log', nonposx='clip')
+    
+    ax.set_xlim(min(x)*.5, max(x)*2)
+    if not (min(y) == max(y)):
+        ax.set_ylim(min(y[np.nonzero(y)])*.5, max(y)*2)
+
+    plt.tight_layout()
+    plt.grid()
+    fig.savefig('plots/{}.png'.format(save))
+
+
 if '__main__' in __name__:
 
     do_demand_constraint = True
 
-    multipliers = []
-    multipliers = [1e12,]
-    for i in range(10):
-        multipliers.append(multipliers[0]*(2**i))
-    #for i in np.linspace(1, 10, 50):
-    #    multipliers.append(i)
-    #for i in np.linspace(10.5, 20, 19):
-    #    multipliers.append(i)
-
     input_file = 'zFuels_case_input_test_190827.csv'
-    path = 'Output_Data/test_190829_v6/'
+    version = 'v9'
+    global_name = 'fuel_test_20190905_{}'.format(version)
+    path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
+
+    run_sem = True
+    multipliers = []
+    multipliers = [0.001,]
+    while True:
+        if multipliers[-1] > 10:
+            break
+        multipliers.append(multipliers[-1]*1.1)
+    if run_sem:
+        print("Length of multipliers {}".format(len(multipliers)))
+        print(multipliers)
 
     for multiplier in multipliers:
 
+        if not run_sem:
+            break
+
         if do_demand_constraint:
-            fuel_str = 'fuel_demand_'+str(multiplier)+'MWh'
+            fuel_str = 'fuel_demand_'+str(multiplier)+'kWh'
         else:
             fuel_str = 'fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
 
@@ -204,11 +241,11 @@ if '__main__' in __name__:
         cfg = get_SEM_csv_file(input_file)
         case_name = fuel_str
         case_file = case_name+'.csv'
-        cfg = set_fuel_info(cfg, fuel_str, multiplier, do_demand_constraint)
+        cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint)
         write_file(case_file, cfg)
         subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-        files = get_output_file_names(path+'test_190829_v6_2019')
+        files = get_output_file_names(path+'{}_2019'.format(global_name))
 
         # Copy output file
         if not os.path.exists(results):
@@ -218,21 +255,35 @@ if '__main__' in __name__:
 
     base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
     results = base+results
-    files = get_output_file_names(results+'test_190829_v6_2019')
-    results = get_results(files)
+    files = get_output_file_names(results+'{}_2019'.format(global_name))
+    results = get_results(files, global_name)
 
     import matplotlib.pyplot as plt
-    df = pd.read_csv('Results.csv', index_col=False)
-    fig, ax = plt.subplots()
-    if do_demand_constraint:
-        ax.scatter(df['fuel demand (kWh)'].values, df['dispatch from fuel h2 storage (kW)'].values+1)
-        plt.xlabel('fuel demand (kWh)')
-        #plt.yscale('log', nonposy='clip')
-        plt.yscale('log', nonposy='clip')
-    else:
-        ax.scatter(df['fuel cost ($/kWh)'].values, df['dispatch from fuel h2 storage (kW)'].values)
-        plt.xlabel('fuel cost ($/kWh)')
-    plt.ylabel('hourly dispatch from fuel h2 storage (kW)')
-    plt.xscale('log', nonposx='clip')
-    plt.grid()
-    fig.savefig('plot.png')
+    df = pd.read_csv('Results_{}.csv'.format(global_name), index_col=False)
+
+    plot_map = { # title / save : x, y, x_title, y_title
+        'fuel demand vs. hourly dispatch' : ['fuel demand (kWh)', 'dispatch from fuel h2 storage (kW)'],
+        'fuel demand vs. system cost' : ['fuel demand (kWh)', 'system cost ($/kW/h)'],
+        'fuel demand vs. capacity natgas' : ['fuel demand (kWh)', 'capacity natgas (kW)'],
+        #'fuel demand vs. capacity solar' : ['fuel demand (kWh)', 'capacity solar (kW)'],
+        'fuel demand vs. capacity wind' : ['fuel demand (kWh)', 'capacity wind (kW)'],
+        'fuel demand vs. capacity electrolyzer' : ['fuel demand (kWh)', 'capacity fuel electrolyzer (kW)'],
+        'fuel demand vs. capacity chem plant' : ['fuel demand (kWh)', 'capacity fuel chem plant (kW)'],
+        'fuel demand vs. capacity h2 storage' : ['fuel demand (kWh)', 'capacity fuel h2 storage (kW)'],
+        'fuel demand vs. dispatch unmet demand' : ['fuel demand (kWh)', 'dispatch unmet demand (kW)'],
+        #'fuel cost vs. hourly dispatch' : ['fuel cost ($/GGE)', 'dispatch from fuel h2 storage (kW)'],
+
+    }
+
+
+    for k, v in plot_map.items():
+        add_one = True
+        simple_plot(df[v[0]].values, df[v[1]].values, v[0], v[1], k, k.replace('.','').replace(' ','_'), add_one)
+        simple_plot(df[v[0]].values, df[v[1]].values/df[v[0]].values, v[0], v[1]+'/'+v[0], 
+                k+'/fuel demand (kWh)', k.replace('.','').replace(' ','_')+'_div_fuel_dem')
+
+
+
+
+
+

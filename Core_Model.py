@@ -347,7 +347,6 @@ def core_model (global_dic, case_dic):
         # - storage of H2
         # - chem plant for H2 + CO2 --> liquid hydrocarbons
         if(case_dic['CAPACITY_FUEL_ELECTROLYZER']<0):
-            print("Capacity Fuel Electrolyzer Is Variable")
             capacity_fuel_electrolyzer = cvx.Variable(1)
             constraints += [
                 capacity_fuel_electrolyzer >= 0,
@@ -357,21 +356,17 @@ def core_model (global_dic, case_dic):
             capacity_fuel_electrolyzer = case_dic['CAPACITY_FUEL_ELECTROLYZER'] * numerics_demand_scaling
 
         if(case_dic['CAPACITY_FUEL_CHEM_PLANT']<0):
-            print("Capacity Fuel Chem Plant Is Variable")
             capacity_fuel_chem_plant = cvx.Variable(1)
             constraints += [
-                capacity_fuel_chem_plant >= 0,
-                capacity_fuel_chem_plant <= 20 * numerics_demand_scaling # prevent run away scenarios
+                capacity_fuel_chem_plant >= 0
                 ]
         else:
             capacity_fuel_chem_plant = case_dic['CAPACITY_FUEL_CHEM_PLANT'] * numerics_demand_scaling
 
         if(case_dic['CAPACITY_FUEL_H2_STORAGE']<0):
-            print("Capacity Fuel H2 Storage Is Variable")
             capacity_fuel_h2_storage = cvx.Variable(1)
             constraints += [
-                capacity_fuel_h2_storage >= 0,
-                capacity_fuel_h2_storage <= 20000 * numerics_demand_scaling # prevent run away scenarios
+                capacity_fuel_h2_storage >= 0
                 ]
         else:
             capacity_fuel_h2_storage = case_dic['CAPACITY_FUEL_H2_STORAGE'] * numerics_demand_scaling
@@ -414,7 +409,7 @@ def core_model (global_dic, case_dic):
                     - dispatch_from_fuel_h2_storage[i] - fuel_h2_storage[i]*decay_rate_fuel_h2_storage
                     ]
 
-        print ('done with FUEL')
+        #print ('done with FUEL')
         #print (constraints)
         #print (fcn2min)
     else:
