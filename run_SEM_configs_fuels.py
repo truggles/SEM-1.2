@@ -126,13 +126,16 @@ def get_results(files, global_name):
                        info['capacity fuel h2 storage (kW)'].values[0],
                        info['dispatch to fuel h2 storage (kW)'].values[0],
                        info['dispatch from fuel h2 storage (kW)'].values[0],
-                       info['dispatch unmet demand (kW)'].values[0]
+                       info['dispatch unmet demand (kW)'].values[0],
+                       info['dispatch nuclear (kW)'].values[0],
+                       info['dispatch wind (kW)'].values[0],
+                       info['dispatch solar (kW)'].values[0]
         ]
 
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -180,12 +183,9 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
     return simp
 
 
-def simple_plot(x, y, x_label, y_label, title, save, add_one=False):
+def simple_plot(x, y, x_label, y_label, title, save, logY=False):
 
     print("Plotting x,y = {},{}".format(x_label,y_label))
-
-    if add_one:
-        y = y + 1.
 
     plt.close()
     fig, ax = plt.subplots()
@@ -195,12 +195,13 @@ def simple_plot(x, y, x_label, y_label, title, save, add_one=False):
 
     ax.scatter(x, y)
 
-    plt.yscale('log', nonposy='clip')
+    if logY:
+        plt.yscale('log', nonposy='clip')
+        if not (min(y) == max(y)):
+            ax.set_ylim(min(y[np.nonzero(y)])*.5, max(y)*2)
+
     plt.xscale('log', nonposx='clip')
-    
-    ax.set_xlim(min(x)*.5, max(x)*2)
-    if not (min(y) == max(y)):
-        ax.set_ylim(min(y[np.nonzero(y)])*.5, max(y)*2)
+    ax.set_xlim(min(x[np.nonzero(x)])*.5, max(x)*2)
 
     plt.tight_layout()
     plt.grid()
@@ -212,14 +213,14 @@ if '__main__' in __name__:
     do_demand_constraint = True
 
     input_file = 'zFuels_case_input_test_190827.csv'
-    version = 'v9'
+    version = 'v10'
     global_name = 'fuel_test_20190905_{}'.format(version)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
 
-    run_sem = True
+    run_sem = False 
     multipliers = []
-    multipliers = [0.001,]
+    multipliers = [0., 0.001,]
     while True:
         if multipliers[-1] > 10:
             break
@@ -228,15 +229,15 @@ if '__main__' in __name__:
         print("Length of multipliers {}".format(len(multipliers)))
         print(multipliers)
 
-    for multiplier in multipliers:
+    for i, multiplier in enumerate(multipliers):
 
         if not run_sem:
             break
 
         if do_demand_constraint:
-            fuel_str = 'fuel_demand_'+str(multiplier)+'kWh'
+            fuel_str = f'run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
         else:
-            fuel_str = 'fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+            fuel_str = f'run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
 
         # 1st Step
         cfg = get_SEM_csv_file(input_file)
@@ -255,7 +256,8 @@ if '__main__' in __name__:
         os.remove(case_file)
 
 
-    base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
+    #base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
+    base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_HOME/'
     results = base+results
     files = get_output_file_names(results+'{}_2019'.format(global_name))
     results = get_results(files, global_name)
@@ -278,14 +280,50 @@ if '__main__' in __name__:
     }
 
 
-    for k, v in plot_map.items():
-        add_one = True
-        simple_plot(df[v[0]].values, df[v[1]].values, v[0], v[1], k, k.replace('.','').replace(' ','_'), add_one)
-        simple_plot(df[v[0]].values, df[v[1]].values/df[v[0]].values, v[0], v[1]+'/'+v[0], 
-                k+'/fuel demand (kWh)', k.replace('.','').replace(' ','_')+'_div_fuel_dem')
+    #for k, v in plot_map.items():
+    #    logY = True
+    #    simple_plot(df[v[0]].values, df[v[1]].values, v[0], v[1], k, k.replace('.','').replace(' ','_'), logY)
+    #    simple_plot(df[v[0]].values, df[v[1]].values/df[v[0]].values, v[0], v[1]+'/'+v[0], 
+    #            k+'/fuel demand (kWh)', k.replace('.','').replace(' ','_')+'_div_fuel_dem', logY)
 
 
+    # $/GGE fuel
+    # subtract off the base-case (least fuel demand, should be zero in the future FIXME) system cost
+    dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
+    # divide by fuel produced in that scenario
+    dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
+    # convert $/kWh to $/GGE
+    dollars_per_fuel = dollars_per_fuel * 33.4
+    simple_plot(df['fuel demand (kWh)'].values, dollars_per_fuel.values, 'fuel demand (kWh)', 'Cost of Fuel ($/GGE)', 
+            'fuel demand vs. fuel cost', 'fuel_demand_vs_fuel_cost')
 
 
+    # Stacked generation dispatch plot
+    total_cap_base = df.loc[df['fuel demand (kWh)'] == 0.0, 'dispatch nuclear (kW)'].values + \
+            df.loc[df['fuel demand (kWh)'] == 0.0, 'dispatch wind (kW)'].values + \
+            df.loc[df['fuel demand (kWh)'] == 0.0, 'dispatch solar (kW)'].values
+    total_cap_base = 1.
+    norm_nuclear = df['dispatch nuclear (kW)'] / total_cap_base
+    norm_wind = df['dispatch wind (kW)'] / total_cap_base
+    norm_solar = df['dispatch solar (kW)'] / total_cap_base
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.set_xlabel('fuel demand (kWh)')
+    ax.set_ylabel('capacities normalized to base-case')
+    plt.title('Normalized Generation Capacities')
+
+    ax.fill_between(df['fuel demand (kWh)'], 0., norm_nuclear, color='red')
+    ax.fill_between(df['fuel demand (kWh)'], norm_nuclear, norm_nuclear+norm_wind, color='blue')
+    ax.fill_between(df['fuel demand (kWh)'], norm_nuclear+norm_wind, norm_nuclear+norm_wind+norm_solar, color='yellow')
+
+    plt.xscale('log', nonposx='clip')
+    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+
+    plt.tight_layout()
+    plt.grid()
+    fig.savefig('plots/capacities_generationr_normalized.png')
+
+    
 
 
