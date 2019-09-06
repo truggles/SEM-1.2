@@ -6,6 +6,7 @@ from glob import glob
 from shutil import copy2, move
 from collections import OrderedDict
 import pandas as pd
+import os
 
 
 
@@ -131,7 +132,7 @@ def get_results(files, global_name):
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity natgas (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -222,7 +223,7 @@ if '__main__' in __name__:
     while True:
         if multipliers[-1] > 10:
             break
-        multipliers.append(multipliers[-1]*1.1)
+        multipliers.append(round(multipliers[-1]*1.1,5))
     if run_sem:
         print("Length of multipliers {}".format(len(multipliers)))
         print(multipliers)
@@ -251,6 +252,7 @@ if '__main__' in __name__:
         if not os.path.exists(results):
             os.makedirs(results)
         move(files[-1], results)
+        os.remove(case_file)
 
 
     base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
@@ -264,7 +266,7 @@ if '__main__' in __name__:
     plot_map = { # title / save : x, y, x_title, y_title
         'fuel demand vs. hourly dispatch' : ['fuel demand (kWh)', 'dispatch from fuel h2 storage (kW)'],
         'fuel demand vs. system cost' : ['fuel demand (kWh)', 'system cost ($/kW/h)'],
-        'fuel demand vs. capacity natgas' : ['fuel demand (kWh)', 'capacity natgas (kW)'],
+        'fuel demand vs. capacity nuclear' : ['fuel demand (kWh)', 'capacity nuclear (kW)'],
         #'fuel demand vs. capacity solar' : ['fuel demand (kWh)', 'capacity solar (kW)'],
         'fuel demand vs. capacity wind' : ['fuel demand (kWh)', 'capacity wind (kW)'],
         'fuel demand vs. capacity electrolyzer' : ['fuel demand (kWh)', 'capacity fuel electrolyzer (kW)'],
