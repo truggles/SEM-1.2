@@ -39,7 +39,7 @@ import time
 import datetime
 import numpy as np
 
-from Storage_Analysis import storage_analysis
+from Storage_Analysis import storage_analysis, no_storage_analysis
 
 from Save_Basic_Results import save_vector_results_as_csv
 from Save_Basic_Results import pickle_raw_results
@@ -63,7 +63,7 @@ def core_model_loop (global_dic, case_dic_list):
 
         result_dic = core_model (global_dic, case_dic_list[case_index])
 
-        if result_dic['SYSTEM_COST'] > 0:
+        if result_dic['PROBLEM_STATUS'] != 'optimal':
 
 #            if verbose:
 #                today = datetime.datetime.now()
@@ -71,12 +71,17 @@ def core_model_loop (global_dic, case_dic_list):
 
             # put raw results in file for later analysis
             # NOTE: THIS NEEDS TO BE FIXED UP FOR STORAGE2
-            if 'STORAGE' in case_dic_list[case_index]['SYSTEM_COMPONENTS']:
-                sdic = storage_analysis(global_dic,case_dic_list[case_index],result_dic)
-                for key in sdic.keys():
-                    result_dic[key] = sdic[key]
-
-        else:
+            # =============================================================================
+            #             if 'STORAGE' in case_dic_list[case_index]['SYSTEM_COMPONENTS']:
+            #                 sdic = storage_analysis(global_dic,case_dic_list[case_index],result_dic)
+            #             else:
+            #                 sdic = no_storage_analysis()
+            #                 for key in sdic.keys():
+            #                     result_dic[key] = sdic[key]
+            # 
+            # 
+            # =============================================================================
+        # else:
 
             if verbose:
                 today = datetime.datetime.now()
@@ -673,7 +678,8 @@ def core_model (global_dic, case_dic):
             == demand_series + dispatch_to_storage + dispatch_to_storage2 + \
                     dispatch_to_pgp_storage + dispatch_to_fuel_h2_storage
             ]
-
+    idx_energy_bal_constraint = len(constraints)-1
+    
     # -----------------------------------------------------------------------------
     obj = cvx.Minimize(fcn2min)
 
@@ -747,6 +753,7 @@ def core_model (global_dic, case_dic):
         result['CURTAILMENT_WIND'] = -1 * np.ones(demand_series.size)
         result['CURTAILMENT_SOLAR2'] = -1 * np.ones(demand_series.size)
         result['CURTAILMENT_WIND2'] = -1 * np.ones(demand_series.size)
+        result['CURTAILMENT_CSP'] = -1 * np.ones(demand_series.size)
         result['CURTAILMENT_NUCLEAR'] = -1 * np.ones(demand_series.size)
  
         result['DISPATCH_TO_STORAGE'] = -1 * np.ones(demand_series.size)
@@ -787,7 +794,7 @@ def core_model (global_dic, case_dic):
                 }
 
         try:
-            result['PRICE'] = np.array(-1.0 * num_time_periods * constraints[-1].dual_value/ numerics_cost_scaling).flatten()
+            result['PRICE'] = np.array(-1.0 * num_time_periods * constraints[idx_energy_bal_constraint].dual_value/ numerics_cost_scaling).flatten()
             # note that hourly pricing can be determined from the dual of the constraint on energy balance
             # The num_time_periods is in the above because the influence on the cost of an hour is much bigger then
             # the impact of average cost over the period. The divide by the cost scaling corrects for the cost scaling.
@@ -969,6 +976,7 @@ def core_model (global_dic, case_dic):
             result['DISPATCH_TO_CSP_STORAGE'] = dispatch_to_csp_storage/numerics_demand_scaling
             result['DISPATCH_FROM_CSP'] = dispatch_from_csp/numerics_demand_scaling
             result['ENERGY_CSP_STORAGE'] = energy_csp_storage/numerics_demand_scaling
+            result['CURTAILMENT_CSP'] = (capacity_csp-dispatch_from_csp)/numerics_demand_scaling
 
         if 'UNMET_DEMAND' in system_components:
             result['DISPATCH_UNMET_DEMAND'] = np.array(dispatch_unmet_demand.value).flatten()/numerics_demand_scaling
