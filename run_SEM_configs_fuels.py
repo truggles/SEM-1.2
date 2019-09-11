@@ -111,7 +111,23 @@ def get_results(files, global_name):
     keys = []
     for f in files:
         info = get_all_cap_and_costs_fuels(f)
-        print(info)
+        if not hasattr(info, 'capacity nuclear (kW)'):
+            info['capacity nuclear (kW)'] = 0.
+            info['dispatch nuclear (kW)'] = 0.
+            info['curtailment nuclear (kW)'] = 0.
+        if not hasattr(info, 'capacity wind (kW)'):
+            info['capacity wind (kW)'] = 0.
+            info['dispatch wind (kW)'] = 0.
+            info['curtailment wind (kW)'] = 0.
+        if not hasattr(info, 'capacity solar (kW)'):
+            info['capacity solar (kW)'] = 0.
+            info['dispatch solar (kW)'] = 0.
+            info['curtailment solar (kW)'] = 0.
+        if not hasattr(info, 'capacity storage (kWh)'):
+            info['capacity storage (kWh)'] = 0.
+            info['dispatch to storage (kWh)'] = 0.
+            info['dispatch from storage (kWh)'] = 0.
+        #print(info)
         keys.append(info['case name'].values[0])
         results[info['case name'].values[0]] = [
                        info['problem status'].values[0],
@@ -121,6 +137,7 @@ def get_results(files, global_name):
                        info['capacity nuclear (kW)'].values[0],
                        info['capacity solar (kW)'].values[0],
                        info['capacity wind (kW)'].values[0],
+                       info['capacity storage (kWh)'].values[0],
                        info['capacity fuel electrolyzer (kW)'].values[0],
                        info['capacity fuel chem plant (kW)'].values[0],
                        info['capacity fuel h2 storage (kW)'].values[0],
@@ -130,6 +147,8 @@ def get_results(files, global_name):
                        info['dispatch nuclear (kW)'].values[0],
                        info['dispatch wind (kW)'].values[0],
                        info['dispatch solar (kW)'].values[0],
+                       info['dispatch to storage (kWh)'].values[0],
+                       info['dispatch from storage (kWh)'].values[0],
                        info['curtailment nuclear (kW)'].values[0],
                        info['curtailment wind (kW)'].values[0],
                        info['curtailment solar (kW)'].values[0]
@@ -138,7 +157,7 @@ def get_results(files, global_name):
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -186,7 +205,7 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
     return simp
 
 
-def simple_plot(x, ys, labels, x_label, y_label, title, save, logY=False):
+def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False):
 
     print("Plotting x,y = {},{}".format(x_label,y_label))
 
@@ -228,26 +247,33 @@ def simple_plot(x, ys, labels, x_label, y_label, title, save, logY=False):
     plt.tight_layout()
     plt.grid()
     plt.legend()
-    fig.savefig('plots/{}.png'.format(save))
+    fig.savefig('{}/{}.png'.format(save_dir, save))
 
 
 if '__main__' in __name__:
+
+    run_sem = False
+    make_results_file = False
+    make_plots = True
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
     EFFICIENCY_FUEL_CHEM_PLANT=0.659
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
-    do_demand_constraint = True
+    do_demand_constraint = True # All true for now
 
-    input_file = 'zOnlyNukeFuels_case_input_test_190827.csv'
-    input_file = 'zFuels_case_input_test_190827.csv'
-    version = 'v12'
+    #input_file = 'zOnlyNukeFuels_case_input_test_190827.csv'
+    #input_file = 'zFuels_case_input_test_190827.csv'
+    #input_file = 'zWindStorageFuels_case_input_test_190827.csv'
+    input_file = 'zWindSolarStorageFuels_case_input_test_190827.csv'
+    version = 'v13nukeOnly'
+    #version = 'v14windStorage'
+    #version = 'v15windSolarStorage'
     global_name = 'fuel_test_20190905_{}'.format(version)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
 
-    run_sem = False
     multipliers = []
     multipliers = [0., 0.0001,]
     while True:
@@ -257,6 +283,8 @@ if '__main__' in __name__:
     if run_sem:
         print("Length of multipliers {}".format(len(multipliers)))
         print(multipliers)
+
+    print("\n\nInput File: {}\n\n".format(input_file))
 
     for i, multiplier in enumerate(multipliers):
 
@@ -285,21 +313,29 @@ if '__main__' in __name__:
         os.remove(case_file)
 
 
-    #base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
-    base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_HOME/'
+    base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
+    #base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_HOME/'
     results = base+results
-    #files = get_output_file_names(results+'{}_2019'.format(global_name))
-    #results = get_results(files, global_name)
+    if make_results_file:
+        files = get_output_file_names(results+'{}_2019'.format(global_name))
+        results = get_results(files, global_name)
+
+    if not make_plots:
+        assert(2+2==5), "Kill before plotting"
 
     import matplotlib.pyplot as plt
     df = pd.read_csv('Results_{}.csv'.format(global_name), index_col=False)
+
+    save_dir = './plots_{}/'.format(version)
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
 
     plot_map = { # title / save : x, y, x_title, y_title
         'fuel demand vs. hourly dispatch' : ['fuel demand (kWh)', 'dispatch from fuel h2 storage (kW)'],
         'fuel demand vs. system cost' : ['fuel demand (kWh)', 'system cost ($/kW/h)'],
         'fuel demand vs. capacity nuclear' : ['fuel demand (kWh)', 'capacity nuclear (kW)'],
-        #'fuel demand vs. capacity solar' : ['fuel demand (kWh)', 'capacity solar (kW)'],
-#        'fuel demand vs. capacity wind' : ['fuel demand (kWh)', 'capacity wind (kW)'],
+        'fuel demand vs. capacity solar' : ['fuel demand (kWh)', 'capacity solar (kW)'],
+        'fuel demand vs. capacity wind' : ['fuel demand (kWh)', 'capacity wind (kW)'],
         'fuel demand vs. capacity electrolyzer' : ['fuel demand (kWh)', 'capacity fuel electrolyzer (kW)'],
         'fuel demand vs. capacity chem plant' : ['fuel demand (kWh)', 'capacity fuel chem plant (kW)'],
         'fuel demand vs. capacity h2 storage' : ['fuel demand (kWh)', 'capacity fuel h2 storage (kW)'],
@@ -311,8 +347,8 @@ if '__main__' in __name__:
 
     #for k, v in plot_map.items():
     #    logY = True
-    #    simple_plot(df[v[0]].values, [df[v[1]].values,], [v[1],], v[0], v[1], k, k.replace('.','').replace(' ','_'), logY)
-    #    simple_plot(df[v[0]].values, [df[v[1]].values/df[v[0]].values,], [v[1]+'/'+v[0],], v[0], v[1]+'/'+v[0], 
+    #    simple_plot(save_dir, df[v[0]].values, [df[v[1]].values,], [v[1],], v[0], v[1], k, k.replace('.','').replace(' ','_'), logY)
+    #    simple_plot(save_dir, df[v[0]].values, [df[v[1]].values/df[v[0]].values,], [v[1]+'/'+v[0],], v[0], v[1]+'/'+v[0], 
     #            k+'/fuel demand (kWh)', k.replace('.','').replace(' ','_')+'_div_fuel_dem', logY)
 
 
@@ -321,16 +357,17 @@ if '__main__' in __name__:
     dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
     # divide by fuel produced in that scenario
     dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
-    simple_plot(df['fuel demand (kWh)'].values, [dollars_per_fuel.values,], ['Cost of Fuel ($/kWh)',], 'fuel demand (kWh)', 'Cost of Fuel ($/kWh)', 
+    simple_plot(save_dir, df['fuel demand (kWh)'].values, [dollars_per_fuel.values,], ['Cost of Fuel ($/kWh)',], 'fuel demand (kWh)', 'Cost of Fuel ($/kWh)', 
             'fuel demand vs. fuel cost', 'fuel_demand_vs_fuel_cost')
 
 
 
+    idx_max = 125
     # Stacked generation dispatch plot
     # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    norm_nuclear = df['dispatch nuclear (kW)']
-    norm_wind = df['dispatch wind (kW)']
-    norm_solar = df['dispatch solar (kW)']
+    nuclear = df.loc[0:idx_max, 'dispatch nuclear (kW)']
+    wind = df.loc[0:idx_max, 'dispatch wind (kW)']
+    solar = df.loc[0:idx_max, 'dispatch solar (kW)']
 
     plt.close()
     fig, ax = plt.subplots()
@@ -338,26 +375,28 @@ if '__main__' in __name__:
     ax.set_ylabel('normalized dispatch (kW)')
     plt.title('Normalized Dispatch')
 
-    ax.fill_between(df['fuel demand (kWh)'], 0., norm_nuclear, color='red', label='annual nuclear dispatch')
-    ax.fill_between(df['fuel demand (kWh)'], norm_nuclear, norm_nuclear+norm_wind, color='blue', label='annual wind dispatch')
-    #ax.fill_between(df['fuel demand (kWh)'], norm_nuclear+norm_wind, norm_nuclear+norm_wind+norm_solar, color='yellow')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='annual nuclear dispatch')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='annual wind dispatch')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='annual solar dispatch')
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+    stacked_min = min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)])
+    stacked_max = max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)
+    ax.set_xlim(stacked_min, stacked_max)
 
     plt.tight_layout()
     plt.legend()
     plt.grid()
-    fig.savefig('plots/stacked_dispatch_normalized.png')
+    fig.savefig('{}/stacked_dispatch_normalized.png'.format(save_dir))
 
     
 
 
     # Stacked generation capacity plot
     # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    norm_nuclear = df['capacity nuclear (kW)']
-    norm_wind = df['capacity wind (kW)']
-    norm_solar = df['capacity solar (kW)']
+    nuclear = df.loc[0:idx_max, 'capacity nuclear (kW)']
+    wind = df.loc[0:idx_max, 'capacity wind (kW)']
+    solar = df.loc[0:idx_max, 'capacity solar (kW)']
 
     plt.close()
     fig, ax = plt.subplots()
@@ -365,39 +404,43 @@ if '__main__' in __name__:
     ax.set_ylabel('normalized capacity (kW)')
     plt.title('Normalized Dispatch')
 
-    ax.fill_between(df['fuel demand (kWh)'], 0., norm_nuclear, color='red', label='nuclear capacity')
-    ax.fill_between(df['fuel demand (kWh)'], norm_nuclear, norm_nuclear+norm_wind, color='blue', label='wind capacity')
-    #ax.fill_between(df['fuel demand (kWh)'], norm_nuclear+norm_wind, norm_nuclear+norm_wind+norm_solar, color='yellow')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='nuclear capacity')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='wind capacity')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='solar capacity')
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+    ax.set_xlim(stacked_min, stacked_max)
 
     plt.tight_layout()
     plt.legend()
     plt.grid()
-    fig.savefig('plots/stacked_capacity_normalized.png')
+    fig.savefig('{}/stacked_capacity_normalized.png'.format(save_dir))
 
     
 
 
     # Stacked curtailment plot
-    # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
+    nuclear = df.loc[0:idx_max, 'curtailment nuclear (kW)']
+    wind = df.loc[0:idx_max, 'curtailment wind (kW)']
+    solar = df.loc[0:idx_max, 'curtailment solar (kW)']
+
     plt.close()
     fig, ax = plt.subplots()
     ax.set_xlabel('fuel demand (kWh/h)')
     ax.set_ylabel('curtailment of dispatch (kWh)')
     plt.title('Curtailment of Generation Capacities')
 
-    ax.fill_between(df['fuel demand (kWh)'], 0., df['curtailment nuclear (kW)'], color='red', label='curtailment nuclear')
-    ax.fill_between(df['fuel demand (kWh)'], df['curtailment nuclear (kW)'], df['curtailment nuclear (kW)']+df['curtailment wind (kW)'], color='blue', label='curtailment wind')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='nuclear curtailment')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='wind curtailment')
+    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='solar curtailment')
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+    ax.set_xlim(stacked_min, stacked_max)
 
     plt.tight_layout()
     plt.legend()
     plt.grid()
-    fig.savefig('plots/stacked_curtailment.png')
+    fig.savefig('{}/stacked_curtailment.png'.format(save_dir))
     
 
 
@@ -411,19 +454,21 @@ if '__main__' in __name__:
 
     curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
     curt_div_dis_wind = df['curtailment wind (kW)']/df['capacity wind (kW)']
+    curt_div_dis_solar = df['curtailment solar (kW)']/df['capacity solar (kW)']
     for idx, val in curt_div_dis_nuclear.items():
         if np.isnan(curt_div_dis_nuclear.at[idx]):
             curt_div_dis_nuclear.at[idx] = 0
     ax.fill_between(df['fuel demand (kWh)'], 0., curt_div_dis_nuclear, color='red', label='curtailment/capacity nuclear')
     ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear, curt_div_dis_nuclear+curt_div_dis_wind, color='blue', label='curtailment/capacity wind')
+    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/capacity solar')
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+    ax.set_xlim(stacked_min, stacked_max)
 
     plt.tight_layout()
     plt.legend()
     plt.grid()
-    fig.savefig('plots/stacked_curtailment_div_capacity.png')
+    fig.savefig('{}/stacked_curtailment_div_capacity.png'.format(save_dir))
     
 
 
@@ -437,26 +482,29 @@ if '__main__' in __name__:
 
     curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['dispatch nuclear (kW)']
     curt_div_dis_wind = df['curtailment wind (kW)']/df['dispatch wind (kW)']
+    curt_div_dis_solar = df['curtailment solar (kW)']/df['dispatch solar (kW)']
     for idx, val in curt_div_dis_nuclear.items():
         if np.isnan(curt_div_dis_nuclear.at[idx]):
             curt_div_dis_nuclear.at[idx] = 0
     ax.fill_between(df['fuel demand (kWh)'], 0., curt_div_dis_nuclear, color='red', label='curtailment/dispatch nuclear')
     ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear, curt_div_dis_nuclear+curt_div_dis_wind, color='blue', label='curtailment/dispatch wind')
+    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/capacity solar')
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(df['fuel demand (kWh)'].values[np.nonzero(df['fuel demand (kWh)'].values)]), max(df['fuel demand (kWh)'].values))
+    stacked_max = max(df['fuel demand (kWh)'].values)
+    ax.set_xlim(stacked_min, stacked_max)
 
     plt.tight_layout()
     plt.legend()
     plt.grid()
-    fig.savefig('plots/stacked_curtailment_div_dispatch.png')
+    fig.savefig('{}/stacked_curtailment_div_dispatch.png'.format(save_dir))
     
 
 
 
     
     # Fuel system capacities ratios
-    simple_plot(df['fuel demand (kWh)'].values,
+    simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['capacity fuel electrolyzer (kW)'].values/df['fuel demand (kWh)'].values, 
                 df['capacity fuel chem plant (kW)'].values/df['fuel demand (kWh)'].values, 
                 df['capacity fuel h2 storage (kW)'].values/df['fuel demand (kWh)'].values], # y values
@@ -467,7 +515,7 @@ if '__main__' in __name__:
 
     # Fuel system capacity factor ratios
     # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
-    simple_plot(df['fuel demand (kWh)'].values,
+    simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                 df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_PLANT/df['capacity fuel chem plant (kW)'].values,], # y values 
             ['electrolyzer capacity factor', 'chem plant capacity factor'], # labels
@@ -477,13 +525,14 @@ if '__main__' in __name__:
 
     # All system capacity factor ratios
     # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
-    simple_plot(df['fuel demand (kWh)'].values,
+    simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                 df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_PLANT/df['capacity fuel chem plant (kW)'].values,
                 df['dispatch nuclear (kW)'].values/df['capacity nuclear (kW)'].values,
-                df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values], # y values 
+                df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values,
+                df['dispatch solar (kW)'].values/df['capacity solar (kW)'].values], # y values 
             ['electrolyzer capacity factor', 'chem plant capacity factor',
-                'nuclear capacity factor', 'wind capacity factor'], # labels
+                'nuclear capacity factor', 'wind capacity factor', 'solar capacity factor'], # labels
             'fuel demand (kWh)', 'System Capacity Factors', 
             'System Capacity Factors', 'ratios_system_CFs_vs_fuel_cost')
 
@@ -493,12 +542,13 @@ if '__main__' in __name__:
     # This version factors out the wind CF of 0.43
     curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
     curt_div_dis_wind = df['curtailment wind (kW)']/(df['curtailment wind (kW)']+df['dispatch wind (kW)'])
+    curt_div_dis_solar = df['curtailment solar (kW)']/(df['curtailment solar (kW)']+df['dispatch solar (kW)'])
     #for idx, val in curt_div_dis_nuclear.items():
     #    if np.isnan(curt_div_dis_nuclear.at[idx]):
     #        curt_div_dis_nuclear.at[idx] = 0
-    simple_plot(df['fuel demand (kWh)'].values,
-            [curt_div_dis_nuclear.values, curt_div_dis_wind.values], # y values 
-            ['nuclear curtailment / capacity', 'wind curtailment / available power'], # labels
+    simple_plot(save_dir, df['fuel demand (kWh)'].values,
+            [curt_div_dis_nuclear.values, curt_div_dis_wind.values, curt_div_dis_solar.values], # y values 
+            ['nuclear curtailment / capacity', 'wind curtailment / available power', 'solar curtailment / available power'], # labels
             'fuel demand (kWh)', 'curtailment of dispatch (kW) / available power (kW)', 
             'Relative Curtailment of Generation Capacities', 'ratios_curtailment_div_available_power')
 
