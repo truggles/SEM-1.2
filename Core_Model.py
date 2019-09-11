@@ -354,8 +354,8 @@ def core_model (global_dic, case_dic):
         if(case_dic['CAPACITY_FUEL_ELECTROLYZER']<0):
             capacity_fuel_electrolyzer = cvx.Variable(1)
             constraints += [
-                capacity_fuel_electrolyzer >= 0,
-                capacity_fuel_electrolyzer <= 20 * numerics_demand_scaling # prevent run away scenarios
+                capacity_fuel_electrolyzer >= 0
+                #capacity_fuel_electrolyzer <= 2000 * numerics_demand_scaling # prevent run away scenarios
                 ]
         else:
             capacity_fuel_electrolyzer = case_dic['CAPACITY_FUEL_ELECTROLYZER'] * numerics_demand_scaling
