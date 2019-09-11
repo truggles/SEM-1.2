@@ -362,11 +362,22 @@ def core_model (global_dic, case_dic):
 
         for i in range(num_time_periods):
 
-            constraints += [
-                    energy_storage[(i+1) % num_time_periods] ==
-                        energy_storage[i] + charging_efficiency_storage * dispatch_to_storage[i]
-                        - dispatch_from_storage[i] - energy_storage[i]*decay_rate_storage
-                    ]
+            if i == 0:
+                constraints += [
+                        energy_storage[0] == capacity_storage,
+                        energy_storage[i+1] ==
+                            energy_storage[0] + charging_efficiency_storage * dispatch_to_storage[i]
+                            - dispatch_from_storage[i] - energy_storage[i]*decay_rate_storage
+                        ]
+            elif i == num_time_periods-1:
+                print("i == num_time_periods, skipping")
+                continue
+            else:
+                constraints += [
+                        energy_storage[i+1] ==
+                            energy_storage[i] + charging_efficiency_storage * dispatch_to_storage[i]
+                            - dispatch_from_storage[i] - energy_storage[i]*decay_rate_storage
+                        ]
         #print ('done with STORAGE')
         #print (constraints)
         #print (fcn2min)
