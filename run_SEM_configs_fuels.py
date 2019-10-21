@@ -97,7 +97,7 @@ def write_file(file_name, cfg):
 
 def get_output_file_names(path):
 
-    print("Looking here for csv files: {}".format(path))
+    print("Looking here for csv files: {}*.csv".format(path))
     files = glob(path+'*.csv')
     files.sort()
     if len(files) > 1:
@@ -252,9 +252,12 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
 
 if '__main__' in __name__:
 
+    run_sem = True
     run_sem = False
+    make_results_file = True
     make_results_file = False
     make_plots = True
+    date = '20191021'
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
@@ -263,21 +266,21 @@ if '__main__' in __name__:
 
     do_demand_constraint = True # All true for now
 
-    #input_file = 'zOnlyNukeFuels_case_input_test_190827.csv'
+    input_file = 'zOnlyNukeFuels_case_input_test_190827.csv'
     #input_file = 'zFuels_case_input_test_190827.csv'
     #input_file = 'zWindStorageFuels_case_input_test_190827.csv'
-    input_file = 'zWindSolarStorageFuels_case_input_test_190827.csv'
-    version = 'v13nukeOnly'
+    #input_file = 'zWindSolarStorageFuels_case_input_test_190827.csv'
+    version = 'v20nukeOnly'
     #version = 'v14windStorage'
     #version = 'v15windSolarStorage'
-    global_name = 'fuel_test_20190905_{}'.format(version)
+    global_name = 'fuel_test_{}_{}'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
 
     multipliers = []
     multipliers = [0., 0.0001,]
     while True:
-        if multipliers[-1] > 1000:
+        if multipliers[-1] > 100:
             break
         multipliers.append(round(multipliers[-1]*1.1,5))
     if run_sem:
@@ -313,8 +316,8 @@ if '__main__' in __name__:
         os.remove(case_file)
 
 
-    base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_CIW/'
-    #base = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2_HOME/'
+    base = '/Users/truggles/SEM-1.2_CIW/'
+    #base = '/Users/truggles/SEM-1.2_HOME/'
     results = base+results
     if make_results_file:
         files = get_output_file_names(results+'{}_2019'.format(global_name))
@@ -374,6 +377,8 @@ if '__main__' in __name__:
     ax.set_xlabel('fuel demand (kWh/h)')
     ax.set_ylabel('normalized dispatch (kW)')
     plt.title('Normalized Dispatch')
+
+    print(f"\n\nMax Nuclear {max(nuclear)}")
 
     ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='annual nuclear dispatch')
     ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='annual wind dispatch')
@@ -488,7 +493,7 @@ if '__main__' in __name__:
             curt_div_dis_nuclear.at[idx] = 0
     ax.fill_between(df['fuel demand (kWh)'], 0., curt_div_dis_nuclear, color='red', label='curtailment/dispatch nuclear')
     ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear, curt_div_dis_nuclear+curt_div_dis_wind, color='blue', label='curtailment/dispatch wind')
-    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/capacity solar')
+    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/dispatch solar')
 
     plt.xscale('log', nonposx='clip')
     stacked_max = max(df['fuel demand (kWh)'].values)
