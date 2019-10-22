@@ -212,8 +212,8 @@ def core_model (global_dic, case_dic):
         if(case_dic['CAPACITY_NATGAS']<0):
             capacity_natgas = cvx.Variable(1) # calculate natgas capacity
             constraints += [
-                capacity_natgas >= 0,
-                capacity_natgas <= max_demand]
+                capacity_natgas >= 0]
+                #capacity_natgas <= max_demand]
         else:
             capacity_natgas = case_dic['CAPACITY_NATGAS'] * numerics_demand_scaling
 
@@ -329,8 +329,8 @@ def core_model (global_dic, case_dic):
         if(case_dic['CAPACITY_NUCLEAR']<0):
             capacity_nuclear = cvx.Variable(1) # calculate SOLAR capacity
             constraints += [
-                capacity_nuclear >= 0,
-                capacity_nuclear <= max_demand]
+                capacity_nuclear >= 0]
+                #capacity_nuclear <= max_demand]
         else:
             capacity_nuclear = case_dic['CAPACITY_NUCLEAR'] * numerics_demand_scaling
 
