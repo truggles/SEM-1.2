@@ -53,23 +53,22 @@ def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
 
     new_cfg = []
 
-    cnt = 1
     case_data_line = -999 # Starts really negative so the 2nd 'if' is never triggered until ready
     fuel_value_position = -999
     fuel_demand_position = -999
-    for line in cfg:
+    for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
             line[1] = global_name
 
         if line[0] == 'CASE_NAME':
-            case_data_line = cnt
+            case_data_line = i
             fuel_value_position = line.index('FUEL_VALUE')
             fuel_demand_position = line.index('FUEL_DEMAND')
             print("fuel info --- demand at position {}, value at position {}, multiplier {}x, do_demand_constraint {}".format(
                     fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint))
         
-        if cnt == case_data_line+2:
+        if i == case_data_line+2:
             # Set case name
             line[0] = fuel_str
             if do_demand_constraint:
@@ -78,7 +77,6 @@ def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
             else:
                 line[fuel_value_position] = multiplier
                 line[fuel_demand_position] = 0
-        cnt += 1
         new_cfg.append(line)
 
     return new_cfg
@@ -253,11 +251,11 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
 if '__main__' in __name__:
 
     run_sem = True
-    run_sem = False
+    #run_sem = False
     make_results_file = True
-    make_results_file = False
+    #make_results_file = False
     make_plots = True
-    date = '20191021'
+    date = '20191022'
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
@@ -270,7 +268,8 @@ if '__main__' in __name__:
     #input_file = 'zFuels_case_input_test_190827.csv'
     #input_file = 'zWindStorageFuels_case_input_test_190827.csv'
     #input_file = 'zWindSolarStorageFuels_case_input_test_190827.csv'
-    version = 'v20nukeOnly'
+    input_file = 'fuel_test_191017v2.csv'
+    version = 'v22Test'
     #version = 'v14windStorage'
     #version = 'v15windSolarStorage'
     global_name = 'fuel_test_{}_{}'.format(date, version)
@@ -278,11 +277,12 @@ if '__main__' in __name__:
     results = path+'results/'
 
     multipliers = []
-    multipliers = [0., 0.0001,]
+    multipliers = [0., 0.001,]
     while True:
         if multipliers[-1] > 100:
             break
-        multipliers.append(round(multipliers[-1]*1.1,5))
+        #multipliers.append(round(multipliers[-1]*1.1,5))
+        multipliers.append(round(multipliers[-1]*1.2,5))
     if run_sem:
         print("Length of multipliers {}".format(len(multipliers)))
         print(multipliers)
@@ -295,9 +295,9 @@ if '__main__' in __name__:
             break
 
         if do_demand_constraint:
-            fuel_str = f'run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
+            fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
         else:
-            fuel_str = f'run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+            fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
 
         # 1st Step
         cfg = get_SEM_csv_file(input_file)
