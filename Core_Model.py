@@ -709,6 +709,12 @@ def core_model (global_dic, case_dic):
 #    prob.solve(solver = 'GUROBI',BarConvTol = 1e-10, feasibilityTol = 1e-8)
 #    prob.solve(solver = 'GUROBI',BarConvTol = 1e-8, FeasibilityTol = 1e-6)
 
+        if prob.status != 'solved' and prob.status != 'optimal':
+            print(f'\n -- Initial GUROBI solve {prob.status}\n\n ---- Trying to solve again with NumericFocus = 3')
+            prob.solve(solver = 'GUROBI', NumericFocus=3)
+            if prob.status != 'solved' and prob.status != 'optimal':
+                raise cvx.error.SolverError
+
         end_time = time.time()  # timer ends
 
     except cvx.error.SolverError as err:
