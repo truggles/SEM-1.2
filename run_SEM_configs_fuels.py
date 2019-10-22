@@ -264,20 +264,26 @@ if '__main__' in __name__:
 
     do_demand_constraint = True # All true for now
 
-    input_file = 'zOnlyNukeFuels_case_input_test_190827.csv'
-    #input_file = 'zFuels_case_input_test_190827.csv'
-    #input_file = 'zWindStorageFuels_case_input_test_190827.csv'
-    #input_file = 'zWindSolarStorageFuels_case_input_test_190827.csv'
-    input_file = 'fuel_test_191017v2.csv'
-    version = 'v22Test'
-    #version = 'v14windStorage'
-    #version = 'v15windSolarStorage'
+    input_file = 'fuel_test_191017.csv' # w/ storage, reliability 100%
+    input_file = 'fuel_test_191017_nuclear.csv' # reliability 100%, ONLY nukes
+    input_file = 'fuel_test_191017_Case1_Nuclear.csv'
+    input_file = 'fuel_test_191017_Case2_NuclearStorage.csv'
+    input_file = 'fuel_test_191017_Case3_WindStorage.csv'
+    input_file = 'fuel_test_191017_Case4_SolarStorage.csv'
+    input_file = 'fuel_test_191017_Case5_WindSolarStorage.csv'
+    input_file = 'fuel_test_191017_Case6_NuclearWindSolarStorage.csv'
+    version = 'v3_Case1'
+    version = 'v3_Case2'
+    version = 'v3_Case3'
+    version = 'v3_Case4'
+    version = 'v3_Case5'
+    version = 'v3_Case6'
     global_name = 'fuel_test_{}_{}'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
 
     multipliers = []
-    multipliers = [0., 0.001,]
+    multipliers = [0., 0.01,]
     while True:
         if multipliers[-1] > 100:
             break
