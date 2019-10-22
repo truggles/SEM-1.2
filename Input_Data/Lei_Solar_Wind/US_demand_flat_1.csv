@@ -1,7 +1,4 @@
-Data prepared by Tyler R. & Dave F.,,,,
-Data corresponds to inputs from 54 balancing authorities summed together post anomaly identification and imputation.,,,,
-This provides coverage over all of CONUS.,,,,
-The two excluded balancing authorities (SEC and OVEC) account for less than 0.1% of the CONUS total.,,,,
+For testing purposes only,,,,
 ,,,,
 Lines above 'BEGIN_DATA' in the first column are for comment only.,,,,
 ,,,,
