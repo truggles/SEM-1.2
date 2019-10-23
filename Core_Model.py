@@ -345,6 +345,7 @@ def core_model (global_dic, case_dic):
         dispatch_nuclear = np.zeros(num_time_periods)
 
 #%%-------------------- liquid fuels ------------------------------------------
+    idx_fuel_constraint = -1
     if 'FUEL' in system_components:
         # Three available capacities to optimize:
         # - water to H2 electrolyzer
@@ -404,6 +405,8 @@ def core_model (global_dic, case_dic):
             constraints += [
                     cvx.sum(dispatch_from_fuel_h2_storage) * efficiency_fuel_chem_plant / num_time_periods == fuel_demand
                 ]
+
+        idx_fuel_constraint = len(constraints)-1
 
         for i in range(num_time_periods):
 
@@ -745,6 +748,7 @@ def core_model (global_dic, case_dic):
         result['CAPACITY_CSP_STORAGE'] = -1
         
         result['PRICE'] = -1 * np.ones(demand_series.size)
+        result['PRICE_FUEL'] = -1 * np.ones(demand_series.size)
         
         result['DISPATCH_NATGAS'] = -1 * np.ones(demand_series.size)
         result['DISPATCH_NATGAS_CCS'] = -1 * np.ones(demand_series.size)
@@ -805,6 +809,16 @@ def core_model (global_dic, case_dic):
             # the impact of average cost over the period. The divide by the cost scaling corrects for the cost scaling.
         except:
             result['PRICE']=np.zeros(num_time_periods)
+
+        # Only check fuel dual if fuel was added
+        if idx_fuel_constraint != -1:
+            try:
+                result['PRICE_FUEL'] = np.array(-1.0 * np.ones(num_time_periods) * num_time_periods * constraints[idx_fuel_constraint].dual_value/ numerics_cost_scaling).flatten()
+                # note that hourly pricing can be determined from the dual of the constraint on energy balance
+                # The num_time_periods is in the above because the influence on the cost of an hour is much bigger then
+                # the impact of average cost over the period. The divide by the cost scaling corrects for the cost scaling.
+            except:
+                result['PRICE_FUEL']=np.zeros(num_time_periods)
 
         if 'NATGAS' in system_components:
             if case_dic['CAPACITY_NATGAS'] < 0:

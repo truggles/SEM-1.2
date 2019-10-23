@@ -97,7 +97,7 @@ def write_file(file_name, cfg):
 
 def get_output_file_names(path):
 
-    print("Looking here for csv files: {}*.csv".format(path))
+    #print("Looking here for csv files: {}*.csv".format(path))
     files = glob(path+'*.csv')
     files.sort()
     if len(files) > 1:
@@ -151,13 +151,16 @@ def get_results(files, global_name):
                        info['dispatch from storage (kWh)'].values[0],
                        info['curtailment nuclear (kW)'].values[0],
                        info['curtailment wind (kW)'].values[0],
-                       info['curtailment solar (kW)'].values[0]
+                       info['curtailment solar (kW)'].values[0],
+                       info['fuel price ($/kWh)'].values[0],
+                       info['mean price ($/kWh)'].values[0],
+                       info['max price ($/kWh)'].values[0]
         ]
 
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -333,12 +336,13 @@ if '__main__' in __name__:
         multipliers = []
         multipliers = [0., 0.01,]
         while True:
-            if multipliers[-1] > 100:
+            if multipliers[-1] > 10:
                 break
             #multipliers.append(round(multipliers[-1]*1.1,5))
             multipliers.append(round(multipliers[-1]*1.2,5))
-            print("Length of multipliers {}".format(len(multipliers)))
-            print(multipliers)
+            #multipliers.append(round(multipliers[-1]*1.5,5))
+        print("Length of multipliers {}".format(len(multipliers)))
+        print(multipliers)
 
         for i, multiplier in enumerate(multipliers):
 
@@ -359,6 +363,7 @@ if '__main__' in __name__:
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
             files = get_output_file_names(path+'{}_2019'.format(global_name))
+            print(files)
 
             # Copy output file
             if not os.path.exists(results):
@@ -413,6 +418,9 @@ if '__main__' in __name__:
     simple_plot(save_dir, df['fuel demand (kWh)'].values, [dollars_per_fuel.values,], ['Cost of Fuel ($/kWh)',], 'fuel demand (kWh)', 'Cost of Fuel ($/kWh)', 
             'fuel demand vs. fuel cost', 'fuel_demand_vs_fuel_cost')
 
+    # Fuel price dual_value
+    simple_plot(save_dir, df['fuel demand (kWh)'].values, [df['mean price ($/kWh)'].values, df['max price ($/kWh)'].values, df['fuel price ($/kWh)'].values,], ['Mean Demand Dual ($/kWh)', 'Max Demand Dual ($/kWh)', 'Fuel Price Dual ($/kWh)',], 'fuel demand (kWh)', 'Dual Values ($/kWh)', 
+            'fuel demand vs. dual values', 'fuel_demand_vs_dual_values', True)
 
 
     ### These should be defaults for all of them

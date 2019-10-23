@@ -218,6 +218,10 @@ def save_vector_results_as_csv( global_dic, case_dic, result_dic ):
     header_list += ['price ($/kWh)']
     series_list.append( result_dic['PRICE'].flatten() )
      
+    if 'PRICE_FUEL' in result_dic.keys():
+        header_list += ['fuel price ($/kWh)']
+        series_list.append( result_dic['PRICE_FUEL'].flatten() )
+     
     output_file_name = global_dic['GLOBAL_NAME']+'_'+case_dic['CASE_NAME']
     
     with contextlib.closing(open(output_folder + "/" + output_file_name + '.csv', 'w',newline='')) as output_file:
@@ -593,6 +597,15 @@ def save_basic_results( global_dic, case_dic_list ):
         f_len = len(result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten())
         f_sum = sum(result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten())
         print(' --- dispatch from fuel (kW) {} from n entries {} = {} / hour'.format(f_sum, f_len, f_sum/f_len))
+
+        if 'PRICE_FUEL' in result_dic.keys():
+            header_list += ['fuel price ($/kWh)']
+            series_list.append( [ result_dic['PRICE_FUEL'].flatten().item(0) ] )
+            header_list += ['mean price ($/kWh)']
+            series_list.append( [ np.mean(result_dic['PRICE'].flatten()) ] )
+            header_list += ['max price ($/kWh)']
+            series_list.append( [ np.max(result_dic['PRICE'].flatten()) ] )
+     
     
     # Results: STORAGE
     if 'STORAGE' in components: 
