@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import csv
 import subprocess
@@ -278,12 +280,45 @@ def stacked_plot(**kwargs):
 
 if '__main__' in __name__:
 
-    run_sem = True
+    import sys
+    print(f"\nRunning {sys.argv[0]}")
+    print(f"Input arg list {sys.argv}")
+
     run_sem = False
-    make_results_file = True
     make_results_file = False
-    make_plots = True
-    date = '20191022'
+    make_plots = False
+    if 'run_sem' in sys.argv:
+        run_sem = True
+    if 'make_results_file' in sys.argv:
+        make_results_file = True
+    if 'make_plots' in sys.argv:
+        make_plots = True
+
+    date = '20191022' # default
+    case = 'Case6_NuclearWindSolarStorage' # default
+    version = 'v3'
+    for arg in sys.argv:
+        if 'date' in arg:
+            date = arg.split('_')[1]
+        if 'Case' in arg:
+            case = arg
+        if 'version' in arg:
+            version = arg.split('_')[1]
+
+    input_file = f'fuel_test_191017_{case}.csv'
+    version = f'{version}_{case}'
+    global_name = 'fuel_test_{}_{}'.format(date, version)
+    path = 'Output_Data/{}/'.format(global_name)
+    results = path+'results/'
+
+    # Print settings:
+    print(f'\nGlobal name {global_name}')
+    print(f'Output path {path}')
+    print(f'Results path {results}')
+    print(f'Input File: {input_file}')
+    print(f'\n - RUN_SEM={run_sem}')
+    print(f' - MAKE_RESULTS_FILE={make_results_file}')
+    print(f' - MAKE_PLOTS={make_plots}\n')
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
@@ -292,73 +327,54 @@ if '__main__' in __name__:
 
     do_demand_constraint = True # All true for now
 
-    input_file = 'fuel_test_191017.csv' # w/ storage, reliability 100%
-    input_file = 'fuel_test_191017_nuclear.csv' # reliability 100%, ONLY nukes
-    input_file = 'fuel_test_191017_Case1_Nuclear.csv'
-    input_file = 'fuel_test_191017_Case2_NuclearStorage.csv'
-    input_file = 'fuel_test_191017_Case3_WindStorage.csv'
-    input_file = 'fuel_test_191017_Case4_SolarStorage.csv'
-    #input_file = 'fuel_test_191017_Case5_WindSolarStorage.csv'
-    #input_file = 'fuel_test_191017_Case6_NuclearWindSolarStorage.csv'
-    version = 'v3_Case1'
-    version = 'v3_Case2'
-    version = 'v3_Case3'
-    version = 'v3_Case4'
-    version = 'v3_Case5'
-    version = 'v3_Case6'
-    global_name = 'fuel_test_{}_{}'.format(date, version)
-    path = 'Output_Data/{}/'.format(global_name)
-    results = path+'results/'
 
-    multipliers = []
-    multipliers = [0., 0.01,]
-    while True:
-        if multipliers[-1] > 100:
-            break
-        #multipliers.append(round(multipliers[-1]*1.1,5))
-        multipliers.append(round(multipliers[-1]*1.2,5))
+
     if run_sem:
-        print("Length of multipliers {}".format(len(multipliers)))
-        print(multipliers)
+        multipliers = []
+        multipliers = [0., 0.01,]
+        while True:
+            if multipliers[-1] > 100:
+                break
+            #multipliers.append(round(multipliers[-1]*1.1,5))
+            multipliers.append(round(multipliers[-1]*1.2,5))
+            print("Length of multipliers {}".format(len(multipliers)))
+            print(multipliers)
 
-    print("\n\nInput File: {}\n\n".format(input_file))
+        for i, multiplier in enumerate(multipliers):
 
-    for i, multiplier in enumerate(multipliers):
+            if not run_sem:
+                break
 
-        if not run_sem:
-            break
+            if do_demand_constraint:
+                fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
+            else:
+                fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
 
-        if do_demand_constraint:
-            fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
-        else:
-            fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+            # 1st Step
+            cfg = get_SEM_csv_file(input_file)
+            case_name = fuel_str
+            case_file = case_name+'.csv'
+            cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint)
+            write_file(case_file, cfg)
+            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-        # 1st Step
-        cfg = get_SEM_csv_file(input_file)
-        case_name = fuel_str
-        case_file = case_name+'.csv'
-        cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint)
-        write_file(case_file, cfg)
-        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+            files = get_output_file_names(path+'{}_2019'.format(global_name))
 
-        files = get_output_file_names(path+'{}_2019'.format(global_name))
-
-        # Copy output file
-        if not os.path.exists(results):
-            os.makedirs(results)
-        move(files[-1], results)
-        os.remove(case_file)
+            # Copy output file
+            if not os.path.exists(results):
+                os.makedirs(results)
+            move(files[-1], results)
+            os.remove(case_file)
 
 
-    base = '/Users/truggles/SEM-1.2_CIW/'
-    #base = '/Users/truggles/SEM-1.2_HOME/'
-    results = base+results
     if make_results_file:
+        base = os.getcwd()
+        results = base+'/'+results
         files = get_output_file_names(results+'{}_2019'.format(global_name))
         results = get_results(files, global_name)
 
     if not make_plots:
-        assert(2+2==5), "Kill before plotting"
+        assert(False), "Kill before plotting"
 
     import matplotlib.pyplot as plt
     df = pd.read_csv('Results_{}.csv'.format(global_name), index_col=False)

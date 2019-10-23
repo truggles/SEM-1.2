@@ -1,3 +1,5 @@
 *.csv
 Output_Data/*
 plots*
+.DS_Store
+.ipynb_checkpoints*
