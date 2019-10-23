@@ -813,7 +813,7 @@ def core_model (global_dic, case_dic):
         # Only check fuel dual if fuel was added
         if idx_fuel_constraint != -1:
             try:
-                result['PRICE_FUEL'] = np.array(-1.0 * np.ones(num_time_periods) * num_time_periods * constraints[idx_fuel_constraint].dual_value/ numerics_cost_scaling).flatten()
+                result['PRICE_FUEL'] = np.array(-1.0 * np.ones(num_time_periods) * constraints[idx_fuel_constraint].dual_value/ numerics_cost_scaling).flatten()
                 # note that hourly pricing can be determined from the dual of the constraint on energy balance
                 # The num_time_periods is in the above because the influence on the cost of an hour is much bigger then
                 # the impact of average cost over the period. The divide by the cost scaling corrects for the cost scaling.
