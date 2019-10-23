@@ -248,12 +248,40 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     fig.savefig('{}/{}.png'.format(save_dir, save))
 
 
+# Poorly written, the args are all required and are below.
+#x_vals, nuclear, wind, solar, x_label, y_label, 
+#title, legend_app, stacked_min, stacked_max, save_name, save_dir):
+def stacked_plot(**kwargs):
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.set_xlabel(kwargs['x_label'])
+    ax.set_ylabel(kwargs['y_label'])
+    plt.title(kwargs['title'])
+
+    ax.fill_between(kwargs['x_vals'], 0., kwargs['nuclear'], color='red', label=f'nuclear {kwargs["legend_app"]}')
+    if 'renewables' in kwargs.keys():
+        ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['renewables'], color='green', label=f'renewables {kwargs["legend_app"]}')
+    else:
+        ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['wind'], color='blue', label=f'wind {kwargs["legend_app"]}')
+        ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color='yellow', label=f'solar {kwargs["legend_app"]}')
+
+    plt.xscale('log', nonposx='clip')
+    ax.set_xlim(kwargs['stacked_min'], kwargs['stacked_max'])
+
+    plt.tight_layout()
+    plt.legend()
+    plt.grid()
+    fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
+
+
+
 if '__main__' in __name__:
 
     run_sem = True
-    #run_sem = False
+    run_sem = False
     make_results_file = True
-    #make_results_file = False
+    make_results_file = False
     make_plots = True
     date = '20191022'
 
@@ -270,8 +298,8 @@ if '__main__' in __name__:
     input_file = 'fuel_test_191017_Case2_NuclearStorage.csv'
     input_file = 'fuel_test_191017_Case3_WindStorage.csv'
     input_file = 'fuel_test_191017_Case4_SolarStorage.csv'
-    input_file = 'fuel_test_191017_Case5_WindSolarStorage.csv'
-    input_file = 'fuel_test_191017_Case6_NuclearWindSolarStorage.csv'
+    #input_file = 'fuel_test_191017_Case5_WindSolarStorage.csv'
+    #input_file = 'fuel_test_191017_Case6_NuclearWindSolarStorage.csv'
     version = 'v3_Case1'
     version = 'v3_Case2'
     version = 'v3_Case3'
@@ -371,144 +399,84 @@ if '__main__' in __name__:
 
 
 
+    ### These should be defaults for all of them
+    ### Reset them if needed
     idx_max = 125
-    # Stacked generation dispatch plot
-    # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    nuclear = df.loc[0:idx_max, 'dispatch nuclear (kW)']
-    wind = df.loc[0:idx_max, 'dispatch wind (kW)']
-    solar = df.loc[0:idx_max, 'dispatch solar (kW)']
+    kwargs = {}
+    kwargs['save_dir'] = save_dir
+    kwargs['stacked_min'] = min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)])
+    kwargs['stacked_max'] = max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)
+    kwargs['x_vals'] = df.loc[0:idx_max, 'fuel demand (kWh)']
+    kwargs['x_label'] = 'fuel demand (kWh/h)'
 
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('normalized dispatch (kW)')
-    plt.title('Normalized Dispatch')
 
-    print(f"\n\nMax Nuclear {max(nuclear)}")
+    ### Stacked dispatch plot
+    kwargs['nuclear'] = df.loc[0:idx_max, 'dispatch nuclear (kW)']
+    kwargs['wind'] = df.loc[0:idx_max, 'dispatch wind (kW)']
+    kwargs['solar'] = df.loc[0:idx_max, 'dispatch solar (kW)']
+    kwargs['y_label'] = 'normalized dispatch (kW)'
+    kwargs['title'] = 'Normalized Dispatch'
+    kwargs['legend_app'] = 'annual dispatch'
+    kwargs['save_name'] = 'stacked_dispatch_normalized'
+    stacked_plot(**kwargs)
+    
 
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='annual nuclear dispatch')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='annual wind dispatch')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='annual solar dispatch')
+    ### Stacked generation capacity plot
+    kwargs['nuclear'] = df.loc[0:idx_max, 'capacity nuclear (kW)']
+    kwargs['wind'] = df.loc[0:idx_max, 'capacity wind (kW)']
+    kwargs['solar'] = df.loc[0:idx_max, 'capacity solar (kW)']
+    kwargs['y_label'] = 'normalized capacity (kW)'
+    kwargs['title'] = 'Normalized Dispatch'
+    kwargs['legend_app'] = 'capacity'
+    kwargs['save_name'] = 'stacked_capacity_normalized'
+    stacked_plot(**kwargs)
 
-    plt.xscale('log', nonposx='clip')
-    stacked_min = min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)])
-    stacked_max = max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)
-    ax.set_xlim(stacked_min, stacked_max)
 
-    plt.tight_layout()
-    plt.legend()
-    plt.grid()
-    fig.savefig('{}/stacked_dispatch_normalized.png'.format(save_dir))
+
+    ### Stacked curtailment plot
+    kwargs['nuclear'] = df.loc[0:idx_max, 'curtailment nuclear (kW)']
+    kwargs['wind'] = df.loc[0:idx_max, 'curtailment wind (kW)']
+    kwargs['solar'] = df.loc[0:idx_max, 'curtailment solar (kW)']
+    kwargs['y_label'] = 'curtailment of dispatch (kW)'
+    kwargs['title'] = 'Curtailment of Dispatchable Power'
+    kwargs['legend_app'] = 'curtailment'
+    kwargs['save_name'] = 'stacked_curtailment'
+    stacked_plot(**kwargs)
 
     
 
 
-    # Stacked generation capacity plot
-    # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    nuclear = df.loc[0:idx_max, 'capacity nuclear (kW)']
-    wind = df.loc[0:idx_max, 'capacity wind (kW)']
-    solar = df.loc[0:idx_max, 'capacity solar (kW)']
+    ### Stacked curtailment / capacity plot
+    kwargs['nuclear'] = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
+    kwargs['wind'] = df['curtailment wind (kW)']/df['capacity wind (kW)']
+    kwargs['solar'] = df['curtailment solar (kW)']/df['capacity solar (kW)']
+    kwargs['nuclear'].fillna(value=0, inplace=True)
+    kwargs['wind'].fillna(value=0, inplace=True)
+    kwargs['solar'].fillna(value=0, inplace=True)
+    #kwargs['renewables'] = kwargs['wind'] + kwargs['solar']
+    kwargs['y_label'] = 'curtailment of dispatch / capacity'
+    kwargs['title'] = 'Curtailment of Dispatchable Power / Capacities'
+    kwargs['legend_app'] = 'curtailment/capacity'
+    kwargs['save_name'] = 'stacked_curtailment_div_capacity'
+    stacked_plot(**kwargs)
 
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('normalized capacity (kW)')
-    plt.title('Normalized Dispatch')
 
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='nuclear capacity')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='wind capacity')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='solar capacity')
-
-    plt.xscale('log', nonposx='clip')
-    ax.set_xlim(stacked_min, stacked_max)
-
-    plt.tight_layout()
-    plt.legend()
-    plt.grid()
-    fig.savefig('{}/stacked_capacity_normalized.png'.format(save_dir))
+    ### Stacked curtailment / dispatch plot
+    kwargs['nuclear'] = df['curtailment nuclear (kW)']/df['dispatch nuclear (kW)']
+    kwargs['wind'] = df['curtailment wind (kW)']/df['dispatch wind (kW)']
+    kwargs['solar'] = df['curtailment solar (kW)']/df['dispatch solar (kW)']
+    kwargs['nuclear'].fillna(value=0, inplace=True)
+    kwargs['wind'].fillna(value=0, inplace=True)
+    kwargs['solar'].fillna(value=0, inplace=True)
+    #kwargs['renewables'] = kwargs['wind'] + kwargs['solar']
+    kwargs['y_label'] = 'curtailment of dispatch / dispatch'
+    kwargs['title'] = 'Curtailment of Dispatchable Power / Dispatch'
+    kwargs['legend_app'] = 'curtailment/dispatch'
+    kwargs['save_name'] = 'stacked_curtailment_div_dispatch'
+    kwargs['stacked_max'] = max(df['fuel demand (kWh)'].values)
+    stacked_plot(**kwargs)
 
     
-
-
-    # Stacked curtailment plot
-    nuclear = df.loc[0:idx_max, 'curtailment nuclear (kW)']
-    wind = df.loc[0:idx_max, 'curtailment wind (kW)']
-    solar = df.loc[0:idx_max, 'curtailment solar (kW)']
-
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('curtailment of dispatch (kWh)')
-    plt.title('Curtailment of Generation Capacities')
-
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], 0., nuclear, color='red', label='nuclear curtailment')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear, nuclear+wind, color='blue', label='wind curtailment')
-    ax.fill_between(df.loc[0:idx_max, 'fuel demand (kWh)'], nuclear+wind, nuclear+wind+solar, color='yellow', label='solar curtailment')
-
-    plt.xscale('log', nonposx='clip')
-    ax.set_xlim(stacked_min, stacked_max)
-
-    plt.tight_layout()
-    plt.legend()
-    plt.grid()
-    fig.savefig('{}/stacked_curtailment.png'.format(save_dir))
-    
-
-
-    # Stacked curtailment / capacity plot
-    # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('curtailment of dispatch / capacity')
-    plt.title('Curtailment of Generation Capacities')
-
-    curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
-    curt_div_dis_wind = df['curtailment wind (kW)']/df['capacity wind (kW)']
-    curt_div_dis_solar = df['curtailment solar (kW)']/df['capacity solar (kW)']
-    for idx, val in curt_div_dis_nuclear.items():
-        if np.isnan(curt_div_dis_nuclear.at[idx]):
-            curt_div_dis_nuclear.at[idx] = 0
-    ax.fill_between(df['fuel demand (kWh)'], 0., curt_div_dis_nuclear, color='red', label='curtailment/capacity nuclear')
-    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear, curt_div_dis_nuclear+curt_div_dis_wind, color='blue', label='curtailment/capacity wind')
-    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/capacity solar')
-
-    plt.xscale('log', nonposx='clip')
-    ax.set_xlim(stacked_min, stacked_max)
-
-    plt.tight_layout()
-    plt.legend()
-    plt.grid()
-    fig.savefig('{}/stacked_curtailment_div_capacity.png'.format(save_dir))
-    
-
-
-    # Stacked curtailment / dispatch plot
-    # In this base-case scenario, there is zero solar, so ignore it for now in plotting FIXME
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('curtailment of dispatch / dispatch')
-    plt.title('Curtailment of Generation Capacities')
-
-    curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['dispatch nuclear (kW)']
-    curt_div_dis_wind = df['curtailment wind (kW)']/df['dispatch wind (kW)']
-    curt_div_dis_solar = df['curtailment solar (kW)']/df['dispatch solar (kW)']
-    for idx, val in curt_div_dis_nuclear.items():
-        if np.isnan(curt_div_dis_nuclear.at[idx]):
-            curt_div_dis_nuclear.at[idx] = 0
-    ax.fill_between(df['fuel demand (kWh)'], 0., curt_div_dis_nuclear, color='red', label='curtailment/dispatch nuclear')
-    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear, curt_div_dis_nuclear+curt_div_dis_wind, color='blue', label='curtailment/dispatch wind')
-    ax.fill_between(df['fuel demand (kWh)'], curt_div_dis_nuclear+curt_div_dis_wind, curt_div_dis_nuclear+curt_div_dis_wind+curt_div_dis_solar, color='yellow', label='curtailment/dispatch solar')
-
-    plt.xscale('log', nonposx='clip')
-    stacked_max = max(df['fuel demand (kWh)'].values)
-    ax.set_xlim(stacked_min, stacked_max)
-
-    plt.tight_layout()
-    plt.legend()
-    plt.grid()
-    fig.savefig('{}/stacked_curtailment_div_dispatch.png'.format(save_dir))
     
 
 
@@ -551,14 +519,14 @@ if '__main__' in __name__:
 
     # Relative curtailment based on available power
     # This version factors out the wind CF of 0.43
-    curt_div_dis_nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
-    curt_div_dis_wind = df['curtailment wind (kW)']/(df['curtailment wind (kW)']+df['dispatch wind (kW)'])
-    curt_div_dis_solar = df['curtailment solar (kW)']/(df['curtailment solar (kW)']+df['dispatch solar (kW)'])
-    #for idx, val in curt_div_dis_nuclear.items():
-    #    if np.isnan(curt_div_dis_nuclear.at[idx]):
-    #        curt_div_dis_nuclear.at[idx] = 0
+    nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
+    wind = df['curtailment wind (kW)']/(df['curtailment wind (kW)']+df['dispatch wind (kW)'])
+    solar = df['curtailment solar (kW)']/(df['curtailment solar (kW)']+df['dispatch solar (kW)'])
+    #for idx, val in nuclear.items():
+    #    if np.isnan(nuclear.at[idx]):
+    #        nuclear.at[idx] = 0
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
-            [curt_div_dis_nuclear.values, curt_div_dis_wind.values, curt_div_dis_solar.values], # y values 
+            [nuclear.values, wind.values, solar.values], # y values 
             ['nuclear curtailment / capacity', 'wind curtailment / available power', 'solar curtailment / available power'], # labels
             'fuel demand (kWh)', 'curtailment of dispatch (kW) / available power (kW)', 
             'Relative Curtailment of Generation Capacities', 'ratios_curtailment_div_available_power')
