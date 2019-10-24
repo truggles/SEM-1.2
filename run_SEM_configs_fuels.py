@@ -152,6 +152,12 @@ def get_results(files, global_name):
                        info['curtailment nuclear (kW)'].values[0],
                        info['curtailment wind (kW)'].values[0],
                        info['curtailment solar (kW)'].values[0],
+                       info['fixed cost fuel electrolyzer ($/kW/h)'].values[0],
+                       info['fixed cost fuel chem plant ($/kW/h)'].values[0],
+                       info['fixed cost fuel h2 storage ($/kW/h)'].values[0],
+                       info['var cost fuel electrolyzer ($/kW/h)'].values[0],
+                       info['var cost fuel chem plant ($/kW/h)'].values[0],
+                       info['var cost fuel co2 ($/kW/h)'].values[0],
                        info['fuel price ($/kWh)'].values[0],
                        info['mean price ($/kWh)'].values[0],
                        info['max price ($/kWh)'].values[0]
@@ -160,7 +166,7 @@ def get_results(files, global_name):
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kW/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -285,6 +291,60 @@ def stacked_plot(**kwargs):
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
 
 
+# Poorly written, the args are all required and are below.
+#save_name, save_dir
+def costs_plot(df, **kwargs):
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.set_xlabel('fuel demand (kWh/h)')
+    ax.set_ylabel('fuel cost ($/kWh)')
+    plt.title('Cost Breakdown For Fuels')
+
+    # $/GGE fuel line above
+    # subtract off the base-case (least fuel demand, should be zero in the future FIXME) system cost
+    dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
+    # divide by fuel produced in that scenario
+    dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
+    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, label='Fuel Cost ($/kWh)')
+
+
+    # Stacked components
+    f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
+    f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
+    #f_store = df['fixed cost fuel h2 storage ($/kW/h)'] * df['capacity fuel h2 storage (kW)'] / df['fuel demand (kWh)']
+    f_tot = f_elec+f_chem#+f_store
+    v_elec = df['var cost fuel electrolyzer ($/kW/h)'] * df['dispatch to fuel h2 storage (kW)'] * EFFICIENCY_FUEL_ELECTROLYZER / df['fuel demand (kWh)']
+    v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_PLANT / df['fuel demand (kWh)']
+    v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_PLANT / df['fuel demand (kWh)']
+
+
+    # Build stack
+    ax.fill_between(df['fuel demand (kWh)'], 0, f_elec, label='fixed cost electrolyzer')
+    ax.fill_between(df['fuel demand (kWh)'], f_elec, f_elec+f_chem, label='fixed cost chem plant')
+    #ax.fill_between(df['fuel demand (kWh)'], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost storage') # fixed cost storage set at 2.72E-7
+    ax.fill_between(df['fuel demand (kWh)'], f_tot, f_tot+v_chem, label='variable cost chem plant')
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost CO$_{2}$')
+    #ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2+v_elec, label='variable cost electrolyzer') # variable cost electrolyzer is set at 1.0E-6 b/c MEM handles electric costs already
+
+
+    # Fill remainder with assumed electricity cost from MEM
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, dollars_per_fuel, label='variable cost electrolyzer (MEM electricity)')
+    # To print the estimated MEM electricity cost per point
+    #print(dollars_per_fuel - (f_tot+v_chem+v_co2))
+
+
+    plt.xscale('log', nonposx='clip')
+    ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
+    ax.set_ylim(0, max(dollars_per_fuel.loc[1:len(dollars_per_fuel)-1])*1.7)
+
+    plt.tight_layout()
+    plt.legend(loc='upper left')
+    plt.grid()
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+    print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+
+
 
 if '__main__' in __name__:
 
@@ -331,6 +391,7 @@ if '__main__' in __name__:
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
     EFFICIENCY_FUEL_CHEM_PLANT=0.659
+    EFFICIENCY_COMBINED = 0.446 # 0.676783005 * 0.659
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
     do_demand_constraint = True # All true for now
@@ -428,7 +489,6 @@ if '__main__' in __name__:
     simple_plot(save_dir, df['fuel demand (kWh)'].values, [df['mean price ($/kWh)'].values, df['max price ($/kWh)'].values, df['fuel price ($/kWh)'].values,], ['Mean Demand Dual ($/kWh)', 'Max Demand Dual ($/kWh)', 'Fuel Price Dual ($/kWh)',], 'fuel demand (kWh)', 'Dual Values ($/kWh)', 
             'fuel demand vs. dual values', 'fuel_demand_vs_dual_values', True)
 
-
     ### These should be defaults for all of them
     ### Reset them if needed
     idx_max = 125
@@ -438,6 +498,11 @@ if '__main__' in __name__:
     kwargs['stacked_max'] = max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)
     kwargs['x_vals'] = df.loc[0:idx_max, 'fuel demand (kWh)']
     kwargs['x_label'] = 'fuel demand (kWh/h)'
+
+
+    # Fuel cost compare scatter and use to fill electricity costs in stacked
+    kwargs['save_name'] = 'stacked_cost_plot'
+    costs_plot(df, **kwargs)
 
 
     ### Stacked dispatch plot
