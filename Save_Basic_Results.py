@@ -585,9 +585,9 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['capacity fuel chem plant (kW)']
         series_list.append(  case_list_dic['CAPACITY_FUEL_CHEM_PLANT'])
         print(' --- capacity fuel chem plant (kW) {}'.format(result_dic['CAPACITY_FUEL_CHEM_PLANT']))
-        header_list += ['capacity fuel h2 storage (kW)']
+        header_list += ['capacity fuel h2 storage (kWh)']
         series_list.append(  case_list_dic['CAPACITY_FUEL_H2_STORAGE'])
-        print(' --- capacity fuel h2 storage (kW) {}'.format(result_dic['CAPACITY_FUEL_H2_STORAGE']))
+        print(' --- capacity fuel h2 storage (kWn) {}'.format(result_dic['CAPACITY_FUEL_H2_STORAGE']))
     
         header_list += ['dispatch to fuel h2 storage (kW)']
         series_list.append( case_list_dic['DISPATCH_TO_FUEL_H2_STORAGE'])
