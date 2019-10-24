@@ -915,6 +915,7 @@ def core_model (global_dic, case_dic):
                 result['CAPACITY_FUEL_H2_STORAGE'] = case_dic['CAPACITY_FUEL_H2_STORAGE']
             result['DISPATCH_TO_FUEL_H2_STORAGE'] = np.array(dispatch_to_fuel_h2_storage.value).flatten()/numerics_demand_scaling
             result['DISPATCH_FROM_FUEL_H2_STORAGE'] = np.array(dispatch_from_fuel_h2_storage.value).flatten()/numerics_demand_scaling
+            result['FUEL_H2_STORAGE'] = np.array(fuel_h2_storage.value).flatten()/numerics_demand_scaling
             #result['CURTAILMENT_FUEL'] = result['CAPACITY_FUEL'] * np.ones(num_time_periods) - result['DISPATCH_TO_FUEL']
         else:
             result['CAPACITY_FUEL_ELECTROLYZER'] = capacity_fuel_electrolyzer/numerics_demand_scaling
@@ -922,6 +923,7 @@ def core_model (global_dic, case_dic):
             result['CAPACITY_FUEL_H2_STORAGE'] = capacity_fuel_h2_storage/numerics_demand_scaling
             result['DISPATCH_TO_FUEL_H2_STORAGE'] = dispatch_to_fuel_h2_storage/numerics_demand_scaling
             result['DISPATCH_FROM_FUEL_H2_STORAGE'] = dispatch_from_fuel_h2_storage/numerics_demand_scaling
+            result['FUEL_H2_STORAGE'] = fuel_h2_storage/numerics_demand_scaling
             #result['CURTAILMENT_FUEL'] = (capacity_fuel-dispatch_to_fuel)/numerics_demand_scaling
 
         if 'STORAGE' in system_components:

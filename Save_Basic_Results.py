@@ -157,6 +157,9 @@ def save_vector_results_as_csv( global_dic, case_dic, result_dic ):
     
     header_list += ['dispatch from fuel h2 storage (kW)']
     series_list.append( result_dic['DISPATCH_FROM_FUEL_H2_STORAGE'].flatten() )
+
+    header_list += ['fuel h2 storage (kWh)']
+    series_list.append( result_dic['FUEL_H2_STORAGE'].flatten() )
     
     header_list += ['dispatch to storage (kW)']
     series_list.append( result_dic['DISPATCH_TO_STORAGE'].flatten() )
@@ -385,7 +388,7 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['fixed cost fuel chem plant ($/kW/h)']
         series_list.append( case_list_dic['FIXED_COST_FUEL_CHEM_PLANT'] )
     
-        header_list += ['fixed cost fuel h2 storage ($/kW/h)']
+        header_list += ['fixed cost fuel h2 storage ($/kWh/h)']
         series_list.append( case_list_dic['FIXED_COST_FUEL_H2_STORAGE'] )
     
         header_list += ['var cost fuel electrolyzer ($/kW/h)']
@@ -606,13 +609,16 @@ def save_basic_results( global_dic, case_dic_list ):
             header_list += ['max price ($/kWh)']
             series_list.append( [ np.max(result_dic['PRICE'].flatten()) ] )
      
+
+        header_list += ['fuel h2 storage (kWh)']
+        series_list.append( case_list_dic['FUEL_H2_STORAGE'] )
     
     # Results: STORAGE
     if 'STORAGE' in components: 
         header_list += ['capacity storage (kW)']
         series_list.append(  case_list_dic['CAPACITY_STORAGE'])
     
-        header_list += ['energy storage (kW)']
+        header_list += ['energy storage (kWh)']
         series_list.append( case_list_dic['ENERGY_STORAGE'])
     
         header_list += ['dispatch to storage (kW)']
@@ -626,7 +632,7 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['capacity storage2 (kW)']
         series_list.append(  case_list_dic['CAPACITY_STORAGE2'])
     
-        header_list += ['energy storage2 (kW)']
+        header_list += ['energy storage2 (kWh)']
         series_list.append( case_list_dic['ENERGY_STORAGE2'])
     
         header_list += ['dispatch to storage2 (kW)']

@@ -125,8 +125,9 @@ def get_results(files, global_name):
             info['curtailment solar (kW)'] = 0.
         if not hasattr(info, 'capacity storage (kWh)'):
             info['capacity storage (kWh)'] = 0.
-            info['dispatch to storage (kWh)'] = 0.
-            info['dispatch from storage (kWh)'] = 0.
+            info['dispatch to storage (kW)'] = 0.
+            info['dispatch from storage (kW)'] = 0.
+            info['energy storage (kWh)'] = 0.
         #print(info)
         keys.append(info['case name'].values[0])
         results[info['case name'].values[0]] = [
@@ -147,17 +148,19 @@ def get_results(files, global_name):
                        info['dispatch nuclear (kW)'].values[0],
                        info['dispatch wind (kW)'].values[0],
                        info['dispatch solar (kW)'].values[0],
-                       info['dispatch to storage (kWh)'].values[0],
-                       info['dispatch from storage (kWh)'].values[0],
+                       info['dispatch to storage (kW)'].values[0],
+                       info['dispatch from storage (kW)'].values[0],
+                       info['energy storage (kWh)'].values[0],
                        info['curtailment nuclear (kW)'].values[0],
                        info['curtailment wind (kW)'].values[0],
                        info['curtailment solar (kW)'].values[0],
                        info['fixed cost fuel electrolyzer ($/kW/h)'].values[0],
                        info['fixed cost fuel chem plant ($/kW/h)'].values[0],
-                       info['fixed cost fuel h2 storage ($/kW/h)'].values[0],
+                       info['fixed cost fuel h2 storage ($/kWh/h)'].values[0],
                        info['var cost fuel electrolyzer ($/kW/h)'].values[0],
                        info['var cost fuel chem plant ($/kW/h)'].values[0],
                        info['var cost fuel co2 ($/kW/h)'].values[0],
+                       info['fuel h2 storage (kWh)'].values[0],
                        info['fuel price ($/kWh)'].values[0],
                        info['mean price ($/kWh)'].values[0],
                        info['max price ($/kWh)'].values[0]
@@ -166,7 +169,7 @@ def get_results(files, global_name):
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kWh),dispatch from storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kW/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kW),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -312,7 +315,7 @@ def costs_plot(df, **kwargs):
     # Stacked components
     f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
     f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
-    #f_store = df['fixed cost fuel h2 storage ($/kW/h)'] * df['capacity fuel h2 storage (kW)'] / df['fuel demand (kWh)']
+    #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kW)'] / df['fuel demand (kWh)']
     f_tot = f_elec+f_chem#+f_store
     v_elec = df['var cost fuel electrolyzer ($/kW/h)'] * df['dispatch to fuel h2 storage (kW)'] * EFFICIENCY_FUEL_ELECTROLYZER / df['fuel demand (kWh)']
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_PLANT / df['fuel demand (kWh)']
@@ -401,6 +404,7 @@ if '__main__' in __name__:
     if run_sem:
         multipliers = []
         multipliers = [0., 0.01,]
+        multipliers = [0., 1,]
         while True:
             if multipliers[-1] > 10:
                 break
