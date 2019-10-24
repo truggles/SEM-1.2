@@ -238,7 +238,12 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
                 y_max = max(y_tmp)
 
         if not (y_min == y_max):
-            ax.set_ylim(y_min*.5, y_max*2)
+            if 'dual' in title:
+                ax.set_ylim(y_min*.5, 1.0)
+                plt.tick_params(axis='y', which='minor')
+                ax.yaxis.set_minor_formatter(FormatStrFormatter("%.2f"))
+            else:
+                ax.set_ylim(y_min*.5, y_max*2)
 
             #y_tmp = y[np.nonzero(y)]
             #y_tmp = y_tmp[np.isfinite(y_tmp)]
@@ -382,6 +387,7 @@ if '__main__' in __name__:
         assert(False), "Kill before plotting"
 
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import FormatStrFormatter
     df = pd.read_csv('Results_{}.csv'.format(global_name), index_col=False)
 
     save_dir = './plots_{}/'.format(version)
