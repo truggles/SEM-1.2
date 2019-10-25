@@ -58,8 +58,19 @@ except:
 
 # -----------------------------------------------------------------------------
 
-print ('Simple_Energy_Model: Executing core model loop')
-core_model_loop (global_dic, case_dic_list)
+# If extra argv length, check if this is an integration test, we need a different solver
+# in that case
+tested = False
+if len(sys.argv) > 2:
+    if sys.argv[2] == 'INTEGRATION_TEST':
+        tested = True
+        print ('RUNNING INTEGRATION TEST FOR MODEL')
+        print ('Simple_Energy_Model: Executing core model loop')
+        core_model_loop (global_dic, case_dic_list, True)
+
+if not tested:
+    print ('Simple_Energy_Model: Executing core model loop')
+    core_model_loop (global_dic, case_dic_list)
 
 print ('Simple_Energy_Model: Saving basic results')
 # Note that results for individual cases are output from core_model_loop

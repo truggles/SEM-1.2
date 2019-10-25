@@ -49,7 +49,7 @@ from Save_Basic_Results import pickle_raw_results
 
 # -----------------------------------------------------------------------------
 
-def core_model_loop (global_dic, case_dic_list):
+def core_model_loop (global_dic, case_dic_list, integration_test=False):
     verbose = global_dic['VERBOSE']
     num_cases = len(case_dic_list)
 
@@ -60,7 +60,7 @@ def core_model_loop (global_dic, case_dic_list):
             print('---')
             print ('solving ',case_dic_list[case_index]['CASE_NAME'],' time = ',today)
 
-        result_dic = core_model (global_dic, case_dic_list[case_index])
+        result_dic = core_model (global_dic, case_dic_list[case_index], integration_test)
 
         if result_dic['PROBLEM_STATUS'] != 'optimal':
 
@@ -95,7 +95,7 @@ def core_model_loop (global_dic, case_dic_list):
 
 # -----------------------------------------------------------------------------
 
-def core_model (global_dic, case_dic):
+def core_model (global_dic, case_dic, integration_test=False):
     verbose = global_dic['VERBOSE']
     numerics_cost_scaling = case_dic['NUMERICS_COST_SCALING']
     numerics_demand_scaling = case_dic['NUMERICS_DEMAND_SCALING']
@@ -615,7 +615,14 @@ def core_model (global_dic, case_dic):
 #    prob.solve(solver = 'GUROBI',BarConvTol = 1e-11, feasibilityTol = 1e-9)
 #    prob.solve(solver = 'GUROBI',BarConvTol = 1e-10, feasibilityTol = 1e-8)
 #    prob.solve(solver = 'GUROBI',BarConvTol = 1e-8, FeasibilityTol = 1e-6)
-        prob.solve(solver = 'GUROBI', seed = 42) # Add a seed to get consistent results
+
+        if integration_test:
+            print(f"Installed solvers: {cvx.installed_solvers()}")
+            to_solve = cvx.installed_solvers()[0] # Default to the first one in the list
+            prob.solve(solver = to_solve) # Add a seed to get consistent results
+
+        else:
+            prob.solve(solver = 'GUROBI', seed = 42) # Add a seed to get consistent results
         
         print(prob.status)
         if prob.status != 'optimal':

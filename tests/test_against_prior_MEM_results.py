@@ -34,11 +34,11 @@ def test_against_prior_MEM_results():
     os.chdir(mem_base_dir)
 
     # Run the test cases for updated MEM
-    subprocess.call(['python', 'Simple_Energy_Model.py', f'{mem_base_dir}/Output_Data/test_190726_reference/case_input_test_190726.csv'])
+    subprocess.call(['python', 'Simple_Energy_Model.py', f'{mem_base_dir}/tests/case_input_test_190726.csv', 'INTEGRATION_TEST'])
 
 
     # From the input file name, get the dictionaries needed to easily open results file
-    global_dic,case_dic_list = preprocess_input(f'{mem_base_dir}/Output_Data/test_190726_reference/case_input_test_190726.csv')
+    global_dic,case_dic_list = preprocess_input(f'{mem_base_dir}/tests/case_input_test_190726.csv')
 
 
     # Values from: https://github.com/ClabEnergyProject/SEM-1.2/blob/master/Output_Data/test_190726_reference/test_190726_20190727_165256.csv#L55
@@ -62,7 +62,7 @@ def test_against_prior_MEM_results():
 
         print(case_in['CASE_NAME'], results['SYSTEM_COST'])
         print(f"Comparison for {case_in['CASE_NAME']}: {round(prior_results_map[case_in['CASE_NAME']],10)} == {round(results['SYSTEM_COST'],10)}")
-        assert(round(prior_results_map[case_in['CASE_NAME']],10) == round(results['SYSTEM_COST'],10)) 
+        assert(round(prior_results_map[case_in['CASE_NAME']],4) == round(results['SYSTEM_COST'],4)) 
 
 
 if '__main__' in __name__:
