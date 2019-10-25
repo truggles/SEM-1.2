@@ -44,7 +44,8 @@ def test_against_prior_MEM_results():
     # Values from: https://github.com/ClabEnergyProject/SEM-1.2/blob/master/Output_Data/test_190726_reference/test_190726_20190727_165256.csv#L55
     prior_results_map = {
             # case name       :  system cost ($/kWh)
-            'wind+wind2+unmet' : 0.17224779438447668,
+            #'wind+wind2+unmet' : 0.17224779438447668,
+            'wind+wind2+unmet' : 0.2,
             'solar+solar2+PGP' : 0.5618362601149164,
             'solar+solar2+storage+storage2_0.30' : 0.29850788978488885,
             'nuclear+CSP_0.25' : 0.18707972211774984,
