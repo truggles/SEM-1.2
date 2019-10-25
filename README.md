@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/truggles/SEM-1.2.svg?branch=master)](https://travis-ci.org/truggles/SEM-1.2)
+
 # SEM-1.2
 Python 3.7 (or 3.6!) and cvxpy 1.x version of SEM-1. This is a Simple Energy Model that optimizes electricity (or electricity
 and fuels) without considering any spatial variation, policy, capacity markets, etc.
