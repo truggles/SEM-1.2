@@ -18,7 +18,7 @@ from Core_Model import core_model_loop
 from Preprocess_Input import preprocess_input
 from Postprocess_Results import post_process
 #from Postprocess_Results_kc180214 import postprocess_key_scalar_results,merge_two_dicts
-from Save_Basic_Results import save_basic_results
+from Save_Basic_Results import save_basic_results, read_pickle_raw_results
 from Quick_Look import quick_look
 
 from shutil import copy2
@@ -64,6 +64,38 @@ core_model_loop (global_dic, case_dic_list)
 print ('Simple_Energy_Model: Saving basic results')
 # Note that results for individual cases are output from core_model_loop
 save_basic_results(global_dic, case_dic_list)
+
+# -----------------------------------------------------------------------------
+
+
+# If running an integration test, check that the optimized system costs match
+# the prior July 2019 results
+if len(sys.argv) > 2:
+    if sys.argv[2] == 'INTEGRATION_TEST':
+
+        # Values from: https://github.com/ClabEnergyProject/SEM-1.2/blob/master/Output_Data/test_190726_reference/test_190726_20190727_165256.csv#L55
+        prior_results_map = {
+                # case name       :  system cost ($/kWh)
+                'wind+wind2+unmet' : 0.17224779438447668,
+                'solar+solar2+PGP' : 0.5618362601149164,
+                'solar+solar2+storage+storage2_0.30' : 0.29850788978488885,
+                'nuclear+CSP_0.25' : 0.18707972211774984,
+                'natgas+unmet' : 0.10702726219181723,
+                'natgasCCS+nuclear_0.5' : 0.05088786294328981,
+                'EIAbase' : 0.05339458150656109
+        }
+
+        for case_in in case_dic_list:
+
+            assert(case_in['CASE_NAME'] in prior_results_map.keys())
+
+            #Try reading pickled results
+            results = read_pickle_raw_results(global_dic, case_in)
+
+            print(case_in['CASE_NAME'], results['SYSTEM_COST'])
+            assert(round(prior_results_map[case_in['CASE_NAME']],10) == round(results['SYSTEM_COST'],10)) 
+            print(f"Prior results match for case {case_in['CASE_NAME']}: {round(prior_results_map[case_in['CASE_NAME']],10)} == {round(results['SYSTEM_COST'],10)}")
+
 
 # -----------------------------------------------------------------------------
 
