@@ -221,7 +221,7 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
     return simp
 
 
-def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False):
+def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False, ylims=[-1,-1]):
 
     print("Plotting x,y = {},{}".format(x_label,y_label))
 
@@ -264,6 +264,9 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
             #y_tmp = y[np.nonzero(y)]
             #y_tmp = y_tmp[np.isfinite(y_tmp)]
             #ax.set_ylim(min(y_tmp)*.5, max(y_tmp)*2)
+
+    if ylims != [-1,-1]:
+        ax.set_ylim(ylims[0], ylims[1])
 
     plt.xscale('log', nonposx='clip')
     ax.set_xlim(min(x[np.nonzero(x)])*.5, max(x)*2)
@@ -337,6 +340,7 @@ def stacked_plot(**kwargs):
     if 'logy' in kwargs.keys():
         if kwargs['logy'] == True:
             plt.yscale('log', nonposy='clip')
+            ax.set_ylim(min(0.1, ax.get_ylim()[0]), max(100, ax.get_ylim()[1]))
 
     plt.tight_layout()
     plt.legend()
@@ -359,7 +363,7 @@ def costs_plot(df, **kwargs):
     dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
     # divide by fuel produced in that scenario
     dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
-    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, label='Fuel Cost ($/kWh)')
+    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, color='black', label='Fuel Cost ($/kWh)')
 
 
     # Stacked components
@@ -386,11 +390,13 @@ def costs_plot(df, **kwargs):
     # To print the estimated MEM electricity cost per point
     #print(dollars_per_fuel)
     #print(dollars_per_fuel - (f_tot+v_chem+v_co2))
+    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, color='black', label='_nolegend_')
 
 
     plt.xscale('log', nonposx='clip')
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
-    ax.set_ylim(0, max(dollars_per_fuel.loc[1:len(dollars_per_fuel)-1])*1.7)
+    #ax.set_ylim(0, max(dollars_per_fuel.loc[1:len(dollars_per_fuel)-1])*1.7)
+    ax.set_ylim(0, 0.55)
 
     plt.tight_layout()
     plt.legend(loc='upper left')
@@ -542,8 +548,9 @@ if '__main__' in __name__:
             'fuel demand vs. fuel cost', 'fuelDemandVsFuelCost')
 
     # Fuel price dual_value
+    ylims = [0.05, 1000]
     simple_plot(save_dir, df['fuel demand (kWh)'].values, [df['mean price ($/kWh)'].values, df['max price ($/kWh)'].values, df['fuel price ($/kWh)'].values,], ['Mean Demand Dual ($/kWh)', 'Max Demand Dual ($/kWh)', 'Fuel Price Dual ($/kWh)',], 'fuel demand (kWh)', 'Dual Values ($/kWh)', 
-            'fuel demand vs. dual values', 'fuelDemandVsDualValues', True)
+            'fuel demand vs. dual values', 'fuelDemandVsDualValues', True, ylims)
 
     ### These should be defaults for all of them
     ### Reset them if needed
@@ -649,12 +656,13 @@ if '__main__' in __name__:
 
     # Fuel system capacity factor ratios
     # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
+    ylims = [0.0, 1.1]
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                 df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_PLANT/df['capacity fuel chem plant (kW)'].values,], # y values 
             ['electrolyzer capacity factor', 'chem plant capacity factor'], # labels
             'fuel demand (kWh)', 'Fuel System Capacity Factors', 
-            'Fuel System Capacity Factors', 'ratiosFuelSystemCFsVsFuelCost')
+            'Fuel System Capacity Factors', 'ratiosFuelSystemCFsVsFuelCost', False, ylims)
 
 
     # All system capacity factor ratios
@@ -671,7 +679,7 @@ if '__main__' in __name__:
             ['electrolyzer', 'chem plant', 'h2 storage',
                 'nuclear', 'wind', 'solar', 'battery storage'], # labels
             'fuel demand (kWh)', 'System Capacity Factors', 
-            'System Capacity Factors', 'ratiosSystemCFsVsFuelCost')
+            'System Capacity Factors', 'ratiosSystemCFsVsFuelCost', False, ylims)
 
 
 

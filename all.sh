@@ -5,8 +5,8 @@ Date="20191023"
 version="vOct26"
 #ARGS="run_sem make_results_file"
 #ARGS="make_results_file"
-ARGS="make_plots"
 ARGS="run_sem make_results_file make_plots"
+ARGS="make_plots"
 
         #"Case0_NuclearFlatDemand" \
 
