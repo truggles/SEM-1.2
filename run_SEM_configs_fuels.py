@@ -51,13 +51,14 @@ def get_SEM_csv_file(file_name):
 
 # Multiplier is either applied to fuel cost or fuel demand
 # based on 'do_demand_constraint'
-def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
+def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, run_one_year):
 
     new_cfg = []
 
     case_data_line = -999 # Starts really negative so the 2nd 'if' is never triggered until ready
     fuel_value_position = -999
     fuel_demand_position = -999
+    end_month_position = -999
     for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
@@ -67,8 +68,9 @@ def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
             case_data_line = i
             fuel_value_position = line.index('FUEL_VALUE')
             fuel_demand_position = line.index('FUEL_DEMAND')
-            print("fuel info --- demand at position {}, value at position {}, multiplier {}x, do_demand_constraint {}".format(
-                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint))
+            end_month_position = line.index('END_MONTH')
+            print(" --- demand pos: {}, value pos {}, multiplier {}x, do_demand_constraint {}, run_one_year {}".format(
+                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint, run_one_year))
         
         if i == case_data_line+2:
             # Set case name
@@ -79,6 +81,8 @@ def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint):
             else:
                 line[fuel_value_position] = multiplier
                 line[fuel_demand_position] = 0
+            if run_one_year:
+                line[end_month_position] = 12 # End on December
         new_cfg.append(line)
 
     return new_cfg
@@ -445,6 +449,7 @@ if '__main__' in __name__:
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
     do_demand_constraint = True # All true for now
+    run_one_year = True # If true, run all cases for 1 full year instead of just Jan 2016
 
 
 
@@ -475,7 +480,7 @@ if '__main__' in __name__:
             cfg = get_SEM_csv_file(input_file)
             case_name = fuel_str
             case_file = case_name+'.csv'
-            cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint)
+            cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, run_one_year)
             write_file(case_file, cfg)
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
