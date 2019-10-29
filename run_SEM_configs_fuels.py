@@ -444,11 +444,11 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, sa
     start = datetime(2016, 1, 1)
     print(f"Assumed starting date for plot_months_vs_curtailment_and_h2_storage: {start}")
 
-    info = {'running': [], 'mean': [], 'lowerIQR': [], 'upperIQR': []}
     target_values = ['0.0kWh', '0.01kWh', '0.26628kWh', '10.20862kWh']
 
     # Set up for axes
     axs = []
+    ax2s = []
     for j, target_val in enumerate(target_values):
         if j == 0:
             ax = plt.subplot(410+len(target_values))
@@ -477,59 +477,45 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, sa
             print("plot_months_vs_curtailment_and_h2_storage not currently coded to run over range other than all of 2016 leap year")
             return
 
-        month_avgs = {
-                'Wind': copy.deepcopy(info),
-                'Solar': copy.deepcopy(info),
-                'Nuclear': copy.deepcopy(info),
-                'Dispatch to H2 Storage': copy.deepcopy(info)
-        }
-
-        prev_month = 1 # Start in January, this is not guaranteed, FIXME
+        # Make list of month values
         start_dt = start
+        month_info = []
         for idx in df.index:
-
-            # Note there is a misspelling of 'curtailment' as 'cutailment' in the MEM-1.2 code long form output
-            month_avgs['Nuclear']['running'].append(df.loc[idx, 'cutailment nuclear (kW)'])
-            month_avgs['Wind']['running'].append(df.loc[idx, 'cutailment wind (kW)']) 
-            month_avgs['Solar']['running'].append(df.loc[idx, 'cutailment solar (kW)'])
-            month_avgs['Dispatch to H2 Storage']['running'].append(df.loc[idx, 'dispatch to fuel h2 storage (kW)'])
-
+            month_info.append(start_dt.month)
             start_dt += timedelta(hours=1)
-
-            # If switching months, average previous, fill, and clear array
-            if start_dt.month != prev_month:
-                for k, vals in month_avgs.items():
-                    vals['mean'].append(np.nanmean(vals['running']))
-                    vals['lowerIQR'].append(np.nanpercentile(vals['running'], 25))
-                    vals['upperIQR'].append(np.nanpercentile(vals['running'], 75))
-                    if target_val == '10.20862kWh':
-                        print(prev_month, k)
-                        print(vals['running'])
-                        print(vals['mean'])
-                        print(vals['lowerIQR'])
-                        print(vals['upperIQR'])
-                    vals['running'].clear()
-            
-            prev_month = start_dt.month
+        month_info = np.array(month_info)
 
         
         axs[j].set_ylabel('Curtailment (kW)')
-        #plt.title('Months vs. Curtailment and Electrolyzer Operations')
 
 
         months = [i for i in range(1, 13)]
-        for tech, c in {'Nuclear':'red', 'Wind':'blue', 'Solar':'yellow'}.items():
-            axs[j].scatter(months, month_avgs[tech]['mean'], color=c, label=tech)
-            axs[j].fill_between(months, month_avgs[tech]['lowerIQR'], month_avgs[tech]['upperIQR'], color=c, alpha=0.3, label='_nolegend_')
+        adj = 0.15
+        alph=0.04
+        max_ = 0.
+        for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['yellow',adj]}.items():
+            axs[j].scatter(month_info+vals[1], df[f'cutailment {tech} (kW)'], color=vals[0], label=tech, alpha=alph)
+            if max(df[f'cutailment {tech} (kW)']) > max_:
+                max_ = max(df[f'cutailment {tech} (kW)'])
         axs[j].grid()
+        axs[j].set_ylim(0, max_*1.1)
+
+        # Second y-axis
+        ax2 = axs[j].twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.set_ylabel('Dispatch to H2 Storage', color='brown')  # we already handled the x-label with ax1
+        ax2.scatter(month_info+2*adj, df['dispatch to fuel h2 storage (kW)'], color='brown', label='Dispatch to H2 Storage', alpha=alph)
+        ax2.tick_params(axis='y', labelcolor='brown')
+        ax2.set_ylim(0, max(0.01, max(df['dispatch to fuel h2 storage (kW)']))*1.1)
+        ax2s.append(ax2)
 
     plt.sca(axs[0])
     plt.xticks([i for i in range(1, 13)], ('January','February','March','April','May','June',
             'July','August','September','October','November','December'), rotation=30)
 
     plt.tight_layout()
-    plt.legend()
+    #plt.legend()
     plt.gcf().savefig('{}/{}.png'.format(save_dir, save_name))
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
 
 
 if '__main__' in __name__:
@@ -664,8 +650,6 @@ if '__main__' in __name__:
 
     # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
     plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthly_curtail_and_disp', save_dir)
-
-    assert(False)
 
 
     # $/GGE fuel
