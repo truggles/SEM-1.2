@@ -9,6 +9,7 @@ from shutil import copy2, move
 from collections import OrderedDict
 import pandas as pd
 import os
+import matplotlib
 
 
 
@@ -316,6 +317,32 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
     fig.savefig('{}/{}.png'.format(save_dir, save))
 
 
+# The addition here compared to the simple_plot is coloring/sizing the dots
+def biv_curtailment_cost_plot(tot_curtailment, fuel_costs, fuel_demand, x_label, save_dir, save_name):
+
+    print("Plotting biv_curtailment_cost_plot")
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.set_xlabel(x_label)
+    ax.set_ylabel('Fuel Cost ($/kWh)')
+    plt.title('Total Curtailment vs. Fuel Costs')
+
+    sc = ax.scatter(tot_curtailment, fuel_costs, c=fuel_demand, norm=matplotlib.colors.LogNorm(), s=250)
+    cbar = plt.colorbar(sc)
+    cbar.ax.set_ylabel("Fuel Demand (kWh/h)")
+
+    plt.grid()
+    
+    #ax.set_xlim(0., 1.0)
+    #ax.set_ylim(.17, .26)
+
+    plt.tight_layout()
+
+    fig.savefig('{}/{}.png'.format(save_dir, save_name))
+
+
+
 # Poorly written, the args are all required and are below.
 #x_vals, nuclear, wind, solar, x_label, y_label, 
 #title, legend_app, stacked_min, stacked_max, save_name, save_dir):
@@ -551,6 +578,28 @@ if '__main__' in __name__:
     ylims = [0.05, 1000]
     simple_plot(save_dir, df['fuel demand (kWh)'].values, [df['mean price ($/kWh)'].values, df['max price ($/kWh)'].values, df['fuel price ($/kWh)'].values,], ['Mean Demand Dual ($/kWh)', 'Max Demand Dual ($/kWh)', 'Fuel Price Dual ($/kWh)',], 'fuel demand (kWh)', 'Dual Values ($/kWh)', 
             'fuel demand vs. dual values', 'fuelDemandVsDualValues', True, ylims)
+
+
+    # Curtailment vs. fuel cost with marker color as fuel fraction
+    tot_curtailment = (df['curtailment nuclear (kW)'] + df['curtailment wind (kW)'] + \
+            df['curtailment solar (kW)'])
+            #/ (df['capacity nuclear (kW)'] + df['capacity wind (kW)'] + \
+            #df['capacity solar (kW)'])
+    biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
+            df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
+            'Total Curtailment', save_dir, 'bivariate_curtailment_vs_cost_with_demand_markers')
+
+
+    # Curtailment vs. fuel cost with marker color as fuel fraction
+    tot_curtailment = (df['curtailment nuclear (kW)'].fillna(0) + df['curtailment wind (kW)'].fillna(0) + \
+            df['curtailment solar (kW)'].fillna(0)) / \
+            (df['capacity nuclear (kW)'].fillna(0) + df['capacity wind (kW)'].fillna(0) + \
+            df['capacity solar (kW)'].fillna(0))
+    biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
+            df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
+            'Total Curtailment/Total Capacity', save_dir, 'bivariate_curtailment_div_cap_vs_cost_with_demand_markers')
+
+
 
     ### These should be defaults for all of them
     ### Reset them if needed
