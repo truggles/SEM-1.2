@@ -10,6 +10,8 @@ from collections import OrderedDict
 import pandas as pd
 import os
 import matplotlib
+from datetime import datetime, timedelta
+import copy
 
 
 
@@ -433,6 +435,103 @@ def costs_plot(df, **kwargs):
 
 
 
+# Months on x-axis, avg curtailment on y, also deployment to H2 storage also
+def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, save_name, save_dir):
+
+    plt.close()
+    matplotlib.rcParams['figure.figsize'] = (6,12)
+
+    start = datetime(2016, 1, 1)
+    print(f"Assumed starting date for plot_months_vs_curtailment_and_h2_storage: {start}")
+
+    info = {'running': [], 'mean': [], 'lowerIQR': [], 'upperIQR': []}
+    target_values = ['0.0kWh', '0.01kWh', '0.26628kWh', '10.20862kWh']
+
+    # Set up for axes
+    axs = []
+    for j, target_val in enumerate(target_values):
+        if j == 0:
+            ax = plt.subplot(410+len(target_values))
+        else:
+            ax = plt.subplot(410+len(target_values)-j, sharex=axs[0])
+            plt.setp(ax.get_xticklabels(), visible=False)
+        ax.margins(0.1)
+        axs.append(ax)
+
+    files = glob(f'{path}{global_name}*.csv')
+    for j, target_val in enumerate(target_values):
+        df = 'x'
+        for f in files:
+            if target_val in f:
+                df = pd.read_csv(f)
+                break
+        if type(df) == str:
+            print(f"Missing a file for target value {target_val}")
+            return
+
+        axs[j].set_title(f'Fuel Demand: {target_val}')
+
+        # FIXME - assume if len(df.index) == 8784 that we ran over all of 2016 (leap year)
+        # else, return and code this later
+        if len(df.index) != 8784:
+            print("plot_months_vs_curtailment_and_h2_storage not currently coded to run over range other than all of 2016 leap year")
+            return
+
+        month_avgs = {
+                'Wind': copy.deepcopy(info),
+                'Solar': copy.deepcopy(info),
+                'Nuclear': copy.deepcopy(info),
+                'Dispatch to H2 Storage': copy.deepcopy(info)
+        }
+
+        prev_month = 1 # Start in January, this is not guaranteed, FIXME
+        start_dt = start
+        for idx in df.index:
+
+            # Note there is a misspelling of 'curtailment' as 'cutailment' in the MEM-1.2 code long form output
+            month_avgs['Nuclear']['running'].append(df.loc[idx, 'cutailment nuclear (kW)'])
+            month_avgs['Wind']['running'].append(df.loc[idx, 'cutailment wind (kW)']) 
+            month_avgs['Solar']['running'].append(df.loc[idx, 'cutailment solar (kW)'])
+            month_avgs['Dispatch to H2 Storage']['running'].append(df.loc[idx, 'dispatch to fuel h2 storage (kW)'])
+
+            start_dt += timedelta(hours=1)
+
+            # If switching months, average previous, fill, and clear array
+            if start_dt.month != prev_month:
+                for k, vals in month_avgs.items():
+                    vals['mean'].append(np.nanmean(vals['running']))
+                    vals['lowerIQR'].append(np.nanpercentile(vals['running'], 25))
+                    vals['upperIQR'].append(np.nanpercentile(vals['running'], 75))
+                    if target_val == '10.20862kWh':
+                        print(prev_month, k)
+                        print(vals['running'])
+                        print(vals['mean'])
+                        print(vals['lowerIQR'])
+                        print(vals['upperIQR'])
+                    vals['running'].clear()
+            
+            prev_month = start_dt.month
+
+        
+        axs[j].set_ylabel('Curtailment (kW)')
+        #plt.title('Months vs. Curtailment and Electrolyzer Operations')
+
+
+        months = [i for i in range(1, 13)]
+        for tech, c in {'Nuclear':'red', 'Wind':'blue', 'Solar':'yellow'}.items():
+            axs[j].scatter(months, month_avgs[tech]['mean'], color=c, label=tech)
+            axs[j].fill_between(months, month_avgs[tech]['lowerIQR'], month_avgs[tech]['upperIQR'], color=c, alpha=0.3, label='_nolegend_')
+        axs[j].grid()
+
+    plt.sca(axs[0])
+    plt.xticks([i for i in range(1, 13)], ('January','February','March','April','May','June',
+            'July','August','September','October','November','December'), rotation=30)
+
+    plt.tight_layout()
+    plt.legend()
+    plt.gcf().savefig('{}/{}.png'.format(save_dir, save_name))
+
+
 if '__main__' in __name__:
 
     import sys
@@ -485,17 +584,13 @@ if '__main__' in __name__:
     run_one_year = True # If true, run all cases for 1 full year instead of just Jan 2016
 
 
+    multipliers = [0., 0.01,]
+    while True:
+        if multipliers[-1] > 10:
+            break
+        multipliers.append(round(multipliers[-1]*1.2,5))
 
     if run_sem:
-        multipliers = []
-        multipliers = [0., 0.01,]
-        #multipliers = [0., 1,]
-        while True:
-            if multipliers[-1] > 10:
-                break
-            #multipliers.append(round(multipliers[-1]*1.1,5))
-            multipliers.append(round(multipliers[-1]*1.2,5))
-            #multipliers.append(round(multipliers[-1]*1.5,5))
         print("Length of multipliers {}".format(len(multipliers)))
         print(multipliers)
 
@@ -564,6 +659,13 @@ if '__main__' in __name__:
     #    simple_plot(save_dir, df[v[0]].values, [df[v[1]].values,], [v[1],], v[0], v[1], k, k.replace('.','').replace(' ','_'), logY)
     #    simple_plot(save_dir, df[v[0]].values, [df[v[1]].values/df[v[0]].values,], [v[1]+'/'+v[0],], v[0], v[1]+'/'+v[0], 
     #            k+'/fuel demand (kWh)', k.replace('.','').replace(' ','_')+'_div_fuel_dem', logY)
+
+
+
+    # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
+    plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthly_curtail_and_disp', save_dir)
+
+    assert(False)
 
 
     # $/GGE fuel
