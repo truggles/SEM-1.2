@@ -649,7 +649,7 @@ if '__main__' in __name__:
 
 
     # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
-    plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthly_curtail_and_disp', save_dir)
+    plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthlyCurtailAndDisp', save_dir)
 
 
     # $/GGE fuel
@@ -673,7 +673,7 @@ if '__main__' in __name__:
             #df['capacity solar (kW)'])
     biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
             df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
-            'Total Curtailment', save_dir, 'bivariate_curtailment_vs_cost_with_demand_markers')
+            'Total Curtailment', save_dir, 'bivariateCurtailmentVsCostWithDemandMarkers')
 
 
     # Curtailment vs. fuel cost with marker color as fuel fraction
@@ -683,7 +683,7 @@ if '__main__' in __name__:
             df['capacity solar (kW)'].fillna(0))
     biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
             df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
-            'Total Curtailment/Total Capacity', save_dir, 'bivariate_curtailment_div_cap_vs_cost_with_demand_markers')
+            'Total Curtailment/Total Capacity', save_dir, 'bivariateCurtailmentDivCapVsCostWithDemandMarkers')
 
 
 
