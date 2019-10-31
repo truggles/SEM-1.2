@@ -518,6 +518,122 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, sa
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
 
 
+# Months on x-axis, avg curtailment on y, also deployment to H2 storage also
+def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipliers, save_name, save_dir):
+
+    plt.close()
+    matplotlib.rcParams['figure.figsize'] = (6,12)
+
+    start = datetime(2016, 1, 1)
+    print(f"Assumed starting date for plot_months_vs_curtailment_and_h2_storage_violin: {start}")
+
+    target_values = ['0.0kWh', '0.01kWh', '0.26628kWh', '10.20862kWh']
+
+    # Set up for axes
+    axs = []
+    ax2s = []
+    for j, target_val in enumerate(target_values):
+        if j == 0:
+            ax = plt.subplot(410+len(target_values))
+        else:
+            ax = plt.subplot(410+len(target_values)-j, sharex=axs[0])
+            plt.setp(ax.get_xticklabels(), visible=False)
+        ax.margins(0.1)
+        axs.append(ax)
+
+    files = glob(f'{path}{global_name}*.csv')
+    for j, target_val in enumerate(target_values):
+        df = 'x'
+        for f in files:
+            if target_val in f:
+                df = pd.read_csv(f)
+                break
+        if type(df) == str:
+            print(f"Missing a file for target value {target_val}")
+            return
+
+        axs[j].set_title(f'Fuel Demand: {target_val}')
+
+        # FIXME - assume if len(df.index) == 8784 that we ran over all of 2016 (leap year)
+        # else, return and code this later
+        if len(df.index) != 8784:
+            print("plot_months_vs_curtailment_and_h2_storage_violin not currently coded to run over range other than all of 2016 leap year")
+            return
+
+
+        info = {'running': [], 'split': []}
+        month_avgs = {
+                'Wind': copy.deepcopy(info),
+                'Solar': copy.deepcopy(info),
+                'Nuclear': copy.deepcopy(info),
+                'Dispatch to H2 Storage': copy.deepcopy(info)
+        }
+
+        prev_month = 1 # Start in January, this is not guaranteed, FIXME
+        start_dt = start
+        for idx in df.index:
+
+            # Note there is a misspelling of 'curtailment' as 'cutailment' in the MEM-1.2 code long form output
+            month_avgs['Nuclear']['running'].append(df.loc[idx, 'cutailment nuclear (kW)'])
+            month_avgs['Wind']['running'].append(df.loc[idx, 'cutailment wind (kW)']) 
+            month_avgs['Solar']['running'].append(df.loc[idx, 'cutailment solar (kW)'])
+            month_avgs['Dispatch to H2 Storage']['running'].append(df.loc[idx, 'dispatch to fuel h2 storage (kW)'])
+
+            start_dt += timedelta(hours=1)
+
+            # If switching months, average previous, fill, and clear array
+            if start_dt.month != prev_month:
+                for k, vals in month_avgs.items():
+                    vals['split'].append(copy.deepcopy(vals['running']))
+                    vals['running'].clear()
+
+            prev_month = start_dt.month
+
+        axs[j].set_ylabel('Curtailment (kW)')
+
+
+        months = [i for i in range(1, 13)]
+        adj = 0.15
+        alph=0.04
+        max_ = 0.
+        #for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['yellow',adj]}.items():
+        #    axs[j].scatter(month_info+vals[1], df[f'cutailment {tech} (kW)'], color=vals[0], label=tech, alpha=alph)
+        #    if max(df[f'cutailment {tech} (kW)']) > max_:
+        #        max_ = max(df[f'cutailment {tech} (kW)'])
+        axs[j].grid()
+        axs[j].set_ylim(0, max_*1.1)
+
+        # Second y-axis
+        ax2 = axs[j].twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.set_ylabel('Dispatch to H2 Storage', color='brown')  # we already handled the x-label with ax1
+        parts = ax2.violinplot(month_avgs['Dispatch to H2 Storage']['split'], showmeans=True)
+
+        # Color violin plot
+        # List or parts: https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.violinplot.html
+        for pc in parts['bodies']:
+            pc.set_facecolor('brown')
+            pc.set_edgecolor('brown')
+            pc.set_alpha(0.3)
+        for group in ['cmins', 'cmaxes', 'cbars', 'cmeans']:
+            parts[group].set_facecolor('brown')
+            parts[group].set_edgecolor('brown')
+            if group != 'cmeans':
+                parts[group].set_alpha(0.3)
+
+        ax2.tick_params(axis='y', labelcolor='brown')
+        ax2.set_ylim(0, max(0.01, max(df['dispatch to fuel h2 storage (kW)']))*1.1)
+        ax2s.append(ax2)
+
+    plt.sca(axs[0])
+    plt.xticks([i for i in range(1, 13)], ('January','February','March','April','May','June',
+            'July','August','September','October','November','December'), rotation=30)
+
+    plt.tight_layout()
+    #plt.legend()
+    plt.gcf().savefig('{}/{}.png'.format(save_dir, save_name))
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
+
+
 if '__main__' in __name__:
 
     import sys
@@ -650,6 +766,7 @@ if '__main__' in __name__:
 
     # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
     plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthlyCurtailAndDisp', save_dir)
+    plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipliers, 'monthlyCurtailAndDispViolin', save_dir)
 
 
     # $/GGE fuel
