@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 
-Date="20191023"
-version="vOct26"
+Date="20191105"
+version="Nov05v3"
 #ARGS="run_sem make_results_file"
 #ARGS="make_results_file"
-ARGS="run_sem make_results_file make_plots"
 ARGS="make_plots"
+ARGS="run_sem make_results_file make_plots"
 
         #"Case0_NuclearFlatDemand" \
 

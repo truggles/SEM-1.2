@@ -683,7 +683,7 @@ if '__main__' in __name__:
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
     do_demand_constraint = True # All true for now
-    run_one_year = True # If true, run all cases for 1 full year instead of just Jan 2016
+    run_one_year = False # If true, run all cases for 1 full year instead of just Jan 2016
 
 
     multipliers = [0., 0.01,]
@@ -708,7 +708,7 @@ if '__main__' in __name__:
 
             # 1st Step
             cfg = get_SEM_csv_file(input_file)
-            case_name = fuel_str
+            case_name = version+'_'+fuel_str
             case_file = case_name+'.csv'
             cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, run_one_year)
             write_file(case_file, cfg)
