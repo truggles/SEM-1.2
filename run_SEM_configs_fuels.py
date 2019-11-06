@@ -226,43 +226,6 @@ def get_results(files, global_name):
     ofile.close()
     return results
 
-# Get info from file, so we don't have to repeat get_results
-# many many times
-def simplify_results(results_file, reliability_values, wind_values, solar_values):
-    ifile = open(results_file, 'r')
-
-    simp = {}
-    for reliability in reliability_values:
-        simp[reliability] = {}
-        for solar in solar_values:
-            simp[reliability][solar] = {}
-            for wind in wind_values:
-                simp[reliability][solar][wind] = [0.0, 0]
-
-    for line in ifile:
-        if 'case name' in line: continue # skip hearder line
-        info = line.split(',')
-        reli = float(info[2])
-        solar = float(info[5])
-        wind = float(info[6])
-        unmet = float(info[7])
-
-        # Remove entries which were from Step 1 which calculated
-        # capacities with a target reliability
-        if round(reli, 10) == round(unmet, 10): continue
-
-        if reli == 0.0: continue # TMP FIXME
-        to_add = abs(unmet/reli - 1.)
-        simp[reli][solar][wind][0] += to_add
-        simp[reli][solar][wind][1] += 1
-
-    for reli in reliability_values:
-        for solar in solar_values:
-            for wind in wind_values:
-                if simp[reli][solar][wind][1] == 0: continue
-                simp[reli][solar][wind][0] = simp[reli][solar][wind][0]/simp[reli][solar][wind][1] # np.sqrt(simp[reli][solar][wind])
-
-    return simp
 
 
 def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False, ylims=[-1,-1]):
