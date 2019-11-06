@@ -14,6 +14,9 @@ from datetime import datetime, timedelta
 import copy
 
 
+def marker_list():
+    return ['o', 'v', '^', 's', 'P', '*', 'H', 'X', 'd', '<', '>']
+
 
 # Use Pandas to retrieve the output values b/c it handles
 # fully populated tables well
@@ -243,10 +246,11 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     ax.set_ylabel(y_label)
     plt.title(title)
 
-    for y, label in zip(ys, labels):
+    markers = marker_list()
+    for y, label, mark in zip(ys, labels, markers):
         #print(label)
         #print(y)
-        ax.scatter(x, y, label=label)
+        ax.scatter(x, y, label=label, marker=mark)
 
     if logY:
         plt.yscale('log', nonposy='clip')
@@ -303,8 +307,9 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
     plt.title(title)
 
     # First y-axis
+    markers = marker_list()
     for i in range(len(ys)-1): # skip last set of y values
-        ax.scatter(x, ys[i], label=labels[i])
+        ax.scatter(x, ys[i], label=labels[i], marker=markers[i])
     plt.legend(loc='upper left')
     ax.set_ylim(ax.get_ylim()[0]/1.5, ax.get_ylim()[1]*1.3)
     plt.grid()
@@ -312,7 +317,7 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
     # Second y-axis
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
     ax2.set_ylabel(y_label_2, color='C3')  # we already handled the x-label with ax1
-    ax2.scatter(x, ys[-1], color='C3', marker='o', label=labels[-1])
+    ax2.scatter(x, ys[-1], color='C3', label=labels[-1], marker=markers[-1])
     ax2.tick_params(axis='y', labelcolor='C3')
     plt.legend(loc='upper right')
     ax2.set_ylim(ax2.get_ylim()[0]/1.5, ax2.get_ylim()[1]*1.3)
@@ -645,6 +650,19 @@ def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipli
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
 
 
+
+def clean_files(path, global_name, results, case_file):
+    files = get_output_file_names(path+'{}_2019'.format(global_name))
+    print(files)
+
+    # Copy output file
+    if not os.path.exists(results):
+        os.makedirs(results)
+    move(files[-1], results)
+    os.remove(case_file)
+    return
+
+
 if '__main__' in __name__:
 
     import sys
@@ -695,7 +713,7 @@ if '__main__' in __name__:
 
     ### DEFAULTS ###
     do_demand_constraint = True # All true for now
-    run_one_year = False # If true, run all cases for 1 full year instead of just Jan 2016
+    do_renewable_scan = True
     start_month = 4
     end_month = 4
     system_reliability = -1 # Use 10 $/kWh
@@ -713,38 +731,60 @@ if '__main__' in __name__:
             break
         multipliers.append(round(multipliers[-1]*1.2,5))
 
+    # For do_renewable_scan
+    solar_vs_wind = np.linspace(0.1, 1.5, 15)
+                
+
     if run_sem:
-        print("Length of multipliers {}".format(len(multipliers)))
-        print(multipliers)
 
-        for i, multiplier in enumerate(multipliers):
+        if do_renewable_scan:
+            print("Solar and Wind multipliers {}".format(len(solar_vs_wind**2)))
+            print(solar_vs_wind)
 
-            if not run_sem:
-                break
+            print("\nSetting output fuels as 10% of electric demand\n")
+            multiplier = 0.1
+            for i, fixed_cost_solar in enumerate(solar_vs_wind):
+                for j, fixed_cost_wind in enumerate(solar_vs_wind):
 
-            if do_demand_constraint:
-                fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
-            else:
-                fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+                    run_num = (i+1)*(j+1)
+                    print(run_num)
+                    fuel_str = f'Run_{run_num:03}_fuel_demand_'+str(multiplier)+'kWh_solarX'+str(fixed_cost_solar)+'_windX'+str(fixed_cost_wind)
 
-            # 1st Step
-            cfg = get_SEM_csv_file(input_file)
-            case_name = version+'_'+fuel_str
-            case_file = case_name+'.csv'
-            cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
-                    system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
-                    fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
-            write_file(case_file, cfg)
-            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+                    # 1st Step
+                    cfg = get_SEM_csv_file(input_file)
+                    case_name = version+'_'+fuel_str
+                    case_file = case_name+'.csv'
+                    cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
+                            system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
+                            fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
+                    write_file(case_file, cfg)
+                    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-            files = get_output_file_names(path+'{}_2019'.format(global_name))
-            print(files)
+                    clean_files(path, global_name, results, case_file)
 
-            # Copy output file
-            if not os.path.exists(results):
-                os.makedirs(results)
-            move(files[-1], results)
-            os.remove(case_file)
+
+        else:
+            print("Length of multipliers {}".format(len(multipliers)))
+            print(multipliers)
+
+            for i, multiplier in enumerate(multipliers):
+
+                if do_demand_constraint:
+                    fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
+                else:
+                    fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+
+                # 1st Step
+                cfg = get_SEM_csv_file(input_file)
+                case_name = version+'_'+fuel_str
+                case_file = case_name+'.csv'
+                cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
+                        system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
+                        fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
+                write_file(case_file, cfg)
+                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+
+                clean_files(path, global_name, results, case_file)
 
 
     if make_results_file:
