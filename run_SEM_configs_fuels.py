@@ -54,14 +54,26 @@ def get_SEM_csv_file(file_name):
 
 # Multiplier is either applied to fuel cost or fuel demand
 # based on 'do_demand_constraint'
-def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, run_one_year):
+def set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month=1, end_month=1,
+        system_reliability=-1, fixed_cost_solar=1, fixed_cost_wind=1, fixed_cost_nuclear=1,
+        fixed_cost_storage=1, fixed_cost_fuel_electrolyzer=1, efficiency_fuel_electrolyzer=1):
+    # system_reliability = -1 means use the 10 $/kWh cost unmet demand
 
     new_cfg = []
 
     case_data_line = -999 # Starts really negative so the 2nd 'if' is never triggered until ready
+    case_name_position = -999
     fuel_value_position = -999
     fuel_demand_position = -999
+    start_month_position = -999
     end_month_position = -999
+    system_reliability_position = -999
+    fixed_cost_solar_position = -999
+    fixed_cost_wind_position = -999
+    fixed_cost_nuclear_position = -999
+    fixed_cost_storage_position = -999
+    fixed_cost_fuel_electrolyzer_position = -999
+    efficiency_fuel_electrolyzer_position = -999
     for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
@@ -69,23 +81,41 @@ def set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, 
 
         if line[0] == 'CASE_NAME':
             case_data_line = i
+            case_name_position = line.index('CASE_NAME')
             fuel_value_position = line.index('FUEL_VALUE')
             fuel_demand_position = line.index('FUEL_DEMAND')
+            start_month_position = line.index('START_MONTH')
             end_month_position = line.index('END_MONTH')
-            print(" --- demand pos: {}, value pos {}, multiplier {}x, do_demand_constraint {}, run_one_year {}".format(
-                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint, run_one_year))
+            system_reliability_position = line.index('SYSTEM_RELIABILITY')
+            fixed_cost_solar_position = line.index('FIXED_COST_SOLAR')
+            fixed_cost_wind_position = line.index('FIXED_COST_WIND')
+            fixed_cost_nuclear_position = line.index('FIXED_COST_NUCLEAR')
+            fixed_cost_storage_position = line.index('FIXED_COST_STORAGE')
+            fixed_cost_fuel_electrolyzer_position = line.index('FIXED_COST_FUEL_ELECTROLYZER')
+            efficiency_fuel_electrolyzer_position = line.index('EFFICIENCY_FUEL_ELECTROLYZER')
+            print(" --- demand pos: {}, value pos {}, multiplier {}x, do_demand_constraint {}, start/end month {}-{}".format(
+                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint, start_month, end_month))
         
         if i == case_data_line+2:
             # Set case name
-            line[0] = fuel_str
+            line[case_name_position] = fuel_str
+            line[start_month_position] = start_month
+            line[end_month_position] = end_month
+            line[system_reliability_position] = system_reliability
+            line[fixed_cost_solar_position] = fixed_cost_solar
+            line[fixed_cost_wind_position] = fixed_cost_wind
+            line[fixed_cost_nuclear_position] = fixed_cost_nuclear
+            line[fixed_cost_storage_position] = fixed_cost_storage
+            line[fixed_cost_fuel_electrolyzer_position] = fixed_cost_fuel_electrolyzer
+            line[efficiency_fuel_electrolyzer_position] = efficiency_fuel_electrolyzer
+
             if do_demand_constraint:
                 line[fuel_value_position] = 0
                 line[fuel_demand_position] = multiplier
             else:
                 line[fuel_value_position] = multiplier
                 line[fuel_demand_position] = 0
-            if run_one_year:
-                line[end_month_position] = 12 # End on December
+
         new_cfg.append(line)
 
     return new_cfg
@@ -122,19 +152,23 @@ def get_results(files, global_name):
             info['capacity nuclear (kW)'] = 0.
             info['dispatch nuclear (kW)'] = 0.
             info['curtailment nuclear (kW)'] = 0.
+            info['fixed cost nuclear ($/kW/h)'] = 0.
         if not hasattr(info, 'capacity wind (kW)'):
             info['capacity wind (kW)'] = 0.
             info['dispatch wind (kW)'] = 0.
             info['curtailment wind (kW)'] = 0.
+            info['fixed cost wind ($/kW/h)'] = 0.
         if not hasattr(info, 'capacity solar (kW)'):
             info['capacity solar (kW)'] = 0.
             info['dispatch solar (kW)'] = 0.
             info['curtailment solar (kW)'] = 0.
+            info['fixed cost solar ($/kW/h)'] = 0.
         if not hasattr(info, 'capacity storage (kWh)'):
             info['capacity storage (kWh)'] = 0.
             info['dispatch to storage (kW)'] = 0.
             info['dispatch from storage (kW)'] = 0.
             info['energy storage (kWh)'] = 0.
+            info['fixed cost storage ($/kWh/h)'] = 0.
         #print(info)
         keys.append(info['case name'].values[0])
         results[info['case name'].values[0]] = [
@@ -170,13 +204,20 @@ def get_results(files, global_name):
                        info['fuel h2 storage (kWh)'].values[0],
                        info['fuel price ($/kWh)'].values[0],
                        info['mean price ($/kWh)'].values[0],
-                       info['max price ($/kWh)'].values[0]
+                       info['max price ($/kWh)'].values[0],
+                       info['system reliability'].values[0],
+                       info['fixed cost wind ($/kW/h)'].values[0],
+                       info['fixed cost solar ($/kW/h)'].values[0],
+                       info['fixed cost nuclear ($/kW/h)'].values[0],
+                       info['fixed cost storage ($/kWh/h)'].values[0],
+                       info['fixed cost fuel electrolyzer ($/kW/h)'].values[0],
+                       info['efficiency fuel electrolyzer'].values[0],
         ]
 
     print('Writing results to "Results_{}.csv"'.format(global_name))
     ofile = open('Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh)\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -233,6 +274,7 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
         x_label = fuel_x
 
     plt.close()
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -291,6 +333,7 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
         x_label = fuel_x
 
     plt.close()
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label_1)
@@ -325,6 +368,7 @@ def biv_curtailment_cost_plot(tot_curtailment, fuel_costs, fuel_demand, x_label,
     print("Plotting biv_curtailment_cost_plot")
 
     plt.close()
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel(x_label)
     ax.set_ylabel('Fuel Cost ($/kWh)')
@@ -351,6 +395,7 @@ def biv_curtailment_cost_plot(tot_curtailment, fuel_costs, fuel_demand, x_label,
 def stacked_plot(**kwargs):
 
     plt.close()
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel(kwargs['x_label'])
     ax.set_ylabel(kwargs['y_label'])
@@ -382,6 +427,7 @@ def stacked_plot(**kwargs):
 def costs_plot(df, **kwargs):
 
     plt.close()
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel('fuel demand (kWh/h)')
     ax.set_ylabel('fuel cost ($/kWh)')
@@ -474,7 +520,8 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, sa
         # FIXME - assume if len(df.index) == 8784 that we ran over all of 2016 (leap year)
         # else, return and code this later
         if len(df.index) != 8784:
-            print("plot_months_vs_curtailment_and_h2_storage not currently coded to run over range other than all of 2016 leap year")
+            # Print colored
+            print("\033[0;33mplot_months_vs_curtailment_and_h2_storage not currently coded to run over range other than all of 2016 leap year\033[0m")
             return
 
         # Make list of month values
@@ -557,7 +604,8 @@ def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipli
         # FIXME - assume if len(df.index) == 8784 that we ran over all of 2016 (leap year)
         # else, return and code this later
         if len(df.index) != 8784:
-            print("plot_months_vs_curtailment_and_h2_storage_violin not currently coded to run over range other than all of 2016 leap year")
+            # Print colored
+            print("\033[0;33mplot_months_vs_curtailment_and_h2_storage_violin not currently coded to run over range other than all of 2016 leap year\033[0m")
             return
 
 
@@ -682,8 +730,18 @@ if '__main__' in __name__:
     EFFICIENCY_COMBINED = 0.446 # 0.676783005 * 0.659
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
+    ### DEFAULTS ###
     do_demand_constraint = True # All true for now
     run_one_year = False # If true, run all cases for 1 full year instead of just Jan 2016
+    start_month = 4
+    end_month = 4
+    system_reliability = -1 # Use 10 $/kWh
+    fixed_cost_solar = 1
+    fixed_cost_wind = 1
+    fixed_cost_nuclear = 1
+    fixed_cost_storage = 1
+    fixed_cost_fuel_electrolyzer = 1
+    efficiency_fuel_electrolyzer = 1
 
 
     multipliers = [0., 0.01,]
@@ -710,7 +768,9 @@ if '__main__' in __name__:
             cfg = get_SEM_csv_file(input_file)
             case_name = version+'_'+fuel_str
             case_file = case_name+'.csv'
-            cfg = set_fuel_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, run_one_year)
+            cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
+                    system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
+                    fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
             write_file(case_file, cfg)
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
@@ -767,6 +827,7 @@ if '__main__' in __name__:
     # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
     plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthlyCurtailAndDisp', save_dir)
     plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipliers, 'monthlyCurtailAndDispViolin', save_dir)
+
 
 
     # $/GGE fuel
