@@ -685,24 +685,32 @@ def set_up_new_cfg(input_file, version, run, **settings):
 
 
 
-#def make_scan_map(keys, ranges):
-#    print(keys)
-#    for range_ in ranges:
-#        print(range)
-#
-## FIXME how to make a combinatoric map of these?  Can I make it generic so a single key
-## and a two or three key case are handled here?
-#
-#            cnt = 0
-#            for fixed_cost_solar in solar_vs_wind:
-#                settings['fixed_cost_solar'] = fixed_cost_solar
-#                for fixed_cost_wind in solar_vs_wind:
-#                    settings['fixed_cost_wind'] = fixed_cost_wind
-#
-#
-#            fuel_demands = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
-#            for cnt, fuel_demand in enumerate(fuel_demands):
-#                settings['fuel_demand'] = fuel_demand
+def make_scan_map(keys, ranges):
+
+    assert(type(keys)==list and type(ranges)==list)
+    assert(len(keys)==len(ranges))
+    
+    df = pd.DataFrame({keys.pop(): ranges.pop()})
+    df_orig = df.copy()
+    while True:
+        if len(keys) == 0:
+            break
+        current_list = list(ranges.pop())
+        current_list.sort(reverse=True)
+        new_col = keys.pop()
+        df[new_col] = current_list[-1]
+        current_list = current_list[:-1]
+
+        while True:
+            if len(current_list) == 0:
+                break
+            to_app = df_orig.copy()
+            to_app[new_col] = current_list[-1]
+            current_list = current_list[:-1]
+            df = df.append(to_app, ignore_index=True)
+
+    return df
+
 
 
 if '__main__' in __name__:
@@ -773,53 +781,42 @@ if '__main__' in __name__:
 
 
 
-    # For do_renewable_scan
-    solar_vs_wind = np.linspace(0.1, 1.5, 3)
                 
 
     if run_sem:
 
+        keys = []
+        ranges = []
+
+        print(settings['do_renewable_scan'])
         if settings['do_renewable_scan']:
-            #make_scan_map(keys, ranges)
-            print("Solar and Wind multipliers {}".format(len(solar_vs_wind**2)))
-            print(solar_vs_wind)
-
-            print("\nSetting output fuels as 10% of electric demand\n")
-            settings['fuel_demand'] = 0.1
-            cnt = 0
-            for fixed_cost_solar in solar_vs_wind:
-                settings['fixed_cost_solar'] = fixed_cost_solar
-                for fixed_cost_wind in solar_vs_wind:
-                    settings['fixed_cost_wind'] = fixed_cost_wind
-
-                    # Set up new case file
-                    case_file = set_up_new_cfg(input_file, version, cnt, **settings)
-                    cnt += 1
-
-                    # Run MEM
-                    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-
-                    # Clean up working area and move files around
-                    clean_files(path, global_name, results, case_file)
-
-
+            solar_vs_wind = np.linspace(0.1, 1.5, 3)
+            keys = ['fixed_cost_solar', 'fixed_cost_wind']
+            ranges = [solar_vs_wind, solar_vs_wind]
         else:
-            fuel_demands = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
-            print("Length of fuel_demands {}".format(len(fuel_demands)))
-            print(fuel_demands)
+            keys = ['fuel_demand',]
+            ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
 
-            for cnt, fuel_demand in enumerate(fuel_demands):
-                settings['fuel_demand'] = fuel_demand
+        scan_map = make_scan_map(keys, ranges)
+        print("Variables to scan")
+        print(scan_map)
+                
+        print("\nSetting output fuels as 10% of electric demand\n")
+        settings['fuel_demand'] = 0.1
 
-                # Set up new case file
-                case_file = set_up_new_cfg(input_file, version, cnt, **settings)
+        for idx in scan_map.index:
 
-                # Run MEM
-                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+            for col in scan_map.columns:
+                settings[col] = scan_map.loc[idx, col]
 
-                # Clean up working area and move files around
-                clean_files(path, global_name, results, case_file)
+            # Set up new case file
+            case_file = set_up_new_cfg(input_file, version, idx, **settings)
 
+            # Run MEM
+            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+
+            # Clean up working area and move files around
+            clean_files(path, global_name, results, case_file)
 
 
     if make_results_file:
