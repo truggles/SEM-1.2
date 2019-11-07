@@ -422,7 +422,7 @@ def costs_plot(df, **kwargs):
 
 
     # Fill remainder with assumed electricity cost from MEM
-    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, dollars_per_fuel, label='variable cost electrolyzer (MEM electricity)')
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, dollars_per_fuel, label='variable cost electrolyzer')
     # To print the estimated MEM electricity cost per point
     #print(dollars_per_fuel)
     #print(dollars_per_fuel - (f_tot+v_chem+v_co2))
@@ -433,10 +433,19 @@ def costs_plot(df, **kwargs):
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
     #ax.set_ylim(0, max(dollars_per_fuel.loc[1:len(dollars_per_fuel)-1])*1.7)
     ax.set_ylim(0, 0.55)
+    plt.grid()
+    plt.legend(loc='upper left')
+
+    # Second y-axis for duals
+    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+    ax2.set_ylabel('dual value costs ($/kWh)', color='magenta')  # we already handled the x-label with ax1
+    ax2.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='magenta', label='fuel dual ($/kWh)', marker='v')
+    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='electric dual ($/kWh)', marker='X')
+    ax2.tick_params(axis='y', labelcolor='magenta')
+    plt.legend(loc='upper right')
+    ax2.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]) # mimic 1st y-axis
 
     plt.tight_layout()
-    plt.legend(loc='upper left')
-    plt.grid()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
@@ -769,7 +778,7 @@ if '__main__' in __name__:
     settings = {
         'global_name' : global_name,
         'do_demand_constraint' : True, # All true for now
-        'do_renewable_scan' : True,
+        'do_renewable_scan' : False,
         'start_month' : 4,
         'end_month' : 4,
         'system_reliability' : -1, # Use 10 $/kWh
@@ -785,7 +794,7 @@ if '__main__' in __name__:
 
     vre_start = 0.1
     vre_end = 1.5
-    vre_num = 5
+    vre_num = 20
 
 
                 
@@ -863,14 +872,31 @@ if '__main__' in __name__:
             wind_c = df.loc[idx,'fixed cost wind ($/kW/h)']
             if wind_c not in wind_costs: wind_costs.append(wind_c)
 
+        solar_costs.sort()
+        wind_costs.sort()
+
         for idx in df.index:
 
             solar_c = df.loc[idx,'fixed cost solar ($/kW/h)']
             wind_c = df.loc[idx,'fixed cost wind ($/kW/h)']
             ary[ solar_costs.index(solar_c) ][ wind_costs.index(wind_c) ] = df.loc[idx,'fuel price ($/kWh)']
 
-        plt.imshow(ary)
-        plt.show()
+        ary2 = np.array(ary)
+        fig, ax = plt.subplots()
+        im = ax.imshow(ary2, origin='lower')
+
+        round_wind_costs = [round(val,4) for val in wind_costs]
+        round_solar_costs = [round(val,4) for val in solar_costs]
+
+        plt.xticks(np.linspace(-0.5, len(round_wind_costs)-0.5, len(round_wind_costs)), round_wind_costs, rotation=90)
+        plt.xlabel("Fixed Cost Wind ($/kW/h)")
+        plt.yticks(np.linspace(-0.5, len(round_solar_costs)-0.5, len(round_solar_costs)), round_solar_costs)
+        plt.ylabel("Fixed Cost Solar ($/kW/h)")
+        cbar = ax.figure.colorbar(im)
+        cbar.ax.set_ylabel("Fuel Cost ($/kWh)")
+        plt.tight_layout()
+        plt.savefig(save_dir+f'renewables_scan_{len(vre_scan)}x{len(vre_scan)}.png')
+        plt.clf()
 
 
         assert(False), "make_plots and do_renewable_scan only produce 2D scanning plots"
