@@ -690,9 +690,11 @@ def make_scan_map(keys, ranges):
     assert(type(keys)==list and type(ranges)==list)
     assert(len(keys)==len(ranges))
     
-    df = pd.DataFrame({keys.pop(): ranges.pop()})
-    df_orig = df.copy()
+    first = list(ranges.pop())
+    first.sort(reverse=True)
+    df = pd.DataFrame({keys.pop(): first})
     while True:
+        df_orig = df.copy()
         if len(keys) == 0:
             break
         current_list = list(ranges.pop())
@@ -788,7 +790,6 @@ if '__main__' in __name__:
         keys = []
         ranges = []
 
-        print(settings['do_renewable_scan'])
         if settings['do_renewable_scan']:
             solar_vs_wind = np.linspace(0.1, 1.5, 3)
             keys = ['fixed_cost_solar', 'fixed_cost_wind']
