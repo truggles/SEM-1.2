@@ -714,6 +714,8 @@ def make_scan_map(keys, ranges):
     return df
 
 
+def get_vre_scan(start, end, num):
+    return np.linspace(start, end, num)
 
 if '__main__' in __name__:
 
@@ -767,7 +769,7 @@ if '__main__' in __name__:
     settings = {
         'global_name' : global_name,
         'do_demand_constraint' : True, # All true for now
-        'do_renewable_scan' : False,
+        'do_renewable_scan' : True,
         'start_month' : 4,
         'end_month' : 4,
         'system_reliability' : -1, # Use 10 $/kWh
@@ -781,6 +783,9 @@ if '__main__' in __name__:
         'fuel_value' : 0,
     }
 
+    vre_start = 0.1
+    vre_end = 1.5
+    vre_num = 5
 
 
                 
@@ -791,9 +796,9 @@ if '__main__' in __name__:
         ranges = []
 
         if settings['do_renewable_scan']:
-            solar_vs_wind = np.linspace(0.1, 1.5, 3)
+            vre_scan = get_vre_scan(vre_start, vre_end, vre_num)
             keys = ['fixed_cost_solar', 'fixed_cost_wind']
-            ranges = [solar_vs_wind, solar_vs_wind]
+            ranges = [vre_scan, vre_scan]
         else:
             keys = ['fuel_demand',]
             ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
@@ -836,6 +841,40 @@ if '__main__' in __name__:
     save_dir = './plots_{}/'.format(version)
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
+
+
+    # Make the scan plots first then assert(False)
+    if settings['do_renewable_scan']:
+
+        # VRE scanned values
+        vre_scan = get_vre_scan(vre_start, vre_end, vre_num)
+        print(vre_scan)
+
+        ary = [[0 for _ in range(len(vre_scan))] for __ in range(len(vre_scan))]
+        solar_costs = []
+        wind_costs = []
+
+        # Build solar and wind cost lists
+        for idx in df.index:
+            #print(idx, df.loc[idx,'case name'], df.loc[idx,'fuel price ($/kWh)']) 
+
+            solar_c = df.loc[idx,'fixed cost solar ($/kW/h)']
+            if solar_c not in solar_costs: solar_costs.append(solar_c)
+            wind_c = df.loc[idx,'fixed cost wind ($/kW/h)']
+            if wind_c not in wind_costs: wind_costs.append(wind_c)
+
+        for idx in df.index:
+
+            solar_c = df.loc[idx,'fixed cost solar ($/kW/h)']
+            wind_c = df.loc[idx,'fixed cost wind ($/kW/h)']
+            ary[ solar_costs.index(solar_c) ][ wind_costs.index(wind_c) ] = df.loc[idx,'fuel price ($/kWh)']
+
+        plt.imshow(ary)
+        plt.show()
+
+
+        assert(False), "make_plots and do_renewable_scan only produce 2D scanning plots"
+
 
     plot_map = { # title / save : x, y, x_title, y_title
         'fuel demand vs. hourly dispatch' : ['fuel demand (kWh)', 'dispatch from fuel h2 storage (kW)'],
