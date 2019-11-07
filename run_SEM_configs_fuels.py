@@ -55,12 +55,8 @@ def get_SEM_csv_file(file_name):
 
 
 
-# Multiplier is either applied to fuel cost or fuel demand
-# based on 'do_demand_constraint'
-def set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month=1, end_month=1,
-        system_reliability=-1, fixed_cost_solar=1, fixed_cost_wind=1, fixed_cost_nuclear=1,
-        fixed_cost_storage=1, fixed_cost_fuel_electrolyzer=1, efficiency_fuel_electrolyzer=1):
-    # system_reliability = -1 means use the 10 $/kWh cost unmet demand
+# Set the values for this run based on settings dictionary
+def set_case_info(cfg, **settings):
 
     new_cfg = []
 
@@ -80,7 +76,7 @@ def set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, 
     for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
-            line[1] = global_name
+            line[1] = settings['global_name']
 
         if line[0] == 'CASE_NAME':
             case_data_line = i
@@ -96,28 +92,25 @@ def set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, 
             fixed_cost_storage_position = line.index('FIXED_COST_STORAGE')
             fixed_cost_fuel_electrolyzer_position = line.index('FIXED_COST_FUEL_ELECTROLYZER')
             efficiency_fuel_electrolyzer_position = line.index('EFFICIENCY_FUEL_ELECTROLYZER')
-            print(" --- demand pos: {}, value pos {}, multiplier {}x, do_demand_constraint {}, start/end month {}-{}".format(
-                    fuel_demand_position, fuel_value_position, multiplier, do_demand_constraint, start_month, end_month))
+            print(" --- demand pos: {}, value pos {}, fuel_demand {}x, do_demand_constraint {}, start/end month {}-{}".format(
+                    fuel_demand_position, fuel_value_position, settings['fuel_demand'], settings['do_demand_constraint'], 
+                    settings['start_month'], settings['end_month']))
         
         if i == case_data_line+2:
             # Set case name
-            line[case_name_position] = fuel_str
-            line[start_month_position] = start_month
-            line[end_month_position] = end_month
-            line[system_reliability_position] = system_reliability
-            line[fixed_cost_solar_position] = fixed_cost_solar
-            line[fixed_cost_wind_position] = fixed_cost_wind
-            line[fixed_cost_nuclear_position] = fixed_cost_nuclear
-            line[fixed_cost_storage_position] = fixed_cost_storage
-            line[fixed_cost_fuel_electrolyzer_position] = fixed_cost_fuel_electrolyzer
-            line[efficiency_fuel_electrolyzer_position] = efficiency_fuel_electrolyzer
+            line[case_name_position] = settings['case_descrip']
+            line[start_month_position] = settings['start_month']
+            line[end_month_position] = settings['end_month']
+            line[system_reliability_position] = settings['system_reliability']
+            line[fixed_cost_solar_position] = settings['fixed_cost_solar']
+            line[fixed_cost_wind_position] = settings['fixed_cost_wind']
+            line[fixed_cost_nuclear_position] = settings['fixed_cost_nuclear']
+            line[fixed_cost_storage_position] = settings['fixed_cost_storage']
+            line[fixed_cost_fuel_electrolyzer_position] = settings['fixed_cost_fuel_electrolyzer']
+            line[efficiency_fuel_electrolyzer_position] = settings['efficiency_fuel_electrolyzer']
 
-            if do_demand_constraint:
-                line[fuel_value_position] = 0
-                line[fuel_demand_position] = multiplier
-            else:
-                line[fuel_value_position] = multiplier
-                line[fuel_demand_position] = 0
+            line[fuel_value_position] = settings['fuel_value']
+            line[fuel_demand_position] = settings['fuel_demand']
 
         new_cfg.append(line)
 
@@ -450,7 +443,7 @@ def costs_plot(df, **kwargs):
 
 
 # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
-def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, save_name, save_dir):
+def plot_months_vs_curtailment_and_h2_storage(global_name, path, fuel_demands, save_name, save_dir):
 
     plt.close()
     matplotlib.rcParams['figure.figsize'] = (6,12)
@@ -534,7 +527,7 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, sa
 
 
 # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
-def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipliers, save_name, save_dir):
+def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, fuel_demands, save_name, save_dir):
 
     plt.close()
     matplotlib.rcParams['figure.figsize'] = (6,12)
@@ -663,6 +656,55 @@ def clean_files(path, global_name, results, case_file):
     return
 
 
+def get_fuel_demands(start, end, steps):
+    fuel_demands = [0., start,]
+    while True:
+        if fuel_demands[-1] > end:
+            break
+        fuel_demands.append(round(fuel_demands[-1]*steps,5))
+    return fuel_demands
+
+
+def set_up_new_cfg(input_file, version, run, **settings):
+    case_descrip = f'Run_{run:03}_fuelD'+str(round(settings['fuel_demand'],5))+'kWh'
+    case_descrip += '_solarX'+str(round(settings['fixed_cost_solar'],4))
+    case_descrip += '_windX'+str(round(settings['fixed_cost_wind'],4))
+    case_descrip += '_nukeX'+str(round(settings['fixed_cost_nuclear'],4))
+    case_descrip += '_battX'+str(round(settings['fixed_cost_storage'],4))
+    case_descrip += '_electoX'+str(round(settings['fixed_cost_fuel_electrolyzer'],4))
+    case_descrip += '_elecEffX'+str(round(settings['efficiency_fuel_electrolyzer'],4))
+    settings['case_descrip'] = case_descrip
+
+    # 1st Step
+    cfg = get_SEM_csv_file(input_file)
+    case_name = version+'_'+case_descrip
+    cfg = set_case_info(cfg, **settings)
+    case_file = case_name+'.csv'
+    write_file(case_file, cfg)
+    return case_file
+
+
+
+#def make_scan_map(keys, ranges):
+#    print(keys)
+#    for range_ in ranges:
+#        print(range)
+#
+## FIXME how to make a combinatoric map of these?  Can I make it generic so a single key
+## and a two or three key case are handled here?
+#
+#            cnt = 0
+#            for fixed_cost_solar in solar_vs_wind:
+#                settings['fixed_cost_solar'] = fixed_cost_solar
+#                for fixed_cost_wind in solar_vs_wind:
+#                    settings['fixed_cost_wind'] = fixed_cost_wind
+#
+#
+#            fuel_demands = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
+#            for cnt, fuel_demand in enumerate(fuel_demands):
+#                settings['fuel_demand'] = fuel_demand
+
+
 if '__main__' in __name__:
 
     import sys
@@ -712,79 +754,72 @@ if '__main__' in __name__:
     MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
 
     ### DEFAULTS ###
-    do_demand_constraint = True # All true for now
-    do_renewable_scan = True
-    start_month = 4
-    end_month = 4
-    system_reliability = -1 # Use 10 $/kWh
-    fixed_cost_solar = 1
-    fixed_cost_wind = 1
-    fixed_cost_nuclear = 1
-    fixed_cost_storage = 1
-    fixed_cost_fuel_electrolyzer = 1
-    efficiency_fuel_electrolyzer = 1
+    settings = {
+        'global_name' : global_name,
+        'do_demand_constraint' : True, # All true for now
+        'do_renewable_scan' : False,
+        'start_month' : 4,
+        'end_month' : 4,
+        'system_reliability' : -1, # Use 10 $/kWh
+        'fixed_cost_solar' : 1,
+        'fixed_cost_wind' : 1,
+        'fixed_cost_nuclear' : 1,
+        'fixed_cost_storage' : 1,
+        'fixed_cost_fuel_electrolyzer' : 1,
+        'efficiency_fuel_electrolyzer' : 1,
+        'fuel_demand' : 1, # equal fuel output as electric demand
+        'fuel_value' : 0,
+    }
 
 
-    multipliers = [0., 0.01,]
-    while True:
-        if multipliers[-1] > 10:
-            break
-        multipliers.append(round(multipliers[-1]*1.2,5))
 
     # For do_renewable_scan
-    solar_vs_wind = np.linspace(0.1, 1.5, 15)
+    solar_vs_wind = np.linspace(0.1, 1.5, 3)
                 
 
     if run_sem:
 
-        if do_renewable_scan:
+        if settings['do_renewable_scan']:
+            #make_scan_map(keys, ranges)
             print("Solar and Wind multipliers {}".format(len(solar_vs_wind**2)))
             print(solar_vs_wind)
 
             print("\nSetting output fuels as 10% of electric demand\n")
-            multiplier = 0.1
-            for i, fixed_cost_solar in enumerate(solar_vs_wind):
-                for j, fixed_cost_wind in enumerate(solar_vs_wind):
+            settings['fuel_demand'] = 0.1
+            cnt = 0
+            for fixed_cost_solar in solar_vs_wind:
+                settings['fixed_cost_solar'] = fixed_cost_solar
+                for fixed_cost_wind in solar_vs_wind:
+                    settings['fixed_cost_wind'] = fixed_cost_wind
 
-                    run_num = (i+1)*(j+1)
-                    print(run_num)
-                    fuel_str = f'Run_{run_num:03}_fuel_demand_'+str(multiplier)+'kWh_solarX'+str(fixed_cost_solar)+'_windX'+str(fixed_cost_wind)
+                    # Set up new case file
+                    case_file = set_up_new_cfg(input_file, version, cnt, **settings)
+                    cnt += 1
 
-                    # 1st Step
-                    cfg = get_SEM_csv_file(input_file)
-                    case_name = version+'_'+fuel_str
-                    case_file = case_name+'.csv'
-                    cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
-                            system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
-                            fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
-                    write_file(case_file, cfg)
+                    # Run MEM
                     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
+                    # Clean up working area and move files around
                     clean_files(path, global_name, results, case_file)
 
 
         else:
-            print("Length of multipliers {}".format(len(multipliers)))
-            print(multipliers)
+            fuel_demands = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
+            print("Length of fuel_demands {}".format(len(fuel_demands)))
+            print(fuel_demands)
 
-            for i, multiplier in enumerate(multipliers):
+            for cnt, fuel_demand in enumerate(fuel_demands):
+                settings['fuel_demand'] = fuel_demand
 
-                if do_demand_constraint:
-                    fuel_str = f'Run_{i:03}_fuel_demand_'+str(multiplier)+'kWh'
-                else:
-                    fuel_str = f'Run_{i:03}_fuel_cost_'+str(round(fuel_multiplier,6)).replace('.','p')+'USD'
+                # Set up new case file
+                case_file = set_up_new_cfg(input_file, version, cnt, **settings)
 
-                # 1st Step
-                cfg = get_SEM_csv_file(input_file)
-                case_name = version+'_'+fuel_str
-                case_file = case_name+'.csv'
-                cfg = set_case_info(cfg, global_name, fuel_str, multiplier, do_demand_constraint, start_month, end_month,
-                        system_reliability, fixed_cost_solar, fixed_cost_wind, fixed_cost_nuclear, 
-                        fixed_cost_storage, fixed_cost_fuel_electrolyzer, efficiency_fuel_electrolyzer)
-                write_file(case_file, cfg)
+                # Run MEM
                 subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
+                # Clean up working area and move files around
                 clean_files(path, global_name, results, case_file)
+
 
 
     if make_results_file:
@@ -828,8 +863,9 @@ if '__main__' in __name__:
 
 
     # Months on x-axis, avg curtailment on y, also deployment to H2 storage also
-    plot_months_vs_curtailment_and_h2_storage(global_name, path, multipliers, 'monthlyCurtailAndDisp', save_dir)
-    plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, multipliers, 'monthlyCurtailAndDispViolin', save_dir)
+    fuel_demands = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
+    plot_months_vs_curtailment_and_h2_storage(global_name, path, fuel_demands, 'monthlyCurtailAndDisp', save_dir)
+    plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, fuel_demands, 'monthlyCurtailAndDispViolin', save_dir)
 
 
 
