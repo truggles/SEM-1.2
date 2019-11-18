@@ -9,6 +9,7 @@ MWh_per_MMBtu = 0.293 # https://www.eia.gov/totalenergy/data/monthly/pdf/sec13_1
 MMBtu_per_Gallon_Gasoline = 0.114 # Btu/GGE "Fuel Economy Impact Analysis of RFG". United States Environmental Protection Agency. August 14, 2007. Retrieved Aug 27, 2019.
 
 
+
 def capital_recovery_factor(discount_rate, **dic):
     dic['capital recovery factor'] = discount_rate*(1.+discount_rate)**dic['assumed lifetime'] / ((1+discount_rate)**dic['assumed lifetime'] - 1)
     return dic
@@ -59,7 +60,7 @@ FIXED_COST_H2_STORAGE = {
 for dic in [FIXED_COST_ELECTROLYZER, FIXED_COST_CHEM_PLANT, FIXED_COST_H2_STORAGE]:
     dic = capital_recovery_factor(DISCOUNT_RATE, **dic)
     dic = fixed_cost_per_hr(**dic)
-    print(dic)
+
 
 
 
@@ -103,3 +104,30 @@ DECAY_RATE_H2_STORAGE = {
     'value' : 1.14E-08, # fraction per hour (0.01% per year)    
     'ref' : 'Crotogino et al., 2010, p43'
 }
+
+def return_fuel_system():
+    system = {
+        'FIXED_COST_ELECTROLYZER' : FIXED_COST_ELECTROLYZER,
+        'FIXED_COST_CHEM_PLANT' : FIXED_COST_CHEM_PLANT,
+        'FIXED_COST_H2_STORAGE' : FIXED_COST_H2_STORAGE,
+        'VAR_COST_ELECTROLYZER' : VAR_COST_ELECTROLYZER,
+        'VAR_COST_CHEM_PLANT' : VAR_COST_CHEM_PLANT,
+        'VAR_COST_CO2' : VAR_COST_CO2,
+        'EFFICIENCY_ELECTROLYZER' : EFFICIENCY_ELECTROLYZER,
+        'EFFICIENCY_CHEM_PLANT' : EFFICIENCY_CHEM_PLANT,
+        'DECAY_RATE_H2_STORAGE' : DECAY_RATE_H2_STORAGE,
+    }
+    for vals in ['FIXED_COST_ELECTROLYZER', 'FIXED_COST_CHEM_PLANT', 'FIXED_COST_H2_STORAGE']:
+        system[vals] = capital_recovery_factor(DISCOUNT_RATE, **system[vals])
+        system[vals] = fixed_cost_per_hr(**system[vals])
+    return system
+
+def get_fuel_system_costs(system, electricity_cost):
+    tot = 0.
+    tot += system['FIXED_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value']
+    tot += system['FIXED_COST_CHEM_PLANT']['value']
+    tot += system['VAR_COST_CHEM_PLANT']['value']
+    tot += system['VAR_COST_CO2']['value']
+    tot += system['VAR_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value']
+    tot += electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value'])
+    return tot
