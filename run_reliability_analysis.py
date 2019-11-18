@@ -174,19 +174,28 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
 
 
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-        start_year, end_year, reli_float, solar, wind, cap_NG, cap_storage):
+        year_code, reli_float, solar, wind, cap_NG, cap_storage):
     # Get new copy of SEM cfg
-    case_name = case_name_base+'_17-18'
+    case_name = case_name_base+'_'+year_code
     case_file = case_name+'.csv'
     cfg = get_SEM_csv_file(input_file)
-    cfg = set_all_values(cfg, global_name, case_name, 2017, 2018, reli_float, solar, wind, cap_NG, cap_storage)
+    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reli_float, solar, wind, cap_NG, cap_storage)
     write_file(case_file, cfg)
     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-    # 3rd set results, Copy output file, Delete results files
+    # Read results
     files = get_output_file_names(path+'/'+global_name+'_2019')
+    f_name = files[-1].split('/')[-1]
+    print(f_name)
+    dta = get_cap_and_costs(path, f_name)
+
+    # Copy output file, Delete results files
+    if not os.path.exists(results):
+        os.makedirs(results)
     copy2(files[-1], results)
     os.remove(files[-1])
+
+    return dta
 
 if '__main__' in __name__:
 
@@ -198,6 +207,7 @@ if '__main__' in __name__:
             '15-16' : [2015, 2016],
             '16-17' : [2016, 2017],
             '17-18' : [2017, 2018],
+            '18-19' : [2018, 2019],
     }
 
     input_file = 'reliability_case_191017.csv'
@@ -215,72 +225,19 @@ if '__main__' in __name__:
                 case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
 
                 # 1st Step
-                case_name = case_name_base+'_15-16'
-                case_file = case_name+'.csv'
-                cfg = get_SEM_csv_file(input_file)
                 cap_NG, cap_storage = -1, -1
-                cfg = set_all_values(cfg, global_name, case_name, 2015, 2016, reliability, solar, wind, cap_NG, cap_storage)
-                write_file(case_file, cfg)
-                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-
-                # Copy output file
-                files = get_output_file_names(path+'/'+global_name+'_2019')
-                if not os.path.exists(results):
-                    os.makedirs(results)
-                copy2(files[-1], results)
-                os.remove(files[-1])
+                year_code = '15-16'
+                dta = reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
+                    year_code, reliability, solar, wind, cap_NG, cap_storage)
 
 
-                # Read results
-                files = get_output_file_names(path+'/'+global_name+'_2019')
-                f_name = files[-1].split('/')[-1]
-                print(f_name)
-                dta = get_cap_and_costs(path, f_name)
                 print(dta.head())
                 cap_NG, cap_storage = float(dta['capacity natgas (kW)']), float(dta['capacity storage (kW)'])
 
-                # Get new copy of SEM cfg
-                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_16-17'
-                case_file = case_name+'.csv'
-                cfg = get_SEM_csv_file(input_file)
-                reli_float = -1
-                cfg = set_all_values(cfg, global_name, case_name, 2016, 2017, reli_float, solar, wind, cap_NG, cap_storage)
-                write_file(case_file, cfg)
-                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-
-
-                # 2nd set results, Copy output file, Delete results files
-                files = get_output_file_names(path+'/'+global_name+'_2019')
-                copy2(files[-1], results)
-                os.remove(files[-1])
-
-
-                # Get new copy of SEM cfg
-                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_17-18'
-                case_file = case_name+'.csv'
-                cfg = get_SEM_csv_file(input_file)
-                cfg = set_all_values(cfg, global_name, case_name, 2017, 2018, reli_float, solar, wind, cap_NG, cap_storage)
-                write_file(case_file, cfg)
-                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-
-                # 3rd set results, Copy output file, Delete results files
-                files = get_output_file_names(path+'/'+global_name+'_2019')
-                copy2(files[-1], results)
-                os.remove(files[-1])
-
-
-                # Get new copy of SEM cfg
-                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_18-19'
-                case_file = case_name+'.csv'
-                cfg = get_SEM_csv_file(input_file)
-                cfg = set_all_values(cfg, global_name, case_name, 2018, 2019, reli_float, solar, wind, cap_NG, cap_storage)
-                write_file(case_file, cfg)
-                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-
-                # 3rd set results, Copy output file, Delete results files
-                files = get_output_file_names(path+'/'+global_name+'_2019')
-                copy2(files[-1], results)
-                os.remove(files[-1])
+                # 2nd Step - run over 3 years with defined capacities
+                for year_code in ['16-17', '17-18', '18-19']:
+                    reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
+                        year_code, reliability, solar, wind, cap_NG, cap_storage)
 
     assert(False)
     #results = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2/Output_Data/tests_Jul25_v1/results'
