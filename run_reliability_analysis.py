@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import csv
 import subprocess
 import os
@@ -14,16 +15,17 @@ def get_cap_and_costs(path, file_name):
     return get_all_cap_and_costs(path+'/'+file_name)
 
 def get_all_cap_and_costs(file_name):
-    dta = pd.read_csv(file_name,
+    dta = pd.read_csv(file_name, index_col=0, header=None,
                    dtype={
                         'case name':np.str,
                         'problem status':np.str,
                         'system cost ($/kW/h)':np.float64,
                         'capacity natgas (kW)':np.float64,
+                        'capacity storage (kWh)':np.float64,
                         'capacity solar (kW)':np.float64,
                         'capacity wind (kW)':np.float64,
                         'dispatch unmet demand (kW)':np.float64,
-                       })
+                       }).T
 
     return dta
 
@@ -38,54 +40,48 @@ def get_SEM_csv_file(file_name):
     return info
 
 
-# For nat gas, this is added after initial optimization sets cap values.
-# It needs to add a new field to the case file
-def set_cap_natgas(cfg, cap_natgas):
-
-    new_cfg = []
-
-    cnt = 1
-    for line in cfg:
-        if cnt == 134:
-            line.append('CAPACITY_NATGAS')
-        if cnt == 136:
-            line.append(cap_natgas)
-        cnt += 1
-        new_cfg.append(line)
-
-    return new_cfg
-
-
-# For nat gas, this is added after initial optimization sets cap values.
-# It needs to add a new field to the case file
-def set_var_cost_unmet_demand(cfg, cost_unmet):
-
-    new_cfg = []
-
-    cnt = 1
-    for line in cfg:
-        if cnt == 136:
-            line[29] = cost_unmet
-        cnt += 1
-        new_cfg.append(line)
-
-    return new_cfg
-
 # These can be set for each and every run
-def set_vals(cfg, case_name, start_year, end_year, cap_solar, cap_wind):
+def set_all_values(cfg, global_name, case_name, start_year, end_year, reliability,
+        cap_solar, cap_wind, cap_NG, cap_storage):
 
     new_cfg = []
 
-    cnt = 1
-    for line in cfg:
-        if cnt == 136:
-            line[0] = case_name
-            line[1] = start_year
-            line[3] = end_year
-            line[27] = cap_wind
-            line[28] = cap_solar
-            print(line)
-        cnt += 1
+    case_data_line = -999 # Starts really negative so the 2nd 'if' is never triggered until ready
+    case_name_position = -999
+    reliability_position = -999
+    start_year_position = -999
+    end_year_position = -999
+    cap_solar_position = -999
+    cap_wind_position = -999     
+    cap_NG_position = -999
+    cap_storage_position = -999
+
+    for i, line in enumerate(cfg):
+
+        if line[0] == 'GLOBAL_NAME':
+            line[1] = global_name
+
+        if line[0] == 'CASE_NAME':
+            case_data_line = i
+            case_name_position = line.index('CASE_NAME')
+            reliability_position = line.index('RELIABILITY')
+            start_year_position = line.index('START_YEAR')
+            end_year_position = line.index('END_YEAR')
+            cap_solar_position = line.index('CAPACITY_SOLAR')
+            cap_wind_position = line.index('CAPACITY_WIND')
+            cap_NG_position = line.index('CAPACITY_NATGAS')
+            cap_storage_position = line.index('CAPACITY_STORAGE')
+
+        if i == case_data_line+2:
+            line[case_name_position] = case_name
+            line[reliability_position] = reliability
+            line[start_year_position] = start_year
+            line[end_year_position] = end_year
+            line[cap_solar_position] = cap_solar
+            line[cap_wind_position] = cap_wind
+            line[cap_NG_position] = cap_NG
+            line[cap_storage_position] = cap_storage
+
         new_cfg.append(line)
 
     return new_cfg
@@ -177,87 +173,116 @@ def simplify_results(results_file, reliability_values, wind_values, solar_values
     return simp
 
 
+def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
+        start_year, end_year, reli_float, solar, wind, cap_NG, cap_storage):
+    # Get new copy of SEM cfg
+    case_name = case_name_base+'_17-18'
+    case_file = case_name+'.csv'
+    cfg = get_SEM_csv_file(input_file)
+    cfg = set_all_values(cfg, global_name, case_name, 2017, 2018, reli_float, solar, wind, cap_NG, cap_storage)
+    write_file(case_file, cfg)
+    subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+
+    # 3rd set results, Copy output file, Delete results files
+    files = get_output_file_names(path+'/'+global_name+'_2019')
+    copy2(files[-1], results)
+    os.remove(files[-1])
+
 if '__main__' in __name__:
 
-    reliability_values = [0.0000, 0.0001, 0.0003, 0.001, 0.01, 0.1]
-    wind_values = [0.0, 0.25, 0.5, 0.75, 1.0]
-    solar_values = [0.0, 0.25, 0.5, 0.75, 1.0]
+    #reliability_values = [0.0000, 0.0001, 0.0003, 0.001, 0.01, 0.1]
+    reliability_values = [0.0001,]
+    wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0]
+    solar_values = [0.0,]# 0.25, 0.5, 0.75, 1.0]
     years = {
             '15-16' : [2015, 2016],
             '16-17' : [2016, 2017],
             '17-18' : [2017, 2018],
     }
 
-    input_file = 'y_case_input_base_190716.csv'
-    path = 'Output_Data/tests_Jul25_v1'
+    input_file = 'reliability_case_191017.csv'
+    global_name = 'reliability_20191118_v1'
+    path = 'Output_Data/'+global_name
     results = path+'/results'
 
-    #for reliability in reliability_values:
-    #    for solar in solar_values:
-    #        for wind in wind_values:
+    for reliability in reliability_values:
+        for solar in solar_values:
+            for wind in wind_values:
 
-    #            solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
-    #            wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
-    #            reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
+                solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
+                wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
+                reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
+                case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
 
-    #            # 1st Step
-    #            cfg = get_SEM_csv_file(input_file)
-    #            case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_15-16'
-    #            case_file = case_name+'.csv'
-    #            cfg = set_vals(cfg, case_name, 2015, 2016, solar, wind)
-    #            cfg = set_var_cost_unmet_demand(cfg, 0.0)
-    #            write_file(case_file, cfg)
-    #            os.environ["UNMET_DEMAND_SET_VALUE"] = str(reliability)
-    #            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+                # 1st Step
+                case_name = case_name_base+'_15-16'
+                case_file = case_name+'.csv'
+                cfg = get_SEM_csv_file(input_file)
+                cap_NG, cap_storage = -1, -1
+                cfg = set_all_values(cfg, global_name, case_name, 2015, 2016, reliability, solar, wind, cap_NG, cap_storage)
+                write_file(case_file, cfg)
+                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
-    #            files = get_output_file_names(path+'/tests_Jul25_v1_2019')
-
-    #            # Copy output file
-    #            if not os.path.exists(results):
-    #                os.makedirs(results)
-    #            copy2(files[-1], results)
-
-    #            # Read results
-    #            f_name = files[-1].split('/')[-1]
-    #            dta = get_cap_and_costs(path, f_name)
-
-    #            # Get new copy of SEM cfg
-    #            case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_16-17'
-    #            case_file = case_name+'.csv'
-    #            cfg = get_SEM_csv_file(input_file)
-    #            cfg = set_vals(cfg, case_name, 2016, 2017, solar, wind)
-    #            cfg = set_var_cost_unmet_demand(cfg, 1.0)
-    #            cfg = set_cap_natgas(cfg, float(dta['capacity natgas (kW)']))
-    #            write_file(case_file, cfg)
-
-    #            # Delete results files
-    #            os.remove(files[-1])
-    #            
-    #            os.environ["UNMET_DEMAND_SET_VALUE"] = "999"
-    #            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+                # Copy output file
+                files = get_output_file_names(path+'/'+global_name+'_2019')
+                if not os.path.exists(results):
+                    os.makedirs(results)
+                copy2(files[-1], results)
+                os.remove(files[-1])
 
 
-    #            # 2nd set results, Copy output file, Delete results files
-    #            files = get_output_file_names(path+'/tests_Jul25_v1_2019')
-    #            copy2(files[-1], results)
-    #            os.remove(files[-1])
+                # Read results
+                files = get_output_file_names(path+'/'+global_name+'_2019')
+                f_name = files[-1].split('/')[-1]
+                print(f_name)
+                dta = get_cap_and_costs(path, f_name)
+                print(dta.head())
+                cap_NG, cap_storage = float(dta['capacity natgas (kW)']), float(dta['capacity storage (kW)'])
+
+                # Get new copy of SEM cfg
+                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_16-17'
+                case_file = case_name+'.csv'
+                cfg = get_SEM_csv_file(input_file)
+                reli_float = -1
+                cfg = set_all_values(cfg, global_name, case_name, 2016, 2017, reli_float, solar, wind, cap_NG, cap_storage)
+                write_file(case_file, cfg)
+                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
 
-    #            # Get new copy of SEM cfg
-    #            case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_17-18'
-    #            case_file = case_name+'.csv'
-    #            cfg = get_SEM_csv_file(input_file)
-    #            cfg = set_vals(cfg, case_name, 2017, 2018, solar, wind)
-    #            cfg = set_var_cost_unmet_demand(cfg, 1.0)
-    #            cfg = set_cap_natgas(cfg, float(dta['capacity natgas (kW)']))
-    #            write_file(case_file, cfg)
-    #            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+                # 2nd set results, Copy output file, Delete results files
+                files = get_output_file_names(path+'/'+global_name+'_2019')
+                copy2(files[-1], results)
+                os.remove(files[-1])
 
-    #            # 3rd set results, Copy output file, Delete results files
-    #            files = get_output_file_names(path+'/tests_Jul25_v1_2019')
-    #            copy2(files[-1], results)
-    #            os.remove(files[-1])
 
+                # Get new copy of SEM cfg
+                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_17-18'
+                case_file = case_name+'.csv'
+                cfg = get_SEM_csv_file(input_file)
+                cfg = set_all_values(cfg, global_name, case_name, 2017, 2018, reli_float, solar, wind, cap_NG, cap_storage)
+                write_file(case_file, cfg)
+                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+
+                # 3rd set results, Copy output file, Delete results files
+                files = get_output_file_names(path+'/'+global_name+'_2019')
+                copy2(files[-1], results)
+                os.remove(files[-1])
+
+
+                # Get new copy of SEM cfg
+                case_name = reliability_str+'_'+wind_str+'_'+solar_str+'_18-19'
+                case_file = case_name+'.csv'
+                cfg = get_SEM_csv_file(input_file)
+                cfg = set_all_values(cfg, global_name, case_name, 2018, 2019, reli_float, solar, wind, cap_NG, cap_storage)
+                write_file(case_file, cfg)
+                subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+
+                # 3rd set results, Copy output file, Delete results files
+                files = get_output_file_names(path+'/'+global_name+'_2019')
+                copy2(files[-1], results)
+                os.remove(files[-1])
+
+    assert(False)
     #results = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2/Output_Data/tests_Jul25_v1/results'
     #files = get_output_file_names(results+'/tests_Jul25_v1_2019')
     #results = get_results(files)

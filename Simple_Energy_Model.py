@@ -89,4 +89,4 @@ if global_dic['POSTPROCESS']:
 if global_dic['QUICK_LOOK']:
     print ('Simple_Energy_Model: Preparing quick look at results')
     pickle_file_name = './Output_Data/'+global_dic['GLOBAL_NAME']+'/'+global_dic['GLOBAL_NAME']+'.pickle'
-    quick_look(global_dic, case_dic_list)  # Fan's new postprocessing
+    #quick_look(global_dic, case_dic_list)  # Fan's new postprocessing
