@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 import csv
 import subprocess
 import os
@@ -64,7 +66,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
         if line[0] == 'CASE_NAME':
             case_data_line = i
             case_name_position = line.index('CASE_NAME')
-            reliability_position = line.index('RELIABILITY')
+            reliability_position = line.index('SYSTEM_RELIABILITY')
             start_year_position = line.index('START_YEAR')
             end_year_position = line.index('END_YEAR')
             cap_solar_position = line.index('CAPACITY_SOLAR')
@@ -104,7 +106,7 @@ def get_output_file_names(path):
         print("This many files were found matching {}*.csv: {}".format(path, len(files)))
     return files
 
-def get_results(files):
+def get_results(files, global_name):
 
     results = {}
 
@@ -115,17 +117,18 @@ def get_results(files):
         results[info['case name'].values[0]] = [
                        info['problem status'].values[0],
                        float(info['case name'].values[0].split('_')[1].replace('p','.')), # reliability value
-                       info['system cost ($/kW/h)'].values[0],
+                       info['system cost ($ or $/kWh)'].values[0],
                        info['capacity natgas (kW)'].values[0],
+                       info['capacity storage (kW)'].values[0],
                        info['capacity solar (kW)'].values[0],
                        info['capacity wind (kW)'].values[0],
                        info['dispatch unmet demand (kW)'].values[0]
         ]
 
     print('Writing results to "Results.txt"')
-    ofile = open('Results.txt', 'w')
+    ofile = open(f'Results_{global_name}.txt', 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity natgas (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
+    ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity natgas (kW),capacity storage (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -136,50 +139,68 @@ def get_results(files):
 
 # Get info from file, so we don't have to repeat get_results
 # many many times
-def simplify_results(results_file, reliability_values, wind_values, solar_values):
-    ifile = open(results_file, 'r')
+def simplify_results(results_file):
+    df = pd.read_csv(results_file, index_col=False)
+    print(df.head())
+
+    reliability_values, wind_values, solar_values = [], [], []
+    for idx in df.index:
+        if df.loc[idx, 'target reliability'] not in reliability_values:
+            reliability_values.append(df.loc[idx, 'target reliability'])
+        if df.loc[idx, 'capacity wind (kW)'] not in wind_values:
+            wind_values.append(df.loc[idx, 'capacity wind (kW)'])
+        if df.loc[idx, 'capacity solar (kW)'] not in solar_values:
+            solar_values.append(df.loc[idx, 'capacity solar (kW)'])
 
     simp = {}
     for reliability in reliability_values:
         simp[reliability] = {}
         for solar in solar_values:
             simp[reliability][solar] = {}
-            for wind in wind_values:
-                simp[reliability][solar][wind] = [0.0, 0]
+            for wind in wind_values:            # vals, std dev, abs rel diff, rel diff
+                simp[reliability][solar][wind] = [[], -999., -999., -999.]
 
-    for line in ifile:
-        if 'case name' in line: continue # skip hearder line
-        info = line.split(',')
-        reli = float(info[2])
-        solar = float(info[5])
-        wind = float(info[6])
-        unmet = float(info[7])
+    for idx in df.index:
+        reli = df.loc[idx, 'target reliability']
+        solar = df.loc[idx, 'capacity solar (kW)']
+        wind = df.loc[idx, 'capacity wind (kW)']
+        unmet = df.loc[idx, 'dispatch unmet demand (kW)']
 
-        # Remove entries which were from Step 1 which calculated
-        # capacities with a target reliability
-        if round(reli, 10) == round(unmet, 10): continue
+        # Remove entries which were from Step 1 with fixed
+        # target reliability (years 2015-2016)
+        if '15-16' in df.loc[idx, 'case name']:
+            continue
 
-        if reli == 0.0: continue # TMP FIXME
-        to_add = abs(unmet/reli - 1.)
-        simp[reli][solar][wind][0] += to_add
-        simp[reli][solar][wind][1] += 1
+        if reli == 0.0:
+            to_add = unmet
+        else:
+            to_add = (unmet - (1. - reli))/(1. - reli)
+        simp[reli][solar][wind][0].append(to_add)
 
     for reli in reliability_values:
         for solar in solar_values:
             for wind in wind_values:
-                if simp[reli][solar][wind][1] == 0: continue
-                simp[reli][solar][wind][0] = simp[reli][solar][wind][0]/simp[reli][solar][wind][1] # np.sqrt(simp[reli][solar][wind])
+                if len(simp[reli][solar][wind][0]) == 0: continue
+                simp[reli][solar][wind][1] = np.std(simp[reli][solar][wind][0])
+                tot_abs, tot = 0., 0.
+                for val in simp[reli][solar][wind][0]:
+                    tot_abs += abs(val)
+                    tot += val
+                tot_abs /= len(simp[reli][solar][wind][0])
+                tot /= len(simp[reli][solar][wind][0])
+                simp[reli][solar][wind][2] = tot_abs
+                simp[reli][solar][wind][3] = tot
 
     return simp
 
 
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-        year_code, reli_float, solar, wind, cap_NG, cap_storage):
+        year_code, reliability, solar, wind, cap_NG, cap_storage):
     # Get new copy of SEM cfg
     case_name = case_name_base+'_'+year_code
     case_file = case_name+'.csv'
     cfg = get_SEM_csv_file(input_file)
-    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reli_float, solar, wind, cap_NG, cap_storage)
+    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reliability, solar, wind, cap_NG, cap_storage)
     write_file(case_file, cfg)
     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
@@ -199,10 +220,10 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 
 if '__main__' in __name__:
 
-    #reliability_values = [0.0000, 0.0001, 0.0003, 0.001, 0.01, 0.1]
-    reliability_values = [0.0001,]
-    wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0]
-    solar_values = [0.0,]# 0.25, 0.5, 0.75, 1.0]
+    reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
+    reliability_values = [0.999,]
+    wind_values = [0.0, 0.25,]# 0.5, 0.75, 1.0]
+    solar_values = [0.0, 0.25,]# 0.5, 0.75, 1.0]
     years = {
             '15-16' : [2015, 2016],
             '16-17' : [2016, 2017],
@@ -211,52 +232,51 @@ if '__main__' in __name__:
     }
 
     input_file = 'reliability_case_191017.csv'
-    global_name = 'reliability_20191118_v1'
+    global_name = 'reliability_20191118_v2'
     path = 'Output_Data/'+global_name
     results = path+'/results'
 
-    for reliability in reliability_values:
-        for solar in solar_values:
-            for wind in wind_values:
+    run_sem = False
+    make_results_files = False
+    run_sem = True
+    make_results_files = True
 
-                solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
-                wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
-                reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
-                case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
+    if run_sem:
+        for reliability in reliability_values:
+            for solar in solar_values:
+                for wind in wind_values:
 
-                # 1st Step
-                cap_NG, cap_storage = -1, -1
-                year_code = '15-16'
-                dta = reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-                    year_code, reliability, solar, wind, cap_NG, cap_storage)
+                    solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
+                    wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
+                    reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
+                    case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
 
-
-                print(dta.head())
-                cap_NG, cap_storage = float(dta['capacity natgas (kW)']), float(dta['capacity storage (kW)'])
-
-                # 2nd Step - run over 3 years with defined capacities
-                for year_code in ['16-17', '17-18', '18-19']:
-                    reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
+                    # 1st Step
+                    cap_NG, cap_storage = -1, -1
+                    year_code = '15-16'
+                    dta = reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
                         year_code, reliability, solar, wind, cap_NG, cap_storage)
 
-    assert(False)
-    #results = '/Users/truggles/IDrive-Sync/Carnegie/SEM-1.2/Output_Data/tests_Jul25_v1/results'
-    #files = get_output_file_names(results+'/tests_Jul25_v1_2019')
-    #results = get_results(files)
-    results = simplify_results("Results.txt", reliability_values, wind_values, solar_values)
+
+                    cap_NG, cap_storage = float(dta['capacity natgas (kW)']), float(dta['capacity storage (kW)'])
+                    float_reli = -1
+
+                    # 2nd Step - run over 3 years with defined capacities
+                    for year_code in ['16-17', '17-18', '18-19']:
+                        reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
+                            year_code, float_reli, solar, wind, cap_NG, cap_storage)
+
+    if make_results_files:
+        files = get_output_file_names(results+'/'+global_name+'_2019')
+        results = get_results(files, global_name)
+
+    results = simplify_results(f"Results_{global_name}.txt")
+    print(results)
 
     ## Take 2D container from get_hourly_info_per_week()
     ## and plot results
     #def plot_daily_over_weeks_surface(hourly_info, save, angle_z=30, angle_plane=50):
 
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-
-    # Make data.
-    X = wind_values
-    Y = solar_values
-    X, Y = np.meshgrid(X, Y)
 
 
     for reliability in reliability_values:
