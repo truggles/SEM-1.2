@@ -261,9 +261,13 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
 if '__main__' in __name__:
 
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
-    reliability_values = [0.999,]
-    wind_values = [0.0, 0.25,]# 0.5, 0.75, 1.0]
-    solar_values = [0.0, 0.25,]# 0.5, 0.75, 1.0]
+    wind_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    solar_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    #reliability_values = [0.999,]
+    wind_values = [0.0, 0.25, 1.0]
+    solar_values = [0.0, 0.25, 1.0]
+
+
     years = {
             '15-16' : [2015, 2016],
             '16-17' : [2016, 2017],
@@ -272,7 +276,7 @@ if '__main__' in __name__:
     }
 
     input_file = 'reliability_case_191017.csv'
-    global_name = 'reliability_20191118_v2'
+    global_name = 'reliability_20191118_v4'
     path = 'Output_Data/'+global_name
     results = path+'/results'
 
