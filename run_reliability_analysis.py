@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,6 +25,7 @@ def get_all_cap_and_costs(file_name):
                         'problem status':np.str,
                         'system cost ($/kW/h)':np.float64,
                         'capacity natgas (kW)':np.float64,
+                        'capacity nuclear (kW)':np.float64,
                         'capacity storage (kWh)':np.float64,
                         'capacity solar (kW)':np.float64,
                         'capacity wind (kW)':np.float64,
@@ -44,7 +47,7 @@ def get_SEM_csv_file(file_name):
 
 # These can be set for each and every run
 def set_all_values(cfg, global_name, case_name, start_year, end_year, reliability,
-        cap_solar, cap_wind, cap_NG, cap_storage):
+        cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage):
 
     new_cfg = []
 
@@ -56,6 +59,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
     cap_solar_position = -999
     cap_wind_position = -999     
     cap_NG_position = -999
+    cap_nuclear_position = -999
     cap_storage_position = -999
 
     for i, line in enumerate(cfg):
@@ -72,6 +76,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
             cap_solar_position = line.index('CAPACITY_SOLAR')
             cap_wind_position = line.index('CAPACITY_WIND')
             cap_NG_position = line.index('CAPACITY_NATGAS')
+            cap_nuclear_position = line.index('CAPACITY_NUCLEAR')
             cap_storage_position = line.index('CAPACITY_STORAGE')
 
         if i == case_data_line+2:
@@ -82,6 +87,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
             line[cap_solar_position] = cap_solar
             line[cap_wind_position] = cap_wind
             line[cap_NG_position] = cap_NG
+            line[cap_nuclear_position] = cap_nuclear
             line[cap_storage_position] = cap_storage
 
         new_cfg.append(line)
@@ -118,17 +124,18 @@ def get_results(files, global_name):
                        info['problem status'].values[0],
                        float(info['case name'].values[0].split('_')[1].replace('p','.')), # reliability value
                        info['system cost ($ or $/kWh)'].values[0],
-                       info['capacity natgas (kW)'].values[0],
+                       #info['capacity natgas (kW)'].values[0],
+                       info['capacity nuclear (kW)'].values[0],
                        info['capacity storage (kW)'].values[0],
                        info['capacity solar (kW)'].values[0],
                        info['capacity wind (kW)'].values[0],
                        info['dispatch unmet demand (kW)'].values[0]
         ]
 
-    print('Writing results to "Results.txt"')
-    ofile = open(f'Results_{global_name}.txt', 'w')
+    print(f'Writing results to "Results_{global_name}.csv"')
+    ofile = open(f'Results_{global_name}.csv', 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity natgas (kW),capacity storage (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
+    ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity nuclear (kW),capacity storage (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -158,7 +165,7 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # vals, std dev, abs rel diff, rel diff
-                simp[reliability][solar][wind] = [[], -999., -999., -999.]
+                simp[reliability][solar][wind] = [[], -999., -999., -999., -999.]
 
     for idx in df.index:
         reli = round(df.loc[idx, 'target reliability'],4)
@@ -190,17 +197,19 @@ def simplify_results(results_file):
                 tot /= len(simp[reli][solar][wind][0])
                 simp[reli][solar][wind][2] = tot_abs
                 simp[reli][solar][wind][3] = tot
+                y = np.array(simp[reli][solar][wind][0])
+                simp[reli][solar][wind][4] = np.sqrt(np.mean(y**2)) # RMS Error
 
     return simp
 
 
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-        year_code, reliability, solar, wind, cap_NG, cap_storage):
+        year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage):
     # Get new copy of SEM cfg
     case_name = case_name_base+'_'+year_code
     case_file = case_name+'.csv'
     cfg = get_SEM_csv_file(input_file)
-    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reliability, solar, wind, cap_NG, cap_storage)
+    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
     write_file(case_file, cfg)
     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
@@ -220,36 +229,37 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 
 
 # 2D matrix showing reliability over different wind and solar builds
-# mthd is 1, 2, 3 and refers to the results array
+# mthd is 1, 2, 3, 4 and refers to the results array
 # 1 = std dev
 # 2 = abs rel diff
 # 3 = rel diff
+# 4 = RMS Error
 def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
 
-    assert(mthd in [1, 2, 3])
+    assert(mthd in [1, 2, 3, 4])
     names = {
             1 : 'Std Dev',
             2 : 'Abs Rel Diff',
             3 : 'Rel Diff',
+            4 : 'RMS Error',
     }
     
-    reli_matrix = np.zeros((len(wind_values),len(solar_values)))
+    print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
+    reli_matrix = np.zeros((len(solar_values),len(wind_values)))
     for solar in solar_values:
         for wind in wind_values:
             reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd]
 
-    print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
-    print(reli_matrix)
-
     fig, ax = plt.subplots()
     #im = ax.imshow(reli_matrix,interpolation='none',extent=[-0.125,1.125,-0.125,1.125],origin='lower', vmin=0.)
-    if mthd == 3:
-        im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
-    else:
-        im = ax.imshow(reli_matrix,interpolation='none',origin='lower', vmin=0.)
+    im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
+    #if mthd == 3:
+    #    im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
+    #else:
+    #    im = ax.imshow(reli_matrix,interpolation='none',origin='lower', vmin=0.)
 
-    plt.xticks(wind_values, wind_values)
-    plt.yticks(wind_values, wind_values)
+    plt.xticks(range(len(wind_values)), wind_values)
+    plt.yticks(range(len(solar_values)), solar_values)
     plt.xlabel("Wind Capacity w.r.t Dem. Mean")
     plt.ylabel("Solar Capacity w.r.t Dem. Mean")
     plt.title("Reliability Uncert. for Target Unmet Demand: {:.2f}%".format(reliability*100))
@@ -263,9 +273,9 @@ if '__main__' in __name__:
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
     wind_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
     solar_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    #reliability_values = [0.999,]
-    wind_values = [0.0, 0.25, 1.0]
-    solar_values = [0.0, 0.25, 1.0]
+    reliability_values = [0.999,]
+    #wind_values = [0.0, 0.25, 1.0]
+    #solar_values = [0.0, 0.25, 1.0]
 
 
     years = {
@@ -276,16 +286,17 @@ if '__main__' in __name__:
     }
 
     input_file = 'reliability_case_191017.csv'
-    global_name = 'reliability_20191118_v4'
+    global_name = 'reliability_20191119_v4'
     path = 'Output_Data/'+global_name
     results = path+'/results'
 
     run_sem = False
     make_results_files = False
     plot_results = False
-    #run_sem = True
-    #make_results_files = True
+    run_sem = True
+    make_results_files = True
     plot_results = True
+    lead_year_code = '16-17'
 
     if run_sem:
         for reliability in reliability_values:
@@ -298,19 +309,21 @@ if '__main__' in __name__:
                     case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
 
                     # 1st Step
-                    cap_NG, cap_storage = -1, -1
-                    year_code = '15-16'
+                    cap_NG, cap_nuclear, cap_storage = -1, -1, -1
                     dta = reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-                        year_code, reliability, solar, wind, cap_NG, cap_storage)
+                        lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
 
-                    cap_NG, cap_storage = float(dta['capacity natgas (kW)']), float(dta['capacity storage (kW)'])
+                    cap_NG, cap_storage = -1, float(dta['capacity storage (kW)'])
+                    cap_nuclear = float(dta['capacity nuclear (kW)'])
                     float_reli = -1
 
                     # 2nd Step - run over 3 years with defined capacities
-                    for year_code in ['16-17', '17-18', '18-19']:
+                    year_codes = list(years.keys())
+                    year_codes.remove(lead_year_code)
+                    for year_code in year_codes:
                         reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-                            year_code, float_reli, solar, wind, cap_NG, cap_storage)
+                            year_code, float_reli, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
     if make_results_files:
         files = get_output_file_names(results+'/'+global_name+'_2019')
@@ -319,12 +332,13 @@ if '__main__' in __name__:
     if not plot_results:
         assert(False)
 
-    results = simplify_results(f"Results_{global_name}.txt")
+    results = simplify_results(f"Results_{global_name}.csv")
     print(results)
 
     ## and plot results
     for reliability in reliability_values:
-        for mthd in [1, 2, 3]:
+        #for mthd in [1, 2, 3, 4]:
+        for mthd in [1,]:
             reliability_matrix(mthd, results, reliability, solar_values, wind_values)
 
 
