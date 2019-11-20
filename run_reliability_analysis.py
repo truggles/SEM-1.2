@@ -315,8 +315,10 @@ if '__main__' in __name__:
     input_file = 'reliability_case_191017.csv'
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
+    if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
+        global_name = 'reliability_{}_{}_wind{}'.format(date, version, str(wind_values[-1]).replace('.','p'))
     path = 'Output_Data/{}/'.format(global_name)
-    results_path = path+'/results'
+    results_path = path+'results'
 
 
     # Print settings:

@@ -5,8 +5,8 @@
 #PBS -V
 #PBS -m e
 #PBS -M truggles@carnegiescience.edu
-#PBS -e /data/cees/truggles/SEM_job_Nv14.err
-#PBS -o /data/cees/truggles/SEM_job_Nv14.out
+#PBS -e /data/cees/truggles/SEM_job_Default.err
+#PBS -o /data/cees/truggles/SEM_job_Default.out
 #
 cd $PBS_O_WORKDIR
 #
