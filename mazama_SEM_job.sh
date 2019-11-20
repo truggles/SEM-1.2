@@ -1,17 +1,17 @@
 #!/bin/tcsh
-#PBS -N TestJobv2
+#PBS -N TestDefault
 #PBS -l nodes=1:ppn=1
 #PBS -q clab
 #PBS -V
 #PBS -m e
 #PBS -M truggles@carnegiescience.edu
-#PBS -e /data/cees/truggles/SEM_job_Nv2.err
-#PBS -o /data/cees/truggles/SEM_job_Nv2.out
+#PBS -e /data/cees/truggles/SEM_job_Nv14.err
+#PBS -o /data/cees/truggles/SEM_job_Nv14.out
 #
 cd $PBS_O_WORKDIR
 #
 module load anaconda/anaconda3
 module load gurobi752
-python Simple_Energy_Model.py ./$input_file
+python run_reliability_analysis.py "date_$DATE" "version_$VERSION" "reliability_$RELIABILITY" "wind_$WIND" "run_sem"
 # end script
 
