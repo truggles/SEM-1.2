@@ -378,48 +378,47 @@ if '__main__' in __name__:
         files = get_output_file_names(results_path+'/'+global_name+'_2019')
         results = get_results(files, global_name)
 
-    if not plot_results:
-        assert(False)
+    if plot_results:
 
-    results = simplify_results(f"Results_{global_name}.csv")
-    print(results)
+        results = simplify_results(f"Results_{global_name}.csv")
+        print(results)
 
-    ## and plot results
-    for reliability in reliability_values:
-        for mthd in [1, 2, 3, 4]:
-            reliability_matrix(mthd, results, reliability, solar_values, wind_values)
-
-
-
-    ## Make some plots of a single fraction over reliability range
-    #techs = OrderedDict()
-    #techs[(0.0, 0.0)] = ["Wind Zero, Solar Zero", []]
-    #techs[(0.5, 0.5)] = ["Wind 0.5, Solar 0.5", []]
-    #techs[(1.0, 0.0)] = ["Wind 1.0, Solar 0.0", []]
-    #techs[(0.0, 1.0)] = ["Wind 0.0, Solar 1.0", []]
-    #techs[(1.0, 1.0)] = ["Wind 1.0, Solar 1.0", []]
-
-    #inverted = sorted(reliability_values, reverse=True)
-    #inverted.remove(0.0)
-    #for reli in inverted:
-    #    for solar in solar_values:
-    #        for wind in wind_values:
-    #            for name, vals in techs.items():
-    #                if name[0] == wind and name[1] == solar:
-    #                    vals[1].append(results[reli][wind][solar][0] * 100)
+        ## and plot results
+        for reliability in reliability_values:
+            for mthd in [1, 2, 3, 4]:
+                reliability_matrix(mthd, results, reliability, solar_values, wind_values)
 
 
 
-    #fig, ax = plt.subplots()
-    #for name, vals in techs.items():
-    #    print(name, vals)
-    #    ax.plot(inverted, vals[1], 'o-', label=vals[0])
+        ## Make some plots of a single fraction over reliability range
+        #techs = OrderedDict()
+        #techs[(0.0, 0.0)] = ["Wind Zero, Solar Zero", []]
+        #techs[(0.5, 0.5)] = ["Wind 0.5, Solar 0.5", []]
+        #techs[(1.0, 0.0)] = ["Wind 1.0, Solar 0.0", []]
+        #techs[(0.0, 1.0)] = ["Wind 0.0, Solar 1.0", []]
+        #techs[(1.0, 1.0)] = ["Wind 1.0, Solar 1.0", []]
 
-    #plt.xlabel("Target Unmet Demand: 1 - (annual delivered/annual demand)")
-    #plt.ylabel("abs[(unmet dem. - target unmet dem.)/target unmet dem.] (%)")
-    #plt.title("Uncertainty in Achieving Annual Reliability Targets")
-    #plt.xscale('log', nonposx='clip')
-    #ax.legend()
-    #plt.savefig("reliability_uncert_comparison.png")
+        #inverted = sorted(reliability_values, reverse=True)
+        #inverted.remove(0.0)
+        #for reli in inverted:
+        #    for solar in solar_values:
+        #        for wind in wind_values:
+        #            for name, vals in techs.items():
+        #                if name[0] == wind and name[1] == solar:
+        #                    vals[1].append(results[reli][wind][solar][0] * 100)
+
+
+
+        #fig, ax = plt.subplots()
+        #for name, vals in techs.items():
+        #    print(name, vals)
+        #    ax.plot(inverted, vals[1], 'o-', label=vals[0])
+
+        #plt.xlabel("Target Unmet Demand: 1 - (annual delivered/annual demand)")
+        #plt.ylabel("abs[(unmet dem. - target unmet dem.)/target unmet dem.] (%)")
+        #plt.title("Uncertainty in Achieving Annual Reliability Targets")
+        #plt.xscale('log', nonposx='clip')
+        #ax.legend()
+        #plt.savefig("reliability_uncert_comparison.png")
     
 

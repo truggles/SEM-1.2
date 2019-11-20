@@ -5,9 +5,9 @@
 
 
 export DATE=20191120
-export VERSION=v3
+export VERSION=v4
 
-for reliability in 0.999; do
+for reliability in 0.9997; do
     for wind in 0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0; do
 
         export RELIABILITY=$reliability
