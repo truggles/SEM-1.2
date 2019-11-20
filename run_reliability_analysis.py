@@ -287,13 +287,15 @@ if '__main__' in __name__:
     run_sem = False
     make_results_file = False
     plot_results = False
-    from_mazama = False # Use after "run_sem" for gathering results and plotting
+    post_mazama = False # Use after "run_sem" for gathering results and plotting
     if 'run_sem' in sys.argv:
         run_sem = True
     if 'make_results_file' in sys.argv:
         make_results_file = True
     if 'plot_results' in sys.argv:
         plot_results = True
+    if 'post_mazama' in sys.argv:
+        post_mazama = True
 
     # Default scans
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
@@ -307,11 +309,6 @@ if '__main__' in __name__:
 
     date = '20191119' # default
     version = 'v11'
-    date = '20191120' # default
-    version = 'v4'
-    #make_results_file = True
-    plot_results = True
-    from_mazama = True
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -327,7 +324,7 @@ if '__main__' in __name__:
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
         global_name = 'reliability_{}_{}_wind{}'.format(date, version, str(wind_values[-1]).replace('.','p'))
-    if from_mazama:
+    if post_mazama:
         global_name = 'reliability_{}_{}_wind*'.format(date, version, str(wind_values[-1]).replace('.','p'))
     path = 'Output_Data/{}/'.format(global_name)
     results_path = path+'results'
