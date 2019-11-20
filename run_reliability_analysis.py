@@ -274,7 +274,7 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
     plt.ylabel("Solar Capacity w.r.t Dem. Mean")
     plt.title("Reliability Uncert. for Target Unmet Demand: {:.2f}%".format(reliability*100))
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"{names[mthd]} of (unmet - tgt. unmet)/tgt. unmet (%)")
+    cbar.ax.set_ylabel(f"{names[mthd]} of (unmet - tgt. unmet)/tgt. unmet")
     plt.savefig("plots_reli/reliability_uncert_for_target_{}_{}.png".format(str(reliability).replace('.','p'), names[mthd].replace(' ','_')))
     plt.clf()
 
@@ -428,7 +428,7 @@ if '__main__' in __name__:
         #    ax.plot(inverted, vals[1], 'o-', label=vals[0])
 
         #plt.xlabel("Target Unmet Demand: 1 - (annual delivered/annual demand)")
-        #plt.ylabel("abs[(unmet dem. - target unmet dem.)/target unmet dem.] (%)")
+        #plt.ylabel("abs[(unmet dem. - target unmet dem.)/target unmet dem.]")
         #plt.title("Uncertainty in Achieving Annual Reliability Targets")
         #plt.xscale('log', nonposx='clip')
         #ax.legend()
