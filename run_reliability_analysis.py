@@ -174,8 +174,12 @@ def simplify_results(results_file):
         unmet = df.loc[idx, 'dispatch unmet demand (kW)']
 
         # Remove entries which were from Step 1 with fixed
-        # target reliability (years 2015-2016)
-        if '15-16' in df.loc[idx, 'case name']:
+        # target reliability
+        year_info = df.loc[idx, 'case name'].split('_')
+        for val in year_info:
+            if 'lead' in val:
+                lead_year = val.replace('lead','')
+        if year_info[-1] == lead_year:
             continue
 
         if reli == 0.0:
@@ -204,9 +208,9 @@ def simplify_results(results_file):
 
 
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-        year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage):
+        lead_year_code, year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage):
     # Get new copy of SEM cfg
-    case_name = case_name_base+'_'+year_code
+    case_name = case_name_base+'_lead'+lead_year_code+'_'+year_code
     case_file = case_name+'.csv'
     cfg = get_SEM_csv_file(input_file)
     cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
@@ -224,6 +228,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
         os.makedirs(results)
     copy2(files[-1], results)
     os.remove(files[-1])
+    os.remove(case_file)
 
     return dta
 
@@ -270,12 +275,64 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
 
 if '__main__' in __name__:
 
+    import sys
+    print(f"\nRunning {sys.argv[0]}")
+    print(f"Input arg list {sys.argv}")
+
+    run_sem = False
+    make_results_file = False
+    plot_results = False
+    plot_results = False
+    if 'run_sem' in sys.argv:
+        run_sem = True
+    if 'make_results_file' in sys.argv:
+        make_results_file = True
+    if 'plot_results' in sys.argv:
+        plot_results = True
+
+    # Default scans
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
     wind_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
     solar_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    solar_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
     reliability_values = [0.999,]
     #wind_values = [0.0, 0.25, 1.0]
     #solar_values = [0.0, 0.25, 1.0]
+
+    date = '20191119' # default
+    version = 'v11'
+    for arg in sys.argv:
+        if 'date' in arg:
+            date = arg.split('_')[1]
+        if 'version' in arg:
+            version = arg.split('_')[1]
+        if 'wind' in arg:
+            wind_values = [float(arg.split('_')[1]),]
+        if 'reliability' in arg and not 'analysis' in arg:
+            reliability_values = [float(arg.split('_')[1]),]
+
+    input_file = 'reliability_case_191017.csv'
+    version = f'{version}'
+    global_name = 'reliability_{}_{}'.format(date, version)
+    path = 'Output_Data/{}/'.format(global_name)
+    results_path = path+'/results'
+
+
+    # Print settings:
+    print(f'\nGlobal name {global_name}')
+    print(f'Output path {path}')
+    print(f'Results path {results_path}')
+    print(f'Input File: {input_file}')
+    print(f'Reliability Values: {reliability_values}')
+    print(f'Wind Values: {wind_values}')
+    print(f'Solar Values: {solar_values}')
+    print(f'\n - RUN_SEM={run_sem}')
+    print(f' - MAKE_RESULTS_FILE={make_results_file}')
+    print(f' - MAKE_PLOTS={plot_results}\n')
+
+
+
 
 
     years = {
@@ -285,48 +342,38 @@ if '__main__' in __name__:
             '18-19' : [2018, 2019],
     }
 
-    input_file = 'reliability_case_191017.csv'
-    global_name = 'reliability_20191119_v4'
-    path = 'Output_Data/'+global_name
-    results = path+'/results'
 
-    run_sem = False
-    make_results_files = False
-    plot_results = False
-    run_sem = True
-    make_results_files = True
-    plot_results = True
-    lead_year_code = '16-17'
 
     if run_sem:
         for reliability in reliability_values:
             for solar in solar_values:
                 for wind in wind_values:
+                    for lead_year_code in years.keys():
 
-                    solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
-                    wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
-                    reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
-                    case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
+                        solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
+                        wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
+                        reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
+                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
 
-                    # 1st Step
-                    cap_NG, cap_nuclear, cap_storage = -1, -1, -1
-                    dta = reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-                        lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
+                        # 1st Step
+                        cap_NG, cap_nuclear, cap_storage = -1, -1, -1
+                        dta = reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
+                            lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
 
-                    cap_NG, cap_storage = -1, float(dta['capacity storage (kW)'])
-                    cap_nuclear = float(dta['capacity nuclear (kW)'])
-                    float_reli = -1
+                        cap_NG, cap_storage = -1, float(dta['capacity storage (kW)'])
+                        cap_nuclear = float(dta['capacity nuclear (kW)'])
+                        float_reli = -1
 
-                    # 2nd Step - run over 3 years with defined capacities
-                    year_codes = list(years.keys())
-                    year_codes.remove(lead_year_code)
-                    for year_code in year_codes:
-                        reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-                            year_code, float_reli, solar, wind, cap_NG, cap_nuclear, cap_storage)
+                        # 2nd Step - run over 3 years with defined capacities
+                        year_codes = list(years.keys())
+                        year_codes.remove(lead_year_code)
+                        for year_code in year_codes:
+                            reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
+                                lead_year_code, year_code, float_reli, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
-    if make_results_files:
-        files = get_output_file_names(results+'/'+global_name+'_2019')
+    if make_results_file:
+        files = get_output_file_names(results_path+'/'+global_name+'_2019')
         results = get_results(files, global_name)
 
     if not plot_results:
@@ -337,8 +384,7 @@ if '__main__' in __name__:
 
     ## and plot results
     for reliability in reliability_values:
-        #for mthd in [1, 2, 3, 4]:
-        for mthd in [1,]:
+        for mthd in [1, 2, 3, 4]:
             reliability_matrix(mthd, results, reliability, solar_values, wind_values)
 
 
