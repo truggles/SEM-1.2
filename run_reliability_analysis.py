@@ -10,6 +10,7 @@ import os
 from glob import glob
 from shutil import copy2
 from collections import OrderedDict
+import re
 
 
 
@@ -132,8 +133,12 @@ def get_results(files, global_name):
                        info['dispatch unmet demand (kW)'].values[0]
         ]
 
-    print(f'Writing results to "Results_{global_name}.csv"')
-    ofile = open(f'Results_{global_name}.csv', 'w')
+
+    # Remove * in name that was introduced for searching regex
+    save_name = re.sub("\*","",global_name)
+    print(f'Writing results to "Results_{save_name}.csv"')
+    ofile = open(f'Results_{save_name}.csv', 'w')
+    
     keys = sorted(keys)
     ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity nuclear (kW),capacity storage (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
     for key in keys:
@@ -282,7 +287,7 @@ if '__main__' in __name__:
     run_sem = False
     make_results_file = False
     plot_results = False
-    plot_results = False
+    from_mazama = False # Use after "run_sem" for gathering results and plotting
     if 'run_sem' in sys.argv:
         run_sem = True
     if 'make_results_file' in sys.argv:
@@ -294,14 +299,19 @@ if '__main__' in __name__:
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
     wind_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
     solar_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    #wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
     #solar_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    reliability_values = [0.999,]
+    reliability_values = [0.9997,]
     #wind_values = [0.0, 0.25, 1.0]
     #solar_values = [0.0, 0.25, 1.0]
 
     date = '20191119' # default
     version = 'v11'
+    date = '20191120' # default
+    version = 'v4'
+    #make_results_file = True
+    plot_results = True
+    from_mazama = True
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -317,6 +327,8 @@ if '__main__' in __name__:
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
         global_name = 'reliability_{}_{}_wind{}'.format(date, version, str(wind_values[-1]).replace('.','p'))
+    if from_mazama:
+        global_name = 'reliability_{}_{}_wind*'.format(date, version, str(wind_values[-1]).replace('.','p'))
     path = 'Output_Data/{}/'.format(global_name)
     results_path = path+'results'
 
@@ -380,6 +392,7 @@ if '__main__' in __name__:
 
     if plot_results:
 
+        global_name = re.sub("\*","",global_name)
         results = simplify_results(f"Results_{global_name}.csv")
         print(results)
 
