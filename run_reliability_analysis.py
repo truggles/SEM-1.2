@@ -282,7 +282,7 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
             2 : 'Abs Rel Diff',
             3 : 'Rel Diff',
             4 : 'RMS Error',
-            5 : 'Mean Unmet (kWh)',
+            5 : 'Mean Unmet Demand (kWh)',
             6 : 'Mean Cap Storage (kWh)',
             7 : 'Mean Cap Nuclear (kW)',
     }
@@ -293,7 +293,7 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
         for wind in wind_values:
             reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd+3] # This was shifted by adding more lists to front of main list
 
-    fig, ax = plt.subplots(figsize=(9, 8))
+    fig, ax = plt.subplots(figsize=(4.5, 4))
     ### FIXME - crazy soln is making one cell stick out over all the others
     if reliability == 0.9997:
         false_z_max = reli_matrix.flatten()
@@ -306,10 +306,10 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
     plt.yticks(range(len(solar_values)), solar_values)
     plt.xlabel("Wind Capacity w.r.t Dem. Mean")
     plt.ylabel("Solar Capacity w.r.t Dem. Mean")
-    plt.title("Target Unmet Demand: {:.2f}%".format(reliability*100))
     cbar = ax.figure.colorbar(im)
-    app = ' of (unmet - tgt. unmet)/tgt. unmet' if mthd <= 4 else ''
+    app = ' of (unmet - target)/target' if mthd <= 4 else ''
     cbar.ax.set_ylabel(f"{names[mthd]}{app}")
+    plt.title(f"{names[mthd]}{app}")
     plt.tight_layout()
     # Modify save_name to make more LaTeX-able
     if 'ZS' in save_name:
