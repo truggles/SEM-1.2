@@ -157,6 +157,8 @@ def simplify_results(results_file):
 
     reliability_values, wind_values, solar_values = [], [], []
     for idx in df.index:
+        if df.loc[idx, 'problem status'] != 'optimal':
+            continue
         if df.loc[idx, 'target reliability'] not in reliability_values:
             reliability_values.append(round(df.loc[idx, 'target reliability'],4))
         if df.loc[idx, 'capacity wind (kW)'] not in wind_values:
@@ -170,9 +172,15 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # vals, std dev, abs rel diff, rel diff
-                simp[reliability][solar][wind] = [[], -999., -999., -999., -999.]
+                simp[reliability][solar][wind] = [[], 0., 0., 0., 0.]
 
     for idx in df.index:
+        
+        # Skip non-optimal solutions:
+        if df.loc[idx, 'problem status'] != 'optimal':
+            print(f" ... skipping {df.loc[idx, 'case name']} at idx: {idx} soln: {df.loc[idx, 'problem status']}")
+            continue
+
         reli = round(df.loc[idx, 'target reliability'],4)
         solar = round(df.loc[idx, 'capacity solar (kW)'],2)
         wind = round(df.loc[idx, 'capacity wind (kW)'],2)
@@ -268,13 +276,14 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
     #else:
     #    im = ax.imshow(reli_matrix,interpolation='none',origin='lower', vmin=0.)
 
-    plt.xticks(range(len(wind_values)), wind_values)
+    plt.xticks(range(len(wind_values)), wind_values, rotation=90)
     plt.yticks(range(len(solar_values)), solar_values)
     plt.xlabel("Wind Capacity w.r.t Dem. Mean")
     plt.ylabel("Solar Capacity w.r.t Dem. Mean")
     plt.title("Reliability Uncert. for Target Unmet Demand: {:.2f}%".format(reliability*100))
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f"{names[mthd]} of (unmet - tgt. unmet)/tgt. unmet")
+    plt.tight_layout()
     plt.savefig("plots_reli/reliability_uncert_for_target_{}_{}.png".format(str(reliability).replace('.','p'), names[mthd].replace(' ','_')))
     plt.clf()
 
