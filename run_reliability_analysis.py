@@ -181,8 +181,8 @@ def simplify_results(results_file):
         simp[reliability] = {}
         for solar in solar_values:
             simp[reliability][solar] = {}
-            for wind in wind_values:            # vals, std dev, abs rel diff, rel diff
-                simp[reliability][solar][wind] = [[], 0., 0., 0., 0.]
+            for wind in wind_values:            # rel vals, unmet, cap storage, cap nuclear, std dev, abs rel diff, rel diff, unmet, storage, nuclear
+                simp[reliability][solar][wind] = [[], [], [], [], 0., 0., 0., 0., 0., 0., 0.]
 
     for idx in df.index:
         
@@ -195,6 +195,8 @@ def simplify_results(results_file):
         solar = round(df.loc[idx, 'capacity solar (kW)'],2)
         wind = round(df.loc[idx, 'capacity wind (kW)'],2)
         unmet = df.loc[idx, 'dispatch unmet demand (kW)']
+        cap_storage = df.loc[idx, 'capacity storage (kW)']
+        cap_nuclear = df.loc[idx, 'capacity nuclear (kW)']
 
         # Remove entries which were from Step 1 with fixed
         # target reliability
@@ -210,22 +212,28 @@ def simplify_results(results_file):
         else:
             to_add = (unmet - (1. - reli))/(1. - reli)
         simp[reli][solar][wind][0].append(to_add)
+        simp[reli][solar][wind][1].append(unmet)
+        simp[reli][solar][wind][2].append(cap_storage)
+        simp[reli][solar][wind][3].append(cap_nuclear)
 
     for reli in reliability_values:
         for solar in solar_values:
             for wind in wind_values:
                 if len(simp[reli][solar][wind][0]) == 0: continue
-                simp[reli][solar][wind][1] = np.std(simp[reli][solar][wind][0])
+                simp[reli][solar][wind][4] = np.std(simp[reli][solar][wind][0])
                 tot_abs, tot = 0., 0.
                 for val in simp[reli][solar][wind][0]:
                     tot_abs += abs(val)
                     tot += val
                 tot_abs /= len(simp[reli][solar][wind][0])
                 tot /= len(simp[reli][solar][wind][0])
-                simp[reli][solar][wind][2] = tot_abs
-                simp[reli][solar][wind][3] = tot
+                simp[reli][solar][wind][5] = tot_abs
+                simp[reli][solar][wind][6] = tot
                 y = np.array(simp[reli][solar][wind][0])
-                simp[reli][solar][wind][4] = np.sqrt(np.mean(y**2)) # RMS Error
+                simp[reli][solar][wind][7] = np.sqrt(np.mean(y**2)) # RMS Error
+                simp[reli][solar][wind][8] = np.mean(simp[reli][solar][wind][1])
+                simp[reli][solar][wind][9] = np.mean(simp[reli][solar][wind][2])
+                simp[reli][solar][wind][10] = np.mean(simp[reli][solar][wind][3])
 
     return simp
 
@@ -263,23 +271,29 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 # 2 = abs rel diff
 # 3 = rel diff
 # 4 = RMS Error
-def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
+# 5 = Unmet
+# 6 = Cap Storage
+# 7 = Cap Nuclear
+def reliability_matrix(mthd, results, reliability, solar_values, wind_values, save_name):
 
-    assert(mthd in [1, 2, 3, 4])
+    assert(mthd in range(1,8))
     names = {
             1 : 'Std Dev',
             2 : 'Abs Rel Diff',
             3 : 'Rel Diff',
             4 : 'RMS Error',
+            5 : 'Mean Unmet (kWh)',
+            6 : 'Mean Cap Storage (kWh)',
+            7 : 'Mean Cap Nuclear (kW)',
     }
     
     print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
     reli_matrix = np.zeros((len(solar_values),len(wind_values)))
     for solar in solar_values:
         for wind in wind_values:
-            reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd]
+            reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd+3] # This was shifted by adding more lists to front of main list
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(9, 8))
     ### FIXME - crazy soln is making one cell stick out over all the others
     if reliability == 0.9997:
         false_z_max = reli_matrix.flatten()
@@ -292,11 +306,17 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
     plt.yticks(range(len(solar_values)), solar_values)
     plt.xlabel("Wind Capacity w.r.t Dem. Mean")
     plt.ylabel("Solar Capacity w.r.t Dem. Mean")
-    plt.title("Reliability Uncert. for Target Unmet Demand: {:.2f}%".format(reliability*100))
+    plt.title("Target Unmet Demand: {:.2f}%".format(reliability*100))
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"{names[mthd]} of (unmet - tgt. unmet)/tgt. unmet")
+    app = ' of (unmet - tgt. unmet)/tgt. unmet' if mthd <= 4 else ''
+    cbar.ax.set_ylabel(f"{names[mthd]}{app}")
     plt.tight_layout()
-    plt.savefig("plots_reli/reliability_uncert_for_target_{}_{}.png".format(str(reliability).replace('.','p'), names[mthd].replace(' ','_')))
+    # Modify save_name to make more LaTeX-able
+    if 'ZS' in save_name:
+        save_name = 'ZeroStorage'
+    else:
+        save_name = 'Normal'
+    plt.savefig("plots_reli/reliability_uncert_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].replace(' ','_').replace('(','').replace(')','')))
     plt.clf()
 
 if '__main__' in __name__:
@@ -427,8 +447,8 @@ if '__main__' in __name__:
 
         ## and plot results
         for reliability in reliability_values:
-            for mthd in [1, 2, 3, 4]:
-                reliability_matrix(mthd, results, reliability, solar_values, wind_values)
+            for mthd in [1, 5, 6, 7]:
+                reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
 
