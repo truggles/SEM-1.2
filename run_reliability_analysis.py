@@ -153,7 +153,7 @@ def get_results(files, global_name):
 # many many times
 def simplify_results(results_file):
     df = pd.read_csv(results_file, index_col=False)
-    print(df.head())
+    #print(df.head())
 
     reliability_values, wind_values, solar_values = [], [], []
     for idx in df.index:
@@ -269,12 +269,13 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values):
             reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd]
 
     fig, ax = plt.subplots()
-    #im = ax.imshow(reli_matrix,interpolation='none',extent=[-0.125,1.125,-0.125,1.125],origin='lower', vmin=0.)
-    im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
-    #if mthd == 3:
-    #    im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
-    #else:
-    #    im = ax.imshow(reli_matrix,interpolation='none',origin='lower', vmin=0.)
+    ### FIXME - crazy soln is making one cell stick out over all the others
+    if reliability == 0.9997:
+        false_z_max = reli_matrix.flatten()
+        false_z_max.sort()
+        im = ax.imshow(reli_matrix,interpolation='none',origin='lower',vmax=false_z_max[-2])
+    else:
+        im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
 
     plt.xticks(range(len(wind_values)), wind_values, rotation=90)
     plt.yticks(range(len(solar_values)), solar_values)
@@ -349,7 +350,8 @@ if '__main__' in __name__:
     print(f'Solar Values: {solar_values}')
     print(f'\n - RUN_SEM={run_sem}')
     print(f' - MAKE_RESULTS_FILE={make_results_file}')
-    print(f' - MAKE_PLOTS={plot_results}\n')
+    print(f' - PLOT_RESULTS={plot_results}')
+    print(f' - POST_MAZAMA={post_mazama}\n')
 
 
 
@@ -400,7 +402,7 @@ if '__main__' in __name__:
 
         global_name = re.sub("\*","",global_name)
         results = simplify_results(f"Results_{global_name}.csv")
-        print(results)
+        #print(results)
 
         ## and plot results
         for reliability in reliability_values:
