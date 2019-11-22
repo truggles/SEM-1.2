@@ -113,6 +113,14 @@ def get_output_file_names(path):
         print("This many files were found matching {}*.csv: {}".format(path, len(files)))
     return files
 
+def del_pickle_files(path):
+
+    files = glob(path+'*.pickle')
+    for f in files:
+        print(f"deleting pickle file: {f}")
+        os.remove(f)
+
+
 def get_results(files, global_name):
 
     results = {}
@@ -242,6 +250,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
     copy2(files[-1], results)
     os.remove(files[-1])
     os.remove(case_file)
+    del_pickle_files(path)
 
     return dta
 
@@ -297,6 +306,7 @@ if '__main__' in __name__:
     run_sem = False
     make_results_file = False
     plot_results = False
+    zero_storage = False # Include storage in options
     post_mazama = False # Use after "run_sem" for gathering results and plotting
     if 'run_sem' in sys.argv:
         run_sem = True
@@ -304,6 +314,8 @@ if '__main__' in __name__:
         make_results_file = True
     if 'plot_results' in sys.argv:
         plot_results = True
+    if 'zero_storage' in sys.argv:
+        zero_storage = True
     if 'post_mazama' in sys.argv:
         post_mazama = True
 
@@ -330,6 +342,8 @@ if '__main__' in __name__:
             reliability_values = [float(arg.split('_')[1]),]
 
     input_file = 'reliability_case_191017.csv'
+    if zero_storage:
+        input_file = 'reliability_case_no_storage_191017.csv'
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
@@ -351,6 +365,7 @@ if '__main__' in __name__:
     print(f'\n - RUN_SEM={run_sem}')
     print(f' - MAKE_RESULTS_FILE={make_results_file}')
     print(f' - PLOT_RESULTS={plot_results}')
+    print(f' - ZERO_STORAGE={zero_storage}')
     print(f' - POST_MAZAMA={post_mazama}\n')
 
 
@@ -383,7 +398,11 @@ if '__main__' in __name__:
                             lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
 
-                        cap_NG, cap_storage = -1, float(dta['capacity storage (kW)'])
+                        cap_NG = -1
+                        if 'capacity storage (kW)' in dta.columns:
+                            cap_storage = float(dta['capacity storage (kW)'])
+                        else:
+                            cap_storage = -1
                         cap_nuclear = float(dta['capacity nuclear (kW)'])
                         float_reli = -1
 
