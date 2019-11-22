@@ -129,6 +129,8 @@ def get_results(files, global_name):
     for f in files:
         info = get_all_cap_and_costs(f)
         keys.append(info['case name'].values[0])
+        if not hasattr(info, 'capacity storage (kW)'):
+            info['capacity storage (kW)'] = 0.
         results[info['case name'].values[0]] = [
                        info['problem status'].values[0],
                        float(info['case name'].values[0].split('_')[1].replace('p','.')), # reliability value
@@ -414,7 +416,7 @@ if '__main__' in __name__:
                                 lead_year_code, year_code, float_reli, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
     if make_results_file:
-        files = get_output_file_names(results_path+'/'+global_name+'_2019')
+        files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
         results = get_results(files, global_name)
 
     if plot_results:
