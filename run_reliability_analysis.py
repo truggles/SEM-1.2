@@ -390,7 +390,7 @@ if '__main__' in __name__:
                         solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
                         wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
                         reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
-                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str
+                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+'_'+version+'_'+date
 
                         # 1st Step
                         cap_NG, cap_nuclear, cap_storage = -1, -1, -1
