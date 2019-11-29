@@ -623,8 +623,8 @@ def core_model (global_dic, case_dic):
             prob.solve(solver = 'GUROBI', seed = 42, NumericFocus=3)
             print(prob.status)
             if prob.status != 'optimal':
-                print('Trying to solve again with NumericFocus=3 and FeasibilityTol = 1e-3 (default is 1e-6)')
-                prob.solve(solver = 'GUROBI', seed = 42, NumericFocus=3, FeasibilityTol=1e-3)
+                print('Trying to solve again with NumericFocus=3 and FeasibilityTol = 1e-2 (default is 1e-6)')
+                prob.solve(solver = 'GUROBI', seed = 42, NumericFocus=3, FeasibilityTol=1e-2)
                 print(prob.status)
                 if prob.status != 'solved' and prob.status != 'optimal':
                     raise cvx.error.SolverError
