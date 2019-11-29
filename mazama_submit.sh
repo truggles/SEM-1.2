@@ -4,11 +4,13 @@
 
 
 
-export DATE=20191120
-export VERSION=v13
+export DATE=20191128
+version=v1
 
-for reliability in 0.99; do
-    for wind in 0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.5 4.0 4.5 5.0; do
+for reliability in 1.0 0.9999 0.9997 0.999 0.99 0.9; do
+    #export VERSION=${version}ZS${reliability}
+    export VERSION=${version}N${reliability}
+    for wind in 0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0; do
 
         export RELIABILITY=$reliability
         export WIND=$wind
