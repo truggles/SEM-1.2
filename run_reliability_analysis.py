@@ -169,11 +169,11 @@ def simplify_results(results_file):
     for idx in df.index:
         if df.loc[idx, 'problem status'] != 'optimal':
             continue
-        if df.loc[idx, 'target reliability'] not in reliability_values:
+        if round(df.loc[idx, 'target reliability'],4) not in reliability_values:
             reliability_values.append(round(df.loc[idx, 'target reliability'],4))
-        if df.loc[idx, 'capacity wind (kW)'] not in wind_values:
+        if round(df.loc[idx, 'capacity wind (kW)'],2) not in wind_values:
             wind_values.append(round(df.loc[idx, 'capacity wind (kW)'],2))
-        if df.loc[idx, 'capacity solar (kW)'] not in solar_values:
+        if round(df.loc[idx, 'capacity solar (kW)'],2) not in solar_values:
             solar_values.append(round(df.loc[idx, 'capacity solar (kW)'],2))
 
     simp = {}
