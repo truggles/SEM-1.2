@@ -250,6 +250,13 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 
     # Read results
     files = get_output_file_names(path+'/'+global_name+'_2019')
+    # Try to read results, if Gurobi failed ungracefully, try running again
+    # If it fails a second time, give up. (don't want to get stuck in some while loop
+    # waiting for Gurobi to suceed on an impossible model)
+    if len(files) == 0:
+        print("ERROR: XXX Initial solve failed, trying again")
+        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+        files = get_output_file_names(path+'/'+global_name+'_2019')
     f_name = files[-1].split('/')[-1]
     print(f_name)
     dta = get_cap_and_costs(path, f_name)
