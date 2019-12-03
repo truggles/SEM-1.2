@@ -445,7 +445,8 @@ if '__main__' in __name__:
                         wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
                         reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
                         nuclear_str = '_nukeSF_'+str(round(nuclear_SF,2)).replace('.','p') if qmu_scan else ''
-                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+nuclear_str+'_'+version+'_'+date
+                        storage_str = '_storageSF_Def' if qmu_scan else ''
+                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+nuclear_str+storage_str+'_'+version+'_'+date
 
                         # 1st Step
                         cap_NG, cap_nuclear, cap_storage = -1, -1, -1
@@ -453,7 +454,15 @@ if '__main__' in __name__:
                             lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
 
+                        print(f"\nStorage SFs: {storage_SFs}\n")
                         for storage_SF in storage_SFs: # Defaults to [1.0,] unless specified
+                            print(f"\nStorage SF: {storage_SF}\n")
+                            if qmu_scan:
+                                storage_str = '_storageSF_'+str(round(storage_SF,2)).replace('.','p')
+                                case_name_base_new = case_name_base.replace('_storageSF_Def', storage_str)
+                            else:
+                                case_name_base_new = case_name_base
+
                             cap_NG = -1
                             if 'capacity storage (kW)' in dta.columns:
                                 cap_storage = float(dta['capacity storage (kW)'])*storage_SF # SF defaults to 1.0 unless specified
@@ -472,7 +481,7 @@ if '__main__' in __name__:
                             year_codes = list(years.keys())
                             year_codes.remove(lead_year_code)
                             for year_code in year_codes:
-                                reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
+                                reconfigure_and_run(path, results_path, case_name_base_new, input_file, global_name, 
                                     lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage)
 
     if make_results_file:
