@@ -337,6 +337,7 @@ if '__main__' in __name__:
     plot_results = False
     zero_storage = False # Include storage in options
     post_mazama = False # Use after "run_sem" for gathering results and plotting
+    qmu_scan = False # Use with fixed wind and solar values to scan nuclear and storage SFs
     if 'run_sem' in sys.argv:
         run_sem = True
     if 'make_results_file' in sys.argv:
@@ -347,6 +348,8 @@ if '__main__' in __name__:
         zero_storage = True
     if 'post_mazama' in sys.argv:
         post_mazama = True
+    if 'qmu_scan' in sys.argv:
+        qmu_scan = True
 
     # Default scans
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
@@ -357,6 +360,10 @@ if '__main__' in __name__:
     reliability_values = [0.9997,]
     #wind_values = [0.0, 0.25, 1.0]
     #solar_values = [0.0, 0.25, 1.0]
+    nuclear_SF = 1.0
+    storage_SFs = [1.0,]
+    if qmu_scan:
+        storage_SFs = np.arange(1.0, 2.01, 0.1)
 
     date = '20191119' # default
     version = 'v11'
@@ -371,6 +378,8 @@ if '__main__' in __name__:
             solar_values = [float(arg.split('_')[1]),]
         if 'reliability' in arg and not 'analysis' in arg:
             reliability_values = [float(arg.split('_')[1]),]
+        if 'nuclear_SF' in arg:
+            nuclear_SF = float(arg.split('_')[-1])
 
     input_file = 'reliability_case_191017.csv'
     if zero_storage:
@@ -379,6 +388,8 @@ if '__main__' in __name__:
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
         global_name = 'reliability_{}_{}_wind{}'.format(date, version, str(wind_values[-1]).replace('.','p'))
+    if qmu_scan:
+        global_name += '_nukeSF{}'.format(str(round(nuclear_SF,2)).replace('.','p'))
     if post_mazama:
         global_name = 'reliability_{}_{}_wind*'.format(date, version, str(wind_values[-1]).replace('.','p'))
     path = 'Output_Data/{}/'.format(global_name)
@@ -393,10 +404,14 @@ if '__main__' in __name__:
     print(f'Reliability Values: {reliability_values}')
     print(f'Wind Values: {wind_values}')
     print(f'Solar Values: {solar_values}')
+    if qmu_scan:
+        print(f'Nuclear SF: {nuclear_SF}')
+        print(f'Storage SFs: {storage_SFs}')
     print(f'\n - RUN_SEM={run_sem}')
     print(f' - MAKE_RESULTS_FILE={make_results_file}')
     print(f' - PLOT_RESULTS={plot_results}')
     print(f' - ZERO_STORAGE={zero_storage}')
+    print(f' - QMU_SCAN={qmu_scan}')
     print(f' - POST_MAZAMA={post_mazama}\n')
 
 
@@ -421,7 +436,8 @@ if '__main__' in __name__:
                         solar_str = 'solar_'+str(round(solar,2)).replace('.','p')
                         wind_str = 'wind_'+str(round(wind,2)).replace('.','p')
                         reliability_str = 'rel_'+str(round(reliability,4)).replace('.','p')
-                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+'_'+version+'_'+date
+                        nuclear_str = '_nukeSF_'+str(round(nuclear_SF,2)).replace('.','p') if qmu_scan else ''
+                        case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+nuclear_str+'_'+version+'_'+date
 
                         # 1st Step
                         cap_NG, cap_nuclear, cap_storage = -1, -1, -1
@@ -429,26 +445,27 @@ if '__main__' in __name__:
                             lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
 
 
-                        cap_NG = -1
-                        if 'capacity storage (kW)' in dta.columns:
-                            cap_storage = float(dta['capacity storage (kW)'])
-                        else:
-                            cap_storage = -1
-                        cap_nuclear = float(dta['capacity nuclear (kW)'])
+                        for storage_SF in storage_SFs: # Defaults to [1.0,] unless specified
+                            cap_NG = -1
+                            if 'capacity storage (kW)' in dta.columns:
+                                cap_storage = float(dta['capacity storage (kW)'])*storage_SF # SF defaults to 1.0 unless specified
+                            else:
+                                cap_storage = -1
+                            cap_nuclear = float(dta['capacity nuclear (kW)'])*nuclear_SF # SF defaults to 1.0 unless specified
 
-                        # XXX FOR EIA BASELINE TEST
-                        #cap_wind = float(dta['capacity wind (kW)'])
-                        #cap_solar = float(dta['capacity solar (kW)'])
-                        cap_wind = wind
-                        cap_solar = solar
-                        float_reli = -1
+                            # XXX FOR EIA BASELINE TEST
+                            #cap_wind = float(dta['capacity wind (kW)'])
+                            #cap_solar = float(dta['capacity solar (kW)'])
+                            cap_wind = wind
+                            cap_solar = solar
+                            float_reli = -1
 
-                        # 2nd Step - run over 3 years with defined capacities
-                        year_codes = list(years.keys())
-                        year_codes.remove(lead_year_code)
-                        for year_code in year_codes:
-                            reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
-                                lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage)
+                            # 2nd Step - run over 3 years with defined capacities
+                            year_codes = list(years.keys())
+                            year_codes.remove(lead_year_code)
+                            for year_code in year_codes:
+                                reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
+                                    lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage)
 
     if make_results_file:
         files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
