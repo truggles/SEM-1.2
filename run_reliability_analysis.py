@@ -120,6 +120,13 @@ def del_pickle_files(path):
         print(f"deleting pickle file: {f}")
         os.remove(f)
 
+def del_csv_files(path):
+
+    files = glob(path+'*.csv')
+    for f in files:
+        print(f"deleting LONG csv file: {f}")
+        os.remove(f)
+
 
 def get_results(files, global_name):
 
@@ -268,6 +275,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
     os.remove(files[-1])
     os.remove(case_file)
     del_pickle_files(path)
+    del_csv_files(path)
 
     return dta
 
