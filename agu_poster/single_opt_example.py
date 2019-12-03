@@ -90,12 +90,15 @@ def print_variance(df):
         for col in df.columns:
             if col not in info:
                 continue
-            print(col, round(np.std(df[col]),4), round(np.std(df[col])/np.mean(df[col]),4), round((max(df[col]) - min(df[col]))/np.mean(df[col]),4))
+            print(col, round(np.std(df[col]),4), round(np.std(df[col])/np.mean(df[col]),4), 
+                    round((max(df[col]) - min(df[col]))/np.mean(df[col]),4), 
+                    round(np.mean(df[col]),4),
+                    round(np.mean(df[col])*us_mean_dem,4))
     
 
 file_map = { # Results file : associated unmet demand
     'Results_reliability_20191201_v1_wind.csv' : 0.001,
-    'Results_reliability_20191201_v2_wind.csv' : 0.0003,
+    #'Results_reliability_20191201_v2_wind.csv' : 0.0003,
 }
 
 for f, unmet in file_map.items():

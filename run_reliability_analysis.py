@@ -258,8 +258,8 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
         subprocess.call(["python", "Simple_Energy_Model.py", case_file])
         files = get_output_file_names(path+'/'+global_name+'_2019')
     f_name = files[-1].split('/')[-1]
-    print(f_name)
     dta = get_cap_and_costs(path, f_name)
+    print("Results file:", f_name, dta['case name'])
 
     # Copy output file, Delete results files
     if not os.path.exists(results):
@@ -367,6 +367,8 @@ if '__main__' in __name__:
             version = arg.split('_')[1]
         if 'wind' in arg:
             wind_values = [float(arg.split('_')[1]),]
+        if 'solar' in arg:
+            solar_values = [float(arg.split('_')[1]),]
         if 'reliability' in arg and not 'analysis' in arg:
             reliability_values = [float(arg.split('_')[1]),]
 
@@ -433,6 +435,12 @@ if '__main__' in __name__:
                         else:
                             cap_storage = -1
                         cap_nuclear = float(dta['capacity nuclear (kW)'])
+
+                        # XXX FOR EIA BASELINE TEST
+                        #cap_wind = float(dta['capacity wind (kW)'])
+                        #cap_solar = float(dta['capacity solar (kW)'])
+                        cap_wind = wind
+                        cap_solar = solar
                         float_reli = -1
 
                         # 2nd Step - run over 3 years with defined capacities
@@ -440,7 +448,7 @@ if '__main__' in __name__:
                         year_codes.remove(lead_year_code)
                         for year_code in year_codes:
                             reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
-                                lead_year_code, year_code, float_reli, solar, wind, cap_NG, cap_nuclear, cap_storage)
+                                lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage)
 
     if make_results_file:
         files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
