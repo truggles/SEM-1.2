@@ -12,7 +12,7 @@ cd $PBS_O_WORKDIR
 #
 module load anaconda/anaconda3
 module load gurobi752
-python run_reliability_analysis.py "date_$DATE" "version_$VERSION" "reliability_$RELIABILITY" "wind_$WIND" "run_sem"
+python run_reliability_analysis.py "date_$DATE" "version_$VERSION" "reliability_$RELIABILITY" "wind_$WIND" "run_sem" $EXTRA_ARGS
 # "zero_storage" # <-- Can grab this for zero storage runs
 # end script
 
