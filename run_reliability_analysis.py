@@ -418,7 +418,7 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
     #assert(mthd in range(3))
     names = {
             0 : 'Mean Unmet Demand (kWh)',
-            1 : 'Mean System Cost ($/kWh)',
+            1 : 'Mean System Cost (cents/kWh)',
             2 : 'Fraction with Unmet Demand > Target',
             3 : 'Fraction with Unmet Demand > 0',
     }
@@ -441,6 +441,8 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 ary = np.array(results[nuclear][storage][0])
                 val = len(np.where(ary > 0)[0])
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+            elif mthd == 1:
+                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])*100
             else:
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])
 
@@ -460,9 +462,9 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 qmu_matrix2[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
         for i in range(len(storageSFs)):
             for j in range(len(nuclearSFs)):
-                txt_color = "w" if qmu_matrix2[i, j] < 1.0 else "magenta"
-                text = ax.text(j, i, round(qmu_matrix[i, j],4),
-                        ha="center", va="center", color=txt_color, fontsize=7)
+                txt_color = "w" if qmu_matrix2[i, j] < 1.0 else "k"
+                text = ax.text(j, i, round(qmu_matrix[i, j],2),
+                        ha="center", va="center", color=txt_color, fontsize=6)
 
 
     plt.xticks(range(len(nuclearSFs)), nuclearSFs, rotation=90)
@@ -641,7 +643,7 @@ if '__main__' in __name__:
         if qmu_scan:
             results = simplify_qmu_results(f"results/Results_{global_name}.csv")
             assert(len(reliability_values) == 1)
-            for mthd in range(4):
+            for mthd in [0, 1, 3]:
                 plot_qmu_matrix(results, reliability_values[0], f'{date}_{version}', mthd)
 
         if not qmu_scan:
