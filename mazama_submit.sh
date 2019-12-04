@@ -4,8 +4,8 @@
 
 
 
-export DATE=20191202
-version=v2
+export DATE=20191203
+version=v1
 
 
 renewables_scan=true
@@ -35,18 +35,18 @@ fi
 if $qmu_scan; then
     wind=1.0
     solar=0.75
-    for reliability in 0.99 0.999; do
+    for reliability in 0.999; do
         #export VERSION=${version}ZS${reliability}
         export VERSION=${version}N${reliability}
-        for nuclear in 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5; do
+        for nuclear in 1.0 1.02 1.04 1.06 1.08 1.1 1.12 1.14 1.16 1.18 1.2 1.22 1.24 1.26 1.28 1.3; do
     
             export RELIABILITY=$reliability
             export WIND=${wind}
             export EXTRA_ARGS="solar_${solar} nuclear_SF_${nuclear} qmu_scan"
             echo "reliability_${RELIABILITY} wind_${WIND} ${EXTRA_ARGS}"
-            qsub -V -N test_reli_${DATE}_${VERSION}_${WIND}_${nuclear} mazama_SEM_job.sh \
-                -e /data/cees/truggles/SEM-1.2/Output_Data/mazama_job_${DATE}_${VERSION}_${WIND}_${nuclear}.err \
-                -o /data/cees/truggles/SEM-1.2/Output_Data/mazama_job_${DATE}_${VERSION}_${WIND}_${nuclear}.out
+            qsub -V -N test_reli_${DATE}_${VERSION}_${WIND}_${solar}_${nuclear} mazama_SEM_job.sh \
+                -e /data/cees/truggles/SEM-1.2/Output_Data/mazama_job_${DATE}_${VERSION}_${WIND}_${solar}_${nuclear}.err \
+                -o /data/cees/truggles/SEM-1.2/Output_Data/mazama_job_${DATE}_${VERSION}_${WIND}_${solar}_${nuclear}.out
     
         done
     done

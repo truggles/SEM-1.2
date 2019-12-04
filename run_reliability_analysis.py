@@ -505,7 +505,7 @@ if '__main__' in __name__:
     nuclear_SF = 1.0
     storage_SFs = [1.0,]
     if qmu_scan:
-        storage_SFs = np.arange(1.0, 2.01, 0.1)
+        storage_SFs = np.arange(1.0, 5.01, 0.25)
 
     date = '20191119' # default
     version = 'v11'
