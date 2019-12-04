@@ -331,8 +331,16 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
     # waiting for Gurobi to suceed on an impossible model)
     if len(files) == 0:
         print(f"ERROR: XXX Initial solve failed, trying again for {global_name} {case_file}")
-        subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-        files = get_output_file_names(path+'/'+global_name+'_2019')
+        cnt = 0
+        while cnt < 10:
+            print(f"\n --- Entering retry loop: {cnt}\n")
+            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+            files = get_output_file_names(path+'/'+global_name+'_2019')
+            if len(files) > 0:
+                break
+            # Else retry up to 10 times
+            cnt += 1
+
     f_name = files[-1].split('/')[-1]
     dta = get_cap_and_costs(path, f_name)
     print("Results file:", f_name, dta['case name'])
