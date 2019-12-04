@@ -48,7 +48,7 @@ def get_SEM_csv_file(file_name):
 
 # These can be set for each and every run
 def set_all_values(cfg, global_name, case_name, start_year, end_year, reliability,
-        cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage):
+        cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage, var_cost_unmet_demand):
 
     new_cfg = []
 
@@ -62,6 +62,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
     cap_NG_position = -999
     cap_nuclear_position = -999
     cap_storage_position = -999
+    var_cost_unmet_demand_position = -999
 
     for i, line in enumerate(cfg):
 
@@ -79,6 +80,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
             cap_NG_position = line.index('CAPACITY_NATGAS')
             cap_nuclear_position = line.index('CAPACITY_NUCLEAR')
             cap_storage_position = line.index('CAPACITY_STORAGE')
+            var_cost_unmet_demand_position = line.index('VAR_COST_UNMET_DEMAND')
 
         if i == case_data_line+2:
             line[case_name_position] = case_name
@@ -90,6 +92,7 @@ def set_all_values(cfg, global_name, case_name, start_year, end_year, reliabilit
             line[cap_NG_position] = cap_NG
             line[cap_nuclear_position] = cap_nuclear
             line[cap_storage_position] = cap_storage
+            line[var_cost_unmet_demand_position] = var_cost_unmet_demand
 
         new_cfg.append(line)
 
@@ -153,8 +156,8 @@ def get_results(files, global_name):
 
     # Remove * in name that was introduced for searching regex
     save_name = re.sub("\*","",global_name)
-    print(f'Writing results to "Results_{save_name}.csv"')
-    ofile = open(f'Results_{save_name}.csv', 'w')
+    print(f'Writing results to "results/Results_{save_name}.csv"')
+    ofile = open(f'results/Results_{save_name}.csv', 'w')
     
     keys = sorted(keys)
     ofile.write('case name,problem status,target reliability,system cost ($/kW/h),capacity nuclear (kW),capacity storage (kW),capacity solar (kW),capacity wind (kW),dispatch unmet demand (kW)\n')
@@ -310,12 +313,14 @@ def simplify_qmu_results(results_file):
 
 
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
-        lead_year_code, year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage):
+        lead_year_code, year_code, reliability, solar, wind, cap_NG, 
+        cap_nuclear, cap_storage, var_cost_unmet_demand):
     # Get new copy of SEM cfg
     case_name = case_name_base+'_lead'+lead_year_code+'_'+year_code
     case_file = case_name+'.csv'
     cfg = get_SEM_csv_file(input_file)
-    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
+    cfg = set_all_values(cfg, global_name, case_name, years[year_code][0], years[year_code][1], 
+            reliability, solar, wind, cap_NG, cap_nuclear, cap_storage, var_cost_unmet_demand)
     write_file(case_file, cfg)
     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
@@ -407,7 +412,7 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
             0 : 'Mean Unmet Demand (kWh)',
             1 : 'Mean System Cost ($/kWh)',
             2 : 'Fraction with Unmet Demand > Target',
-            3 : 'Fraction with Unmet Demand > 1e-6',
+            3 : 'Fraction with Unmet Demand > 0',
     }
     
     # Get nuclear SFs and storage SFs from results map
@@ -426,13 +431,31 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
             elif mthd == 3:
                 ary = np.array(results[nuclear][storage][0])
-                val = len(np.where(ary > 1e-6)[0])
+                val = len(np.where(ary > 0)[0])
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
             else:
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])
 
-    fig, ax = plt.subplots(figsize=(4.5, 4))
+    #fig, ax = plt.subplots(figsize=(4.5, 4))
+    fig, ax = plt.subplots(figsize=(7, 6))
     im = ax.imshow(qmu_matrix,interpolation='none',origin='lower')
+
+    # Annotate if this is cost (mthd 1)
+    # Loop over data dimensions and create text annotations.
+    if mthd == 1:
+        # This is the 100% meet 100% criteria matrix for coloring the text RED
+        qmu_matrix2 = np.zeros((len(storageSFs),len(nuclearSFs)))
+        for storage in storageSFs:
+            for nuclear in nuclearSFs:
+                ary = np.array(results[nuclear][storage][0])
+                val = len(np.where(ary > 0)[0])
+                qmu_matrix2[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+        for i in range(len(storageSFs)):
+            for j in range(len(nuclearSFs)):
+                txt_color = "w" if qmu_matrix2[i, j] < 1.0 else "magenta"
+                text = ax.text(j, i, round(qmu_matrix[i, j],4),
+                        ha="center", va="center", color=txt_color, fontsize=7)
+
 
     plt.xticks(range(len(nuclearSFs)), nuclearSFs, rotation=90)
     plt.yticks(range(len(storageSFs)), storageSFs)
@@ -560,17 +583,21 @@ if '__main__' in __name__:
                         case_name_base = reliability_str+'_'+wind_str+'_'+solar_str+nuclear_str+storage_str+'_'+version+'_'+date
 
                         # 1st Step
-                        cap_NG, cap_nuclear, cap_storage = -1, -1, -1
+                        cap_NG, cap_nuclear, cap_storage, var_cost_unmet_demand = -1, -1, -1, 1 # scale unmet normally
                         dta = reconfigure_and_run(path, results_path, case_name_base, input_file, global_name, 
-                            lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage)
+                            lead_year_code, lead_year_code, reliability, solar, wind, cap_NG, cap_nuclear, 
+                            cap_storage, var_cost_unmet_demand)
 
 
                         print(f"\nStorage SFs: {storage_SFs}\n")
                         for storage_SF in storage_SFs: # Defaults to [1.0,] unless specified
                             print(f"\nStorage SF: {storage_SF}\n")
+                            var_cost_unmet_demand = 1
                             if qmu_scan:
                                 storage_str = '_storageSF_'+str(round(storage_SF,2)).replace('.','p')
                                 case_name_base_new = case_name_base.replace('_storageSF_Def', storage_str)
+                                var_cost_unmet_demand = 0.005
+                                #var_cost_unmet_demand = 1
                             else:
                                 case_name_base_new = case_name_base
 
@@ -593,7 +620,8 @@ if '__main__' in __name__:
                             year_codes.remove(lead_year_code)
                             for year_code in year_codes:
                                 reconfigure_and_run(path, results_path, case_name_base_new, input_file, global_name, 
-                                    lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, cap_nuclear, cap_storage)
+                                    lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, 
+                                    cap_nuclear, cap_storage, var_cost_unmet_demand)
 
     if make_results_file:
         files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
@@ -603,13 +631,13 @@ if '__main__' in __name__:
 
         global_name = re.sub("\*","",global_name)
         if qmu_scan:
-            results = simplify_qmu_results(f"Results_{global_name}.csv")
+            results = simplify_qmu_results(f"results/Results_{global_name}.csv")
             assert(len(reliability_values) == 1)
-            for mthd in [0, 1, 2, 3]:
+            for mthd in range(4):
                 plot_qmu_matrix(results, reliability_values[0], f'{date}_{version}', mthd)
 
         if not qmu_scan:
-            results = simplify_results(f"Results_{global_name}.csv", qmu_scan)
+            results = simplify_results(f"results/Results_{global_name}.csv", qmu_scan)
             #print(results)
 
 
