@@ -245,6 +245,70 @@ def simplify_results(results_file):
     return simp
 
 
+
+# Get info from file, so we don't have to repeat get_results
+# many many times
+def simplify_qmu_results(results_file):
+    df = pd.read_csv(results_file, index_col=False)
+    #print(df.head())
+
+
+    # Get the default values from initial optimization
+    # Default values from initial optimization
+    def_nuclear, def_storage = 0., 0.
+    for idx in df.index:
+        if df.loc[idx, 'problem status'] != 'optimal':
+            continue
+        if 'storageSF_Def' in df.loc[idx, 'case name']:
+            def_nuclear = df.loc[idx, 'capacity nuclear (kW)']
+            def_storage = df.loc[idx, 'capacity storage (kW)']
+
+
+    # Get the scale factor values based on capacities w.r.t. initial values
+    nuclearSF_values, storageSF_values = [], []
+    for idx in df.index:
+        if df.loc[idx, 'problem status'] != 'optimal':
+            continue
+        if 'storageSF_Def' in df.loc[idx, 'case name']:
+            continue
+
+        nuclearSF = round(float(df.loc[idx, 'case name'].split('nukeSF')[-1].strip('_').split('_')[0].replace('p','.')),2)
+        if nuclearSF not in nuclearSF_values:
+            nuclearSF_values.append(nuclearSF)
+        storageSF = round(float(df.loc[idx, 'case name'].split('storageSF')[-1].strip('_').split('_')[0].replace('p','.')),2)
+        if storageSF not in storageSF_values:
+            storageSF_values.append(storageSF)
+
+    nuclearSF_values.sort()
+    storageSF_values.sort()
+
+
+    # Create mapping of results to the associated nuclear and storage SF parameter values
+    simp = {}
+    for nuke in nuclearSF_values:
+        simp[nuke] = {}
+        for storage in storageSF_values: # unmet, cost
+            simp[nuke][storage] = [[], []]
+
+    for idx in df.index:
+        # Skip non-optimal solutions:
+        if df.loc[idx, 'problem status'] != 'optimal':
+            print(f" ... skipping {df.loc[idx, 'case name']} at idx: {idx} soln: {df.loc[idx, 'problem status']}")
+            continue
+        if 'storageSF_Def' in df.loc[idx, 'case name']:
+            continue
+
+        nuclearSF = round(float(df.loc[idx, 'case name'].split('nukeSF')[-1].strip('_').split('_')[0].replace('p','.')),2)
+        storageSF = round(float(df.loc[idx, 'case name'].split('storageSF')[-1].strip('_').split('_')[0].replace('p','.')),2)
+        unmet = df.loc[idx, 'dispatch unmet demand (kW)']
+        cost = df.loc[idx, 'system cost ($/kW/h)']
+
+        simp[nuclearSF][storageSF][0].append(unmet)
+        simp[nuclearSF][storageSF][1].append(cost)
+
+    return simp
+
+
 def reconfigure_and_run(path, results, case_name_base, input_file, global_name, 
         lead_year_code, year_code, reliability, solar, wind, cap_NG, cap_nuclear, cap_storage):
     # Get new copy of SEM cfg
@@ -332,6 +396,53 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
     else:
         save_name = 'Normal'
     plt.savefig("plots_reli/reliability_uncert_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].replace(' ','_').replace('(','').replace(')','')))
+    plt.clf()
+
+
+# QMU matrix
+def plot_qmu_matrix(results, reliability, save_name, mthd):
+
+    #assert(mthd in range(3))
+    names = {
+            0 : 'Mean Unmet Demand (kWh)',
+            1 : 'Mean System Cost ($/kWh)',
+            2 : 'Fraction with Unmet Demand > Target',
+            3 : 'Fraction with Unmet Demand > 1e-6',
+    }
+    
+    # Get nuclear SFs and storage SFs from results map
+    nuclearSFs = list(results.keys())
+    storageSFs = list(results[nuclearSFs[0]].keys())
+    nuclearSFs.sort()
+    storageSFs.sort()
+    
+    print(f"QMU plotting for reliability {reliability} for type {mthd} = {names[mthd]}")
+    qmu_matrix = np.zeros((len(storageSFs),len(nuclearSFs)))
+    for storage in storageSFs:
+        for nuclear in nuclearSFs:
+            if mthd == 2:
+                ary = np.array(results[nuclear][storage][0])
+                val = len(np.where(ary > 1. - reliability)[0])
+                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+            elif mthd == 3:
+                ary = np.array(results[nuclear][storage][0])
+                val = len(np.where(ary > 1e-6)[0])
+                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+            else:
+                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])
+
+    fig, ax = plt.subplots(figsize=(4.5, 4))
+    im = ax.imshow(qmu_matrix,interpolation='none',origin='lower')
+
+    plt.xticks(range(len(nuclearSFs)), nuclearSFs, rotation=90)
+    plt.yticks(range(len(storageSFs)), storageSFs)
+    plt.xlabel("Nuclear Scale Factor")
+    plt.ylabel("Storage Scale Factor")
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel(f"{names[mthd]}")
+    plt.title(f"{names[mthd]}")
+    plt.tight_layout()
+    plt.savefig("agu_poster/plots/qmu_matrix_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].split('(')[0].strip().replace(' ','_')))
     plt.clf()
 
 if '__main__' in __name__:
@@ -491,13 +602,21 @@ if '__main__' in __name__:
     if plot_results:
 
         global_name = re.sub("\*","",global_name)
-        results = simplify_results(f"Results_{global_name}.csv")
-        #print(results)
+        if qmu_scan:
+            results = simplify_qmu_results(f"Results_{global_name}.csv")
+            assert(len(reliability_values) == 1)
+            for mthd in [0, 1, 2, 3]:
+                plot_qmu_matrix(results, reliability_values[0], f'{date}_{version}', mthd)
 
-        ## and plot results
-        for reliability in reliability_values:
-            for mthd in [1, 5, 6, 7]:
-                reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
+        if not qmu_scan:
+            results = simplify_results(f"Results_{global_name}.csv", qmu_scan)
+            #print(results)
+
+
+            ## and plot results
+            for reliability in reliability_values:
+                for mthd in [1, 5, 6, 7]:
+                    reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
 
