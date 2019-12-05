@@ -9,6 +9,7 @@ save_type = 'png'
 save_type = 'pdf'
 
 us_mean_dem = 450 # GW
+us_mean_dem = 1 # kW
 
 # Create the 1) initial optimization df and 2) the results df
 def split_df(df):
@@ -42,8 +43,8 @@ def plot_caps(df, unmet):
                 df.loc[idx, 'capacity storage (kW)']])
         ax.plot(range(4), info*us_mean_dem, markersize=10, marker='o', linestyle='dashed', label=f'Year {i+1}')
     ax.set_ylim(0, ax.get_ylim()[1])
-    ax.set_ylabel('Nameplate Capacity (GW or GWh)')
-    plt.xticks(range(4), ['Wind (GW)', 'Solar (GW)', 'Nuclear (GW)', 'Storage (GWh)'])
+    ax.set_ylabel('Nameplate Capacity (kW or kWh)')
+    plt.xticks(range(4), ['Wind (kW)', 'Solar (kW)', 'Nuclear (kW)', 'Storage (kWh)'])
     plt.legend(loc='lower right')
     plt.tight_layout()
     plt.savefig('plots/single_cap_'+str(unmet).replace('.','p')+'.'+save_type)
@@ -56,6 +57,8 @@ def plot_unmet(df, unmet):
 
     years = OrderedDict()
     max_v = 0.
+    all_v = []
+    all_v2 = []
     for idx in df.index:
         info = df.loc[idx, 'case name'].split('_')
         if df.loc[idx, 'dispatch unmet demand (kW)'] > max_v:
@@ -64,6 +67,10 @@ def plot_unmet(df, unmet):
             years[info[-2]].append(df.loc[idx, 'dispatch unmet demand (kW)'])
         else:
             years[info[-2]] = [df.loc[idx, 'dispatch unmet demand (kW)'],]
+        all_v.append((unmet - df.loc[idx, 'dispatch unmet demand (kW)'])/unmet)
+        all_v2.append(df.loc[idx, 'dispatch unmet demand (kW)'])
+
+    print(f'std of (Unmet - Tgt) / Tgt = {np.std(all_v)}   {np.std(all_v2)/unmet}')
 
     i = 0
     for k, v in years.items():
@@ -77,7 +84,7 @@ def plot_unmet(df, unmet):
     #ax.set_ylim(0, ax.get_ylim()[1])
     ax.set_ylim(0, max_v*1.3)
     ax.set_xlim(-0.25, 0.25+len(years)-1)
-    ax.set_ylabel('Fraction of Unmet Demand')
+    ax.set_ylabel('Unmet Demand / Total Demand')
     plt.xticks(range(4), [f'Year {i+1}\nConfiguration' for i in range(4)])
     plt.legend(loc='upper right')
     plt.tight_layout()
