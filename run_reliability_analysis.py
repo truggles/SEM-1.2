@@ -460,9 +460,21 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 ary = np.array(results[nuclear][storage][0])
                 val = len(np.where(ary > 0)[0])
                 qmu_matrix2[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+        min_val = 999
+        min_val_100_reli = 999
+        for i in range(len(storageSFs)):
+            for j in range(len(nuclearSFs)):
+                if round(qmu_matrix[i, j],2) < min_val_100_reli and not qmu_matrix2[i, j] < 1.0:
+                    min_val_100_reli = round(qmu_matrix[i, j],2)
+                if round(qmu_matrix[i, j],2) < min_val:
+                    min_val = round(qmu_matrix[i, j],2)
         for i in range(len(storageSFs)):
             for j in range(len(nuclearSFs)):
                 txt_color = "w" if qmu_matrix2[i, j] < 1.0 else "k"
+                if round(qmu_matrix[i, j],2) == min_val_100_reli and not qmu_matrix2[i, j] < 1.0:
+                    txt_color = "r"
+                if round(qmu_matrix[i, j],2) == min_val:
+                    txt_color = "r"
                 text = ax.text(j, i, round(qmu_matrix[i, j],2),
                         ha="center", va="center", color=txt_color, fontsize=6)
 
@@ -647,7 +659,7 @@ if '__main__' in __name__:
                 plot_qmu_matrix(results, reliability_values[0], f'{date}_{version}', mthd)
 
         if not qmu_scan:
-            results = simplify_results(f"results/Results_{global_name}.csv", qmu_scan)
+            results = simplify_results(f"results/Results_{global_name}.csv")
             #print(results)
 
 
