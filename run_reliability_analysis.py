@@ -192,7 +192,7 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # rel vals, unmet, cap storage, cap nuclear, std dev, abs rel diff, rel diff, unmet, storage, nuclear
-                simp[reliability][solar][wind] = [[], [], [], [], 0., 0., 0., 0., 0., 0., 0.]
+                simp[reliability][solar][wind] = [[], [], [], [], [], [], 0., 0., 0., 0., 0., 0., 0., np.nan, np.nan]
 
     for idx in df.index:
         
@@ -215,6 +215,8 @@ def simplify_results(results_file):
             if 'lead' in val:
                 lead_year = val.replace('lead','')
         if year_info[-1] == lead_year:
+            simp[reli][solar][wind][4].append(cap_storage)
+            simp[reli][solar][wind][5].append(cap_nuclear)
             continue
 
         if reli == 0.0:
@@ -226,24 +228,29 @@ def simplify_results(results_file):
         simp[reli][solar][wind][2].append(cap_storage)
         simp[reli][solar][wind][3].append(cap_nuclear)
 
+    adj = 6
     for reli in reliability_values:
         for solar in solar_values:
             for wind in wind_values:
                 if len(simp[reli][solar][wind][0]) == 0: continue
-                simp[reli][solar][wind][4] = np.std(simp[reli][solar][wind][0])
                 tot_abs, tot = 0., 0.
                 for val in simp[reli][solar][wind][0]:
                     tot_abs += abs(val)
                     tot += val
                 tot_abs /= len(simp[reli][solar][wind][0])
                 tot /= len(simp[reli][solar][wind][0])
-                simp[reli][solar][wind][5] = tot_abs
-                simp[reli][solar][wind][6] = tot
+                simp[reli][solar][wind][adj+0] = np.std(simp[reli][solar][wind][0])
+                simp[reli][solar][wind][adj+1] = tot_abs
+                simp[reli][solar][wind][adj+2] = tot
                 y = np.array(simp[reli][solar][wind][0])
-                simp[reli][solar][wind][7] = np.sqrt(np.mean(y**2)) # RMS Error
-                simp[reli][solar][wind][8] = np.mean(simp[reli][solar][wind][1])
-                simp[reli][solar][wind][9] = np.mean(simp[reli][solar][wind][2])
-                simp[reli][solar][wind][10] = np.mean(simp[reli][solar][wind][3])
+                simp[reli][solar][wind][adj+3] = np.sqrt(np.mean(y**2)) # RMS Error
+                simp[reli][solar][wind][adj+4] = np.mean(simp[reli][solar][wind][1])
+                simp[reli][solar][wind][adj+5] = np.mean(simp[reli][solar][wind][2])
+                simp[reli][solar][wind][adj+6] = np.mean(simp[reli][solar][wind][3])
+                if np.mean(simp[reli][solar][wind][4]) > 0:
+                    simp[reli][solar][wind][adj+7] = np.std(simp[reli][solar][wind][4])/np.mean(simp[reli][solar][wind][4])
+                if np.mean(simp[reli][solar][wind][5]) > 0:
+                    simp[reli][solar][wind][adj+8] = np.std(simp[reli][solar][wind][5])/np.mean(simp[reli][solar][wind][5])
 
     return simp
 
@@ -368,7 +375,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 # 7 = Cap Nuclear
 def reliability_matrix(mthd, results, reliability, solar_values, wind_values, save_name):
 
-    assert(mthd in range(1,8))
+    assert(mthd in range(1,10))
     names = {
             1 : 'Std Dev',
             2 : 'Abs Rel Diff',
@@ -377,13 +384,15 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
             5 : 'Mean Unmet Demand (kWh)',
             6 : 'Mean Cap Storage (kWh)',
             7 : 'Mean Cap Nuclear (kW)',
+            8 : 'Std Dev div Mean Cap Storage (kWh)',
+            9 : 'Std Dev div Mean Cap Nuclear (kW)',
     }
     
     print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
     reli_matrix = np.zeros((len(solar_values),len(wind_values)))
     for solar in solar_values:
         for wind in wind_values:
-            reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd+3] # This was shifted by adding more lists to front of main list
+            reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd+5] # This was shifted by adding more lists to front of main list
 
     fig, ax = plt.subplots(figsize=(4.5, 4))
     ### FIXME - crazy soln is making one cell stick out over all the others
@@ -665,7 +674,8 @@ if '__main__' in __name__:
 
             ## and plot results
             for reliability in reliability_values:
-                for mthd in [1, 5, 6, 7]:
+                #for mthd in [1, 5, 6, 7]:
+                for mthd in [1, 5, 6, 7, 8, 9]:
                     reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
