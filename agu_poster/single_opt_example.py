@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 save_type = 'png'
 save_type = 'pdf'
+adj = 1.
 
 us_mean_dem = 450 # GW
 us_mean_dem = 1 # kW
@@ -34,7 +35,7 @@ def split_df(df):
 def plot_caps(df, unmet):
 
     plt.close()
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(4.5*adj,4*adj))
 
     for i, idx in enumerate(df.index):
         info = np.array([df.loc[idx, 'capacity wind (kW)'],
@@ -53,7 +54,7 @@ def plot_caps(df, unmet):
 def plot_unmet(df, unmet):
 
     plt.close()
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(4.5*adj,4*adj))
 
     years = OrderedDict()
     max_v = 0.
@@ -70,7 +71,7 @@ def plot_unmet(df, unmet):
         all_v.append((unmet - df.loc[idx, 'dispatch unmet demand (kW)'])/unmet)
         all_v2.append(df.loc[idx, 'dispatch unmet demand (kW)'])
 
-    print(f'std of (Unmet - Tgt) / Tgt = {np.std(all_v)}   {np.std(all_v2)/unmet}')
+    print(f'Coefficient of Variation Unmet Dem: {np.std(all_v2)/np.mean(all_v2)}')
 
     i = 0
     for k, v in years.items():
@@ -79,13 +80,13 @@ def plot_unmet(df, unmet):
         i += 1
 
 
-    ax.plot(np.linspace(-1, len(years), 100), np.ones(100)*unmet, 'k-', label='Target Unmet\nDemand')
+    ax.plot(np.linspace(-1, len(years), 10), np.ones(10)*unmet, 'k--', label='Target Unmet\nDemand')
 
     #ax.set_ylim(0, ax.get_ylim()[1])
-    ax.set_ylim(0, max_v*1.3)
+    ax.set_ylim(0, max_v*1.5)
     ax.set_xlim(-0.25, 0.25+len(years)-1)
-    ax.set_ylabel('Unmet Demand / Total Demand')
-    plt.xticks(range(4), [f'Year {i+1}\nConfiguration' for i in range(4)])
+    ax.set_ylabel('Normalized Unmet Demand')
+    plt.xticks(range(4), [f'Year {i+1}\nConfig.' for i in range(4)])
     plt.legend(loc='upper right')
     plt.tight_layout()
     plt.savefig('plots/single_unmet_'+str(unmet).replace('.','p')+'.'+save_type)

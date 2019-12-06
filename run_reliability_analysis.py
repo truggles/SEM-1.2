@@ -3,6 +3,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.rcParams.update({'font.size': 28})
+matplotlib.rcParams['figure.figsize'] = (10, 9)
 
 import csv
 import subprocess
@@ -192,7 +195,7 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # rel vals, unmet, cap storage, cap nuclear, std dev, abs rel diff, rel diff, unmet, storage, nuclear
-                simp[reliability][solar][wind] = [[], [], [], [], [], [], 0., 0., 0., 0., 0., 0., 0., np.nan, np.nan]
+                simp[reliability][solar][wind] = [[], [], [], [], [], [], 0., 0., 0., 0., 0., 0., 0., np.nan, np.nan, 0.]
 
     for idx in df.index:
         
@@ -251,6 +254,7 @@ def simplify_results(results_file):
                     simp[reli][solar][wind][adj+7] = np.std(simp[reli][solar][wind][4])/np.mean(simp[reli][solar][wind][4])
                 if np.mean(simp[reli][solar][wind][5]) > 0:
                     simp[reli][solar][wind][adj+8] = np.std(simp[reli][solar][wind][5])/np.mean(simp[reli][solar][wind][5])
+                simp[reli][solar][wind][adj+9] = np.std(simp[reli][solar][wind][1])/np.mean(simp[reli][solar][wind][1])
 
     return simp
 
@@ -375,7 +379,6 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
 # 7 = Cap Nuclear
 def reliability_matrix(mthd, results, reliability, solar_values, wind_values, save_name):
 
-    assert(mthd in range(1,10))
     names = {
             1 : 'Std Dev',
             2 : 'Abs Rel Diff',
@@ -384,8 +387,9 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
             5 : 'Mean Unmet Demand (kWh)',
             6 : 'Mean Cap Storage (kWh)',
             7 : 'Mean Cap Nuclear (kW)',
-            8 : 'Std Dev div Mean Cap Storage (kWh)',
-            9 : 'Std Dev div Mean Cap Nuclear (kW)',
+            8 : 'Capacity Storage', # sigma/mu
+            9 : 'Capacity Nuclear', # sigma/mu
+            10 : 'Unmet Demand', # sigma/mu
     }
     
     print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
@@ -394,7 +398,7 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
         for wind in wind_values:
             reli_matrix[solar_values.index(solar)][wind_values.index(wind)] = results[reliability][solar][wind][mthd+5] # This was shifted by adding more lists to front of main list
 
-    fig, ax = plt.subplots(figsize=(4.5, 4))
+    fig, ax = plt.subplots()#figsize=(4.5, 4))
     ### FIXME - crazy soln is making one cell stick out over all the others
     if reliability == 0.9997:
         false_z_max = reli_matrix.flatten()
@@ -403,15 +407,29 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
     else:
         im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
 
-    plt.xticks(range(len(wind_values)), wind_values, rotation=90)
-    plt.yticks(range(len(solar_values)), solar_values)
-    plt.xlabel("Wind Capacity w.r.t Dem. Mean")
-    plt.ylabel("Solar Capacity w.r.t Dem. Mean")
+    wind_labs, solar_labs = [], []
+    for v in wind_values:
+        if int(v)==v:
+            wind_labs.append(v)
+        else:
+            wind_labs.append('')
+    for v in solar_values:
+        if int(v)==v:
+            solar_labs.append(v)
+        else:
+            solar_labs.append('')
+    plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
+    plt.yticks(range(len(solar_values)), solar_labs)
+    plt.xlabel("Wind Cap./Mean Demand")
+    plt.ylabel("Solar Cap./Mean Demand")
     cbar = ax.figure.colorbar(im)
     app = ' of (unmet - target)/target' if mthd <= 4 else ''
     cbar.ax.set_ylabel(f"{names[mthd]}{app}")
     plt.title(f"{names[mthd]}{app}")
-    plt.tight_layout()
+    if mthd in [8, 9, 10]:
+        cbar.ax.set_ylabel(f"{names[mthd]}"+' ($\sigma/\mu$)')
+        plt.title(f"{names[mthd]}"+' ($\sigma/\mu$)')
+    #plt.tight_layout()
     # Modify save_name to make more LaTeX-able
     if 'ZS' in save_name:
         save_name = 'ZeroStorage'
@@ -456,7 +474,7 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])
 
     #fig, ax = plt.subplots(figsize=(4.5, 4))
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots()#figsize=(7, 6))
     im = ax.imshow(qmu_matrix,interpolation='none',origin='lower')
 
     # Annotate if this is cost (mthd 1)
@@ -495,7 +513,7 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f"{names[mthd]}")
     plt.title(f"{names[mthd]}")
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.savefig("agu_poster/plots/qmu_matrix_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].split('(')[0].strip().replace(' ','_')))
     plt.clf()
 
@@ -675,7 +693,7 @@ if '__main__' in __name__:
             ## and plot results
             for reliability in reliability_values:
                 #for mthd in [1, 5, 6, 7]:
-                for mthd in [1, 5, 6, 7, 8, 9]:
+                for mthd in [1, 5, 6, 7, 8, 9, 10]:
                     reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
