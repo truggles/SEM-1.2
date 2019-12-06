@@ -445,9 +445,10 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
     #assert(mthd in range(3))
     names = {
             0 : 'Mean Unmet Demand (kWh)',
-            1 : 'Mean System Cost (cents/kWh)',
+            #1 : 'Mean System Cost',
+            1 : 'Levelized Cost of Electricity',
             2 : 'Fraction with Unmet Demand > Target',
-            3 : 'Fraction with Unmet Demand > 0',
+            3 : 'Fraction of Tests with 100% Reliability',
     }
     
     # Get nuclear SFs and storage SFs from results map
@@ -467,7 +468,7 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
             elif mthd == 3:
                 ary = np.array(results[nuclear][storage][0])
                 val = len(np.where(ary > 0)[0])
-                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = 1.-val/len(ary)
+                qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = (1.-val/len(ary))*100.
             elif mthd == 1:
                 qmu_matrix[storageSFs.index(storage)][nuclearSFs.index(nuclear)] = np.mean(results[nuclear][storage][mthd])*100
             else:
@@ -503,16 +504,30 @@ def plot_qmu_matrix(results, reliability, save_name, mthd):
                 if round(qmu_matrix[i, j],2) == min_val:
                     txt_color = "r"
                 text = ax.text(j, i, round(qmu_matrix[i, j],2),
-                        ha="center", va="center", color=txt_color, fontsize=6)
+                        ha="center", va="center", color=txt_color, fontsize=8)
 
 
-    plt.xticks(range(len(nuclearSFs)), nuclearSFs, rotation=90)
-    plt.yticks(range(len(storageSFs)), storageSFs)
+    nuclear_labs, storage_labs = [], []
+    for v in nuclearSFs:
+        if round(v,1)==v:
+            nuclear_labs.append(v)
+        else:
+            nuclear_labs.append('')
+    for v in storageSFs:
+        if int(v)==v:
+            storage_labs.append(v)
+        else:
+            storage_labs.append('')
+    plt.xticks(range(len(nuclearSFs)), nuclear_labs, rotation=90)
+    plt.yticks(range(len(storageSFs)), storage_labs)
+
     plt.xlabel("Nuclear Scale Factor")
     plt.ylabel("Storage Scale Factor")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f"{names[mthd]}")
-    plt.title(f"{names[mthd]}")
+    if mthd == 1:
+        cbar.ax.set_ylabel(f"{names[mthd]} (\u00A2/kWh)") # cents/kWh
+    #plt.title(f"{names[mthd]}")
     #plt.tight_layout()
     plt.savefig("agu_poster/plots/qmu_matrix_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].split('(')[0].strip().replace(' ','_')))
     plt.clf()
@@ -682,7 +697,7 @@ if '__main__' in __name__:
         if qmu_scan:
             results = simplify_qmu_results(f"results/Results_{global_name}.csv")
             assert(len(reliability_values) == 1)
-            for mthd in [0, 1, 3]:
+            for mthd in [1, 3]:
                 plot_qmu_matrix(results, reliability_values[0], f'{date}_{version}', mthd)
 
         if not qmu_scan:
