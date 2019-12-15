@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+import matplotlib.lines as mlines
 
 
 series_map = {
@@ -67,18 +68,78 @@ def violin_plot(data_to_plot, xticks, save_name):
     # If not cut at zero, make alternative plot with zero min
     # This preserves the PDf normalization for the whole distribution
     ax = plt.gca()
-    if ax.get_ylim()[0] < -1:
+    if ax.get_ylim()[0] < 0:
         ax.set_ylim(0, ax.get_ylim()[1])
         fig = plt.gcf()
         plt.savefig(f'plots/alt_{save_name}')
+
+
+def array_ppf_idx(ary, pp):
+
+    tot = np.sum(ary)
+    run = 0.
+    for i, v in enumerate(ary):
+        run += v
+        if run / tot >= pp:
+            print(i, v, run, tot, run/tot)
+            return i
+    return -1
+
+def integrated_threshold(data, pp):
+
+    plt.close()
+    top = 1.7
+    bottom = 0.0
+    intervals = 2000
+    spacing = (top - bottom)/intervals
+
+    test = data[0][0]
+
+    test.sort()
+    # Reverse the sorted array
+    test2 = test[::-1]
+
+    tracker = []
+    prev = 999
+    for val in np.linspace(top, bottom, intervals):
+        to_add = 0
+        for d in test2:
+            if d >= val and d < prev:
+                to_add += 1
+            if d < val:
+                break
+        prev = val
+        if len(tracker) == 0:
+            prior = 0
+        else:
+            prior = tracker[-1]
+        tracker.append(to_add + prior)
+        #print(val, to_add, tracker[-1])
+    #print(tracker)
+    tracker.sort(reverse = True)
+    fig, ax = plt.subplots()
+    ax.plot(np.linspace(bottom, top, intervals), tracker)
+
+    # Get bin for percent point
+    idx = array_ppf_idx(tracker, pp)
+    l = mlines.Line2D([bottom+idx*spacing,bottom+idx*spacing], [0,np.max(tracker)], color='red')
+    ax.add_line(l)
+
+    plt.savefig('plots/hist.png')
+    plt.gcf()
+    ax.set_yscale('log')
+    ax.set_ylim(0.5, ax.get_ylim()[1])
+    plt.savefig('plots/hist_log.png')
+
+
 
 # wind, solar, idx
 study_regions = OrderedDict()
 study_regions['Optimized'] = [1.0, 0.75, 0]
 study_regions['Min Std'] = [1.0, 0.5, 0]
 study_regions['Zero Renewables'] = [0., 0., 1]
-study_regions['All Solar'] = [0., 3.0, 2]
-study_regions['All Wind'] = [2.0, 0., 3]
+#study_regions['All Solar'] = [0., 3.0, 2]
+#study_regions['All Wind'] = [2.0, 0., 3]
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
 data_to_plot = [[], [], [], []]
@@ -114,3 +175,5 @@ xticks = study_regions.keys()
 violin_plot(data_to_plot, xticks, 'all_years.png')
 violin_plot(data_to_plot2, xticks, 'all_years_zero_min.png')
 
+pp = 0.999
+integrated_threshold(data_to_plot2, pp)
