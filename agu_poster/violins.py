@@ -74,14 +74,17 @@ def violin_plot(data_to_plot, xticks, save_name):
         plt.savefig(f'plots/alt_{save_name}')
 
 
-def array_ppf_idx(ary, pp):
+def array_ppf_idx(ary, pp, spacing, nhours):
 
-    tot = np.sum(ary)
-    run = 0.
+    tot_full = 1. * nhours # n Hours b/c of leap years
+    tot_gtr_zero = np.sum(ary) * spacing
+    run = tot_full - tot_gtr_zero   # Start accounting at zero and
+                                    # some portion, sometimes is already zeroed
+    print(tot_full, tot_gtr_zero, run)
     for i, v in enumerate(ary):
-        run += v
-        if run / tot >= pp:
-            print(i, v, run, tot, run/tot)
+        run += v * spacing # To preserve integral
+        if run / tot_full >= pp:
+            print(i, v, run, tot_full, tot_gtr_zero, run/tot_full)
             return i
     return -1
 
@@ -95,7 +98,7 @@ def array_ppfs(ary):
         pps.append(run / tot)
     return pps
 
-def integrated_threshold(data, cnt, name, pp):
+def integrated_threshold(data, data_long, cnt, name, pp):
 
     plt.close()
     top = 1.7
@@ -103,6 +106,11 @@ def integrated_threshold(data, cnt, name, pp):
     intervals = 2000
     spacing = (top - bottom)/intervals
     x_norm = np.linspace(bottom, top, intervals)
+
+    # For normalizations
+    hours = []
+    for d in data_long: # Get original length of each year
+        hours.append(len(d[cnt]))
 
     rev_cdfs = []
     pps = []
@@ -138,12 +146,12 @@ def integrated_threshold(data, cnt, name, pp):
     jjj = 0
     fig = plt.figure(figsize=(10,5))
     ax1 = fig.add_subplot(121)
-    for r_cdf in rev_cdfs:
+    for r_cdf, nhours in zip(rev_cdfs, hours):
 
         ax1.plot(x_norm, r_cdf, color=f'C{jjj}')
 
         # Get bin for percent point
-        idx = array_ppf_idx(r_cdf, pp)
+        idx = array_ppf_idx(r_cdf, pp, spacing, nhours)
         l = mlines.Line2D([bottom+idx*spacing,bottom+idx*spacing], [0,np.max(r_cdf)], color=f'C{jjj}')
         ax1.add_line(l)
         jjj += 1
@@ -169,11 +177,11 @@ def integrated_threshold(data, cnt, name, pp):
 # wind, solar, idx
 study_regions = OrderedDict()
 study_regions['Optimized'] = [1.0, 0.75, 0]
-#study_regions['Min Std'] = [1.0, 0.5, 0]
+study_regions['Min Std'] = [1.0, 0.5, 0]
 study_regions['Zero Renewables'] = [0., 0., 1]
 study_regions['All Solar'] = [0., 3.0, 2]
 study_regions['All Wind'] = [2.0, 0., 3]
-#study_regions['Crazy'] = [4.5, 1.5, 4]
+study_regions['Crazy'] = [4.5, 1.5, 4]
 
 data_to_plot = [[], [], [], []]
 data_to_plot2 = [[], [], [], []]
@@ -211,5 +219,5 @@ violin_plot(data_to_plot2, xticks, 'all_years_zero_min.png')
 pp = 0.999
 cnt = 0
 for name, region in study_regions.items():
-    integrated_threshold(data_to_plot2, cnt, name, pp)
+    integrated_threshold(data_to_plot2, data_to_plot, cnt, name, pp)
     cnt += 1
