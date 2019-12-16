@@ -85,61 +85,94 @@ def array_ppf_idx(ary, pp):
             return i
     return -1
 
-def integrated_threshold(data, pp):
+def array_ppfs(ary):
+
+    tot = np.sum(ary)
+    run = 0.
+    pps = []
+    for v in ary:
+        run += v
+        pps.append(run / tot)
+    return pps
+
+def integrated_threshold(data, cnt, name, pp):
 
     plt.close()
     top = 1.7
     bottom = 0.0
     intervals = 2000
     spacing = (top - bottom)/intervals
+    x_norm = np.linspace(bottom, top, intervals)
 
-    test = data[0][0]
+    rev_cdfs = []
+    pps = []
+    for d in data:
+        test = d[cnt]
 
-    test.sort()
-    # Reverse the sorted array
-    test2 = test[::-1]
+        test.sort()
+        # Reverse the sorted array
+        test2 = test[::-1]
 
-    tracker = []
-    prev = 999
-    for val in np.linspace(top, bottom, intervals):
-        to_add = 0
-        for d in test2:
-            if d >= val and d < prev:
-                to_add += 1
-            if d < val:
-                break
-        prev = val
-        if len(tracker) == 0:
-            prior = 0
-        else:
-            prior = tracker[-1]
-        tracker.append(to_add + prior)
-        #print(val, to_add, tracker[-1])
-    #print(tracker)
-    tracker.sort(reverse = True)
-    fig, ax = plt.subplots()
-    ax.plot(np.linspace(bottom, top, intervals), tracker)
+        tracker = []
+        prev = 999
+        for val in np.linspace(top, bottom, intervals):
+            to_add = 0
+            for d in test2:
+                if d >= val and d < prev:
+                    to_add += 1
+                if d < val:
+                    break
+            prev = val
+            if len(tracker) == 0:
+                prior = 0
+            else:
+                prior = tracker[-1]
+            tracker.append(to_add + prior)
+            #print(val, to_add, tracker[-1])
+        #print(tracker)
+        tracker.sort(reverse = True)
+        rev_cdfs.append(tracker)
+        pps.append(array_ppfs(tracker))
 
-    # Get bin for percent point
-    idx = array_ppf_idx(tracker, pp)
-    l = mlines.Line2D([bottom+idx*spacing,bottom+idx*spacing], [0,np.max(tracker)], color='red')
-    ax.add_line(l)
 
-    plt.savefig('plots/hist.png')
-    plt.gcf()
-    ax.set_yscale('log')
-    ax.set_ylim(0.5, ax.get_ylim()[1])
-    plt.savefig('plots/hist_log.png')
+    jjj = 0
+    fig = plt.figure(figsize=(10,5))
+    ax1 = fig.add_subplot(121)
+    for r_cdf in rev_cdfs:
+
+        ax1.plot(x_norm, r_cdf, color=f'C{jjj}')
+
+        # Get bin for percent point
+        idx = array_ppf_idx(r_cdf, pp)
+        l = mlines.Line2D([bottom+idx*spacing,bottom+idx*spacing], [0,np.max(r_cdf)], color=f'C{jjj}')
+        ax1.add_line(l)
+        jjj += 1
+    ax1.set_xlabel('dem - wind - solar (kW)')
+    ax1.set_ylabel('# Hours >= X val')
+
+    jjj = 0
+    ax2 = fig.add_subplot(122)
+    for r_cdf, pp in zip(rev_cdfs, pps):
+        ax2.plot(pp, x_norm, color=f'C{jjj}')
+        jjj += 1
+    ax2.set_xlabel('$pp$')
+    ax2.set_ylabel('dem - wind - solar (kW)')
+
+    plt.savefig(f'plots/hist_{name.replace(" ","_")}.png')
+    #plt.gcf()
+    #ax.set_yscale('log')
+    #ax.set_ylim(0.5, ax.get_ylim()[1])
+    #plt.savefig(f'plots/hist_{name.replace(" ","_")}_log.png')
 
 
 
 # wind, solar, idx
 study_regions = OrderedDict()
 study_regions['Optimized'] = [1.0, 0.75, 0]
-study_regions['Min Std'] = [1.0, 0.5, 0]
+#study_regions['Min Std'] = [1.0, 0.5, 0]
 study_regions['Zero Renewables'] = [0., 0., 1]
-#study_regions['All Solar'] = [0., 3.0, 2]
-#study_regions['All Wind'] = [2.0, 0., 3]
+study_regions['All Solar'] = [0., 3.0, 2]
+study_regions['All Wind'] = [2.0, 0., 3]
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
 data_to_plot = [[], [], [], []]
@@ -176,4 +209,7 @@ violin_plot(data_to_plot, xticks, 'all_years.png')
 violin_plot(data_to_plot2, xticks, 'all_years_zero_min.png')
 
 pp = 0.999
-integrated_threshold(data_to_plot2, pp)
+cnt = 0
+for name, region in study_regions.items():
+    integrated_threshold(data_to_plot2, cnt, name, pp)
+    cnt += 1
