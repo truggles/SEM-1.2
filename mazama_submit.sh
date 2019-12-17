@@ -5,7 +5,8 @@
 
 
 export DATE=20191217
-version=v4
+# v4 was the 1.0 and 0.999 ZS run
+version=v6
 
 
 renewables_scan=true
@@ -17,15 +18,21 @@ qmu_scan=false
 
 if $renewables_scan; then
     #for reliability in 1.0 0.9999 0.9997 0.999 0.99 0.9; do
-    for reliability in 1.0 0.999; do
-        export VERSION=${version}ZSTX${reliability}
+    for reliability in 0.999; do
+        #export VERSION=${version}ZSTX${reliability}
+        export VERSION=${version}NTX${reliability}
         #export VERSION=${version}N${reliability}
         for wind in 0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0; do
     
             export RELIABILITY=$reliability
             export WIND=$wind
-            export EXTRA_ARGS="zero_storage TEXAS"
-            qsub -V -N test_reli_${DATE}_${VERSION}_${WIND} mazama_SEM_job.sh
+            #export EXTRA_ARGS="zero_storage TEXAS"
+            #qsub -V -N test_reli_${DATE}_${VERSION}_${WIND} mazama_SEM_job.sh
+        
+            for solar in 0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0; do
+                export EXTRA_ARGS="TEXAS solar_${solar}"
+                qsub -V -N test_reli_${DATE}_${VERSION}_${WIND}_${solar} mazama_SEM_job.sh
+            done
     
         done
     done
