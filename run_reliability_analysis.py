@@ -544,6 +544,7 @@ if '__main__' in __name__:
     zero_storage = False # Include storage in options
     post_mazama = False # Use after "run_sem" for gathering results and plotting
     qmu_scan = False # Use with fixed wind and solar values to scan nuclear and storage SFs
+    texas = False # Default is CONUS
     if 'run_sem' in sys.argv:
         run_sem = True
     if 'make_results_file' in sys.argv:
@@ -556,6 +557,8 @@ if '__main__' in __name__:
         post_mazama = True
     if 'qmu_scan' in sys.argv:
         qmu_scan = True
+    if 'TEXAS' in sys.argv:
+        texas = True
 
     # Default scans
     reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
@@ -590,6 +593,10 @@ if '__main__' in __name__:
     input_file = 'reliability_case_191017.csv'
     if zero_storage:
         input_file = 'reliability_case_no_storage_191017.csv'
+    if texas:
+        input_file = 'reliability_case_191017_TEXAS.csv'
+        if zero_storage:
+            input_file = 'reliability_case_no_storage_191017_TEXAS.csv'
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
@@ -618,6 +625,7 @@ if '__main__' in __name__:
     print(f' - PLOT_RESULTS={plot_results}')
     print(f' - ZERO_STORAGE={zero_storage}')
     print(f' - QMU_SCAN={qmu_scan}')
+    print(f' - TEXAS={texas}')
     print(f' - POST_MAZAMA={post_mazama}\n')
 
 
@@ -631,6 +639,26 @@ if '__main__' in __name__:
             '18-19' : [2018, 2019],
     }
 
+    if texas:
+        years = {
+                '02-03' : [2002, 2003],
+                '03-04' : [2003, 2004],
+                '04-05' : [2004, 2005],
+                '05-06' : [2005, 2006],
+                '06-07' : [2006, 2007],
+                '07-08' : [2007, 2008],
+                '08-09' : [2008, 2009],
+                '09-10' : [2009, 2010],
+                '10-11' : [2010, 2011],
+                '11-12' : [2011, 2012],
+                '12-13' : [2012, 2013],
+                '13-14' : [2013, 2014],
+                '14-15' : [2014, 2015],
+                '15-16' : [2015, 2016],
+                '16-17' : [2016, 2017],
+                '17-18' : [2017, 2018],
+                #'18-19' : [2018, 2019], # We don't have solar and wind for 2019
+        }
 
 
     if run_sem:
