@@ -9,12 +9,17 @@ import pickle
 
 
 
-def load_inputs(n_years):
+def load_inputs(n_years, TEXAS=False):
     series_map = {
             'dem' : ['Demand', 'black'],
             'wind' : ['Wind', 'blue'],
             'solar' : ['Solar', 'orange']
     }
+    TX_map = { # column of interest, file path, rows to skip at start
+            'Demand' : ['demand (MW)', '../Input_Data/TEXAS/TX_demand_unnormalized.csv', 6],
+            'Wind' : ['solar capacity', '../Input_Data/TEXAS/solarCF_lei_TI_nonormalized.csv', 5],
+            'Solar' : ['solar capacity', '../Input_Data/TEXAS/windCF_lei_TI_nonormalized.csv', 5],
+            }
     
     collection = {}
     
@@ -23,7 +28,18 @@ def load_inputs(n_years):
         collection[i] = {}
     
         for series, info in series_map.items():
-            df = pd.read_csv(f'{series}_{i}.csv', index_col=False)
+
+            if not TEXAS:
+                df = pd.read_csv(f'{series}_{i}.csv', index_col=False)
+                df = df.drop(['Year', 'Month', 'Day', 'Hour'], axis=1)
+            if TEXAS:
+                df = pd.read_csv(TX_map[info[0]][1], index_col=False, skiprows=TX_map[info[0]][2])
+                df[info[0]] = df[TX_map[info[0]][0]]
+                df = df.loc[df['year'] == 2002 + i]
+                print(i, series, len(df.index))
+                #print(df.head())
+                df = df.drop(['year', 'month', 'day', 'hour', TX_map[info[0]][0]], axis=1)
+
             
             ## Sanity checks
             #start = f"{df.loc[0,'Year']}"
@@ -197,8 +213,15 @@ def apply_threshold_to_other(bottom, spacing, idx, pp):
 
     return 1. - pp[idx]
 
-n_years = 4
-collection = load_inputs(n_years)
+
+
+
+
+#=================================================================================
+
+n_years = 16
+TEXAS = True
+collection = load_inputs(n_years, TEXAS)
 
 # wind, solar, idx
 study_regions = OrderedDict()
@@ -210,7 +233,8 @@ study_regions = OrderedDict()
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
 grid = [0, 5.1, 0.25]
-initial_processing = False
+grid = [0, 2.1, 0.25]
+initial_processing = True
 
 if initial_processing:
     for i in np.arange(grid[0], grid[1], grid[2]):
@@ -229,7 +253,7 @@ if initial_processing:
         for i, year_info in collection.items():
     
     
-            ary = np.array(year_info['dem']['Demand'] - year_info['wind']['Wind']*region[0] - year_info['solar']['Solar']*region[1])
+            ary = np.array(year_info['dem']['Demand'].values - year_info['wind']['Wind'].values*region[0] - year_info['solar']['Solar'].values*region[1])
             std = np.std(ary)
             qX = np.percentile(ary, 99.9)
     
@@ -259,6 +283,8 @@ if initial_processing:
     pickle_file = open('tmp.pkl', 'wb')
     pickle.dump(study_regions, pickle_file)
     pickle_file.close()
+
+assert(False)
 
 pickle_in = open('tmp.pkl','rb')
 study_regions = pickle.load(pickle_in)
