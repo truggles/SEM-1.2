@@ -594,7 +594,9 @@ if '__main__' in __name__:
     if zero_storage:
         input_file = 'reliability_case_no_storage_191017.csv'
     if texas:
-        input_file = 'reliability_case_no_storage_191017_TEXAS.csv'
+        input_file = 'reliability_case_191017_TEXAS.csv'
+        if zero_storage:
+            input_file = 'reliability_case_no_storage_191017_TEXAS.csv'
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
