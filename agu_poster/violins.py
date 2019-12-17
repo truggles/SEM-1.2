@@ -5,50 +5,53 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import matplotlib.lines as mlines
+import pickle
 
 
-series_map = {
-        'dem' : ['Demand', 'black'],
-        'wind' : ['Wind', 'blue'],
-        'solar' : ['Solar', 'orange']
-}
 
+def load_inputs(n_years):
+    series_map = {
+            'dem' : ['Demand', 'black'],
+            'wind' : ['Wind', 'blue'],
+            'solar' : ['Solar', 'orange']
+    }
+    
+    collection = {}
+    
+    for i in range(1, n_years+1):
+    
+        collection[i] = {}
+    
+        for series, info in series_map.items():
+            df = pd.read_csv(f'{series}_{i}.csv', index_col=False)
+            
+            ## Sanity checks
+            #start = f"{df.loc[0,'Year']}"
+            #start += f"-{df.loc[0,'Month']}"
+            #start += f"-{df.loc[0,'Day']}"
+            #start += f" {df.loc[0,'Hour']}"
+            #end = f"{df.loc[len(df.index)-1,'Year']}"
+            #end += f"-{df.loc[len(df.index)-1,'Month']}"
+            #end += f"-{df.loc[len(df.index)-1,'Day']}"
+            #end += f" {df.loc[len(df.index)-1,'Hour']}"
+            #print(f'{series}_{i}.csv', len(df.index), start, end)
+    
+            # If demand, then normalize it, other are normalized
+            if series == 'dem':
+                name = info[0]
+                df[name] = df[name]/np.mean(df[name])
+    
+            collection[i][series] = df
+    
+        #plt.close()
+        #fig, ax = plt.subplots()
+        #for series, vals in collection[i].items():
+        #    ax.plot(vals[series_map[series][0]].loc[0:100], label=series, 
+        #            color=series_map[series][1])
+        #plt.legend()
+        #plt.savefig(f'plots/collection_{i}.png')
 
-collection = {}
-
-for i in range(1, 5):
-
-    collection[i] = {}
-
-    for series, info in series_map.items():
-        df = pd.read_csv(f'{series}_{i}.csv', index_col=False)
-        
-        ## Sanity checks
-        #start = f"{df.loc[0,'Year']}"
-        #start += f"-{df.loc[0,'Month']}"
-        #start += f"-{df.loc[0,'Day']}"
-        #start += f" {df.loc[0,'Hour']}"
-        #end = f"{df.loc[len(df.index)-1,'Year']}"
-        #end += f"-{df.loc[len(df.index)-1,'Month']}"
-        #end += f"-{df.loc[len(df.index)-1,'Day']}"
-        #end += f" {df.loc[len(df.index)-1,'Hour']}"
-        #print(f'{series}_{i}.csv', len(df.index), start, end)
-
-        # If demand, then normalize it, other are normalized
-        if series == 'dem':
-            name = info[0]
-            df[name] = df[name]/np.mean(df[name])
-
-        collection[i][series] = df
-
-    plt.close()
-    fig, ax = plt.subplots()
-    for series, vals in collection[i].items():
-        ax.plot(vals[series_map[series][0]].loc[0:100], label=series, 
-                color=series_map[series][1])
-    plt.legend()
-    plt.savefig(f'plots/collection_{i}.png')
-
+    return collection
 
 def violin_plot(data_to_plot, xticks, save_name):
     plt.close()
@@ -80,11 +83,11 @@ def array_ppf_idx(ary, pp, spacing, nhours):
     tot_gtr_zero = np.sum(ary) * spacing
     run = tot_full - tot_gtr_zero   # Start accounting at zero and
                                     # some portion, sometimes is already zeroed
-    print(f'tot all {round(tot_full)}, tot_gtr_zero {round(tot_gtr_zero)}, frac > zero {round(tot_gtr_zero/tot_full,2)}')
+    #print(f'tot all {round(tot_full)}, tot_gtr_zero {round(tot_gtr_zero)}, frac > zero {round(tot_gtr_zero/tot_full,2)}')
     for i, v in enumerate(ary):
         run += v * spacing # To preserve integral
         if run / tot_full >= pp:
-            print(i, v, run, tot_full, tot_gtr_zero, run/tot_full)
+            #print(i, v, run, tot_full, tot_gtr_zero, run/tot_full)
             return i
     return -1
 
@@ -145,6 +148,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
         pps.append(array_ppfs(tracker, spacing, hours[j]))
 
 
+    ppf_idxs = []
     jjj = 0
     fig = plt.figure(figsize=(10,5))
     ax1 = fig.add_subplot(121)
@@ -154,6 +158,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
 
         # Get bin for percent point
         idx = array_ppf_idx(r_cdf, pp, spacing, nhours)
+        ppf_idxs.append(idx)
         l = mlines.Line2D([bottom+idx*spacing,bottom+idx*spacing], [0,np.max(r_cdf)], color=f'C{jjj}')
         ax1.add_line(l)
         jjj += 1
@@ -174,52 +179,130 @@ def integrated_threshold(data, data_long, cnt, name, pp):
     #ax.set_ylim(0.5, ax.get_ylim()[1])
     #plt.savefig(f'plots/hist_{name.replace(" ","_")}_log.png')
 
+    # Check the threshold in Year A on Year B ...
+    results = []
+    for i, idx in enumerate(ppf_idxs):
+        for j, pp in enumerate(pps):
+            if i == j:
+                continue
+            rslt = apply_threshold_to_other(bottom, spacing, idx, pp)
+            results.append(rslt)
 
+    print(f"Results: coeff of var: {np.std(results)/np.mean(results) * 100.}")
+    return np.std(results)/np.mean(results) * 100.
+
+# Apply a threshod from a given index to another
+# year and return the unmet demand
+def apply_threshold_to_other(bottom, spacing, idx, pp):
+
+    return 1. - pp[idx]
+
+n_years = 4
+collection = load_inputs(n_years)
 
 # wind, solar, idx
 study_regions = OrderedDict()
-study_regions['Optimized'] = [1.0, 0.75, 0]
+#study_regions['Optimized'] = [1.0, 0.75, 0]
 #study_regions['Min Std'] = [1.0, 0.5, 0]
 #study_regions['Zero Renewables'] = [0., 0., 1]
 #study_regions['All Solar'] = [0., 3.0, 2]
 #study_regions['All Wind'] = [2.0, 0., 3]
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
-data_to_plot = [[], [], [], []]
-data_to_plot2 = [[], [], [], []]
-for name, region in study_regions.items():
-    print(f'{name}')
+grid = [0, 5.1, 0.25]
+initial_processing = False
 
-    stds = []
-    qXs = []
+if initial_processing:
+    for i in np.arange(grid[0], grid[1], grid[2]):
+        for j in np.arange(grid[0], grid[1], grid[2]):
+            study_regions[f'wind{i}_solar{j}'] = [i, j, 0]
+    
+    data_to_plot = []
+    data_to_plot2 = []
+    for yr in range(n_years):
+        data_to_plot.append([])
+        data_to_plot2.append([])
+    
+    for name, region in study_regions.items():
+        print(f'{name}')
+    
+        for i, year_info in collection.items():
+    
+    
+            ary = np.array(year_info['dem']['Demand'] - year_info['wind']['Wind']*region[0] - year_info['solar']['Solar']*region[1])
+            std = np.std(ary)
+            qX = np.percentile(ary, 99.9)
+    
+            #print(f'  {i} --- std dev {std} qX {qX}')
+            ary2 = []
+            for val in ary:
+                if val > 0.:
+                    ary2.append(val)
+            ary2 = np.array(ary2)
+            data_to_plot[i-1].append(ary)
+            data_to_plot2[i-1].append(ary2)
+    
+        #val = (max(qXs) - min(qXs))/np.mean(qXs)
+        #print(val)
+    
+    #xticks = study_regions.keys()
+    #violin_plot(data_to_plot, xticks, 'all_years.png')
+    #violin_plot(data_to_plot2, xticks, 'all_years_zero_min.png')
+    
+    pp = 0.999
+    cnt = 0
+    for name in study_regions.keys():
+        study_regions[name].append(integrated_threshold(
+                data_to_plot2, data_to_plot, cnt, name, pp))
+        cnt += 1
+    
+    pickle_file = open('tmp.pkl', 'wb')
+    pickle.dump(study_regions, pickle_file)
+    pickle_file.close()
 
-    for i, year_info in collection.items():
+pickle_in = open('tmp.pkl','rb')
+study_regions = pickle.load(pickle_in)
+
+for name, results in study_regions.items():
+    print(name, results[-1])
 
 
-        ary = np.array(year_info['dem']['Demand'] - year_info['wind']['Wind']*region[0] - year_info['solar']['Solar']*region[1])
-        std = np.std(ary)
-        qX = np.percentile(ary, 99.9)
-        stds.append(std)
-        qXs.append(qX)
+matrix = []
+for i, vi in enumerate(np.arange(grid[0], grid[1], grid[2])):
+    matrix.append([])
+    for j, vj in enumerate(np.arange(grid[0], grid[1], grid[2])):
+        matrix[i].append(study_regions[f'wind{vj}_solar{vi}'][-1])
 
-        print(f'  {i} --- std dev {std} qX {qX}')
-        ary2 = []
-        for val in ary:
-            if val > 0.:
-                ary2.append(val)
-        ary2 = np.array(ary2)
-        data_to_plot[i-1].append(ary)
-        data_to_plot2[i-1].append(ary2)
+print(matrix)
 
-    val = (max(qXs) - min(qXs))/np.mean(qXs)
-    print(val)
 
-xticks = study_regions.keys()
-violin_plot(data_to_plot, xticks, 'all_years.png')
-violin_plot(data_to_plot2, xticks, 'all_years_zero_min.png')
+fig, ax = plt.subplots()
+im = ax.imshow(matrix,interpolation='none',origin='lower')
+cbar = ax.figure.colorbar(im)
+cbar.ax.set_ylabel(f"Unmet Demand ($sigma/$mu)")
 
-pp = 0.999
-cnt = 0
-for name, region in study_regions.items():
-    integrated_threshold(data_to_plot2, data_to_plot, cnt, name, pp)
-    cnt += 1
+axis_vals = np.arange(grid[0], grid[1], grid[2])
+x_labs, y_labs = [], []
+for v in axis_vals:
+    if round(v,1)==v:
+        x_labs.append(v)
+    else:
+        x_labs.append('')
+for v in axis_vals:
+    if int(v)==v:
+        y_labs.append(v)
+    else:
+        y_labs.append('')
+plt.xticks(range(len(axis_vals)), x_labs, rotation=90)
+plt.yticks(range(len(axis_vals)), y_labs)
+plt.xlabel("Wind Cap/Mean Demand")
+plt.ylabel("Solar Cap/Mean Demand")
+
+#plt.tight_layout()
+plt.savefig('matrix.png')
+
+
+
+
+
+
