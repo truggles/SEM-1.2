@@ -80,7 +80,7 @@ def array_ppf_idx(ary, pp, spacing, nhours):
     tot_gtr_zero = np.sum(ary) * spacing
     run = tot_full - tot_gtr_zero   # Start accounting at zero and
                                     # some portion, sometimes is already zeroed
-    print(tot_full, tot_gtr_zero, run)
+    print(f'tot all {round(tot_full)}, tot_gtr_zero {round(tot_gtr_zero)}, frac > zero {round(tot_gtr_zero/tot_full,2)}')
     for i, v in enumerate(ary):
         run += v * spacing # To preserve integral
         if run / tot_full >= pp:
@@ -88,14 +88,16 @@ def array_ppf_idx(ary, pp, spacing, nhours):
             return i
     return -1
 
-def array_ppfs(ary):
+def array_ppfs(ary, spacing, nhours):
 
-    tot = np.sum(ary)
-    run = 0.
+    tot_full = 1. * nhours # n Hours b/c of leap years
+    tot_gtr_zero = np.sum(ary) * spacing
+    run = tot_full - tot_gtr_zero   # Start accounting at zero and
+                                    # some portion, sometimes is already zeroed
     pps = []
     for v in ary:
-        run += v
-        pps.append(run / tot)
+        run += v * spacing # To preserve integral
+        pps.append(run / tot_full)
     return pps
 
 def integrated_threshold(data, data_long, cnt, name, pp):
@@ -114,7 +116,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
 
     rev_cdfs = []
     pps = []
-    for d in data:
+    for j, d in enumerate(data):
         test = d[cnt]
 
         test.sort()
@@ -140,7 +142,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
         #print(tracker)
         tracker.sort(reverse = True)
         rev_cdfs.append(tracker)
-        pps.append(array_ppfs(tracker))
+        pps.append(array_ppfs(tracker, spacing, hours[j]))
 
 
     jjj = 0
@@ -177,11 +179,11 @@ def integrated_threshold(data, data_long, cnt, name, pp):
 # wind, solar, idx
 study_regions = OrderedDict()
 study_regions['Optimized'] = [1.0, 0.75, 0]
-study_regions['Min Std'] = [1.0, 0.5, 0]
-study_regions['Zero Renewables'] = [0., 0., 1]
-study_regions['All Solar'] = [0., 3.0, 2]
-study_regions['All Wind'] = [2.0, 0., 3]
-study_regions['Crazy'] = [4.5, 1.5, 4]
+#study_regions['Min Std'] = [1.0, 0.5, 0]
+#study_regions['Zero Renewables'] = [0., 0., 1]
+#study_regions['All Solar'] = [0., 3.0, 2]
+#study_regions['All Wind'] = [2.0, 0., 3]
+#study_regions['Crazy'] = [4.5, 1.5, 4]
 
 data_to_plot = [[], [], [], []]
 data_to_plot2 = [[], [], [], []]
