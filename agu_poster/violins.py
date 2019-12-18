@@ -204,8 +204,8 @@ def integrated_threshold(data, data_long, cnt, name, pp):
             rslt = apply_threshold_to_other(bottom, spacing, idx, pp)
             results.append(rslt)
 
-    print(f"Results: coeff of var: {np.std(results)/np.mean(results) * 100.}")
-    return np.std(results)/np.mean(results) * 100.
+    print(f"Results for {name}: len: {len(results)}, coeff of var: {round(np.std(results)/np.mean(results),4)}")
+    return np.std(results)/np.mean(results)
 
 # Apply a threshod from a given index to another
 # year and return the unmet demand
@@ -233,8 +233,9 @@ study_regions = OrderedDict()
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
 grid = [0, 5.1, 0.25]
-grid = [0, 2.1, 0.25]
+#grid = [0, 2.1, 0.25]
 initial_processing = True
+#initial_processing = False
 
 if initial_processing:
     for i in np.arange(grid[0], grid[1], grid[2]):
@@ -284,7 +285,6 @@ if initial_processing:
     pickle.dump(study_regions, pickle_file)
     pickle_file.close()
 
-assert(False)
 
 pickle_in = open('tmp.pkl','rb')
 study_regions = pickle.load(pickle_in)
