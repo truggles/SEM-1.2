@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 import matplotlib.lines as mlines
 import pickle
+import copy
 
 
 
@@ -17,8 +18,8 @@ def load_inputs(n_years, TEXAS=False):
     }
     TX_map = { # column of interest, file path, rows to skip at start
             'Demand' : ['demand (MW)', '../Input_Data/TEXAS/TX_demand_unnormalized.csv', 6],
-            'Wind' : ['solar capacity', '../Input_Data/TEXAS/solarCF_lei_TI_nonormalized.csv', 5],
-            'Solar' : ['solar capacity', '../Input_Data/TEXAS/windCF_lei_TI_nonormalized.csv', 5],
+            'Wind' : ['solar capacity', '../Input_Data/TEXAS/windCF_lei_TI_nonormalized.csv', 5],
+            'Solar' : ['solar capacity', '../Input_Data/TEXAS/solarCF_lei_TI_nonormalized.csv', 5],
             }
     
     collection = {}
@@ -214,14 +215,145 @@ def apply_threshold_to_other(bottom, spacing, idx, pp):
     return 1. - pp[idx]
 
 
+# Take all yearly inputs and split into two sets:
+# 1 - all hours with demand < threshold
+# 2 - all hours with demand > threshold
+def run_correlations(collection, threshold, TEXAS):
+
+    # Arrays to hold >= and < threshold, defined on each year of inputs
+    solar_gtr, wind_gtr, dem_gtr = [], [], []
+    solar_lt, wind_lt, dem_lt = [], [], []
+    solar_all, wind_all, dem_all = [], [], []
+
+    # Loop over all years and hours and split
+    # The split is defined w.r.t. demand percentile
+    for i, year_info in collection.items():
+        
+        thr = np.percentile(year_info['dem']['Demand'].values, threshold)
+
+        for i, dem in enumerate(year_info['dem']['Demand'].values):
+            if dem >= thr:
+                solar_gtr.append(year_info['solar']['Solar'].values[i])
+                wind_gtr.append(year_info['wind']['Wind'].values[i])
+                dem_gtr.append(year_info['dem']['Demand'].values[i])
+            else:
+                solar_lt.append(year_info['solar']['Solar'].values[i])
+                wind_lt.append(year_info['wind']['Wind'].values[i])
+                dem_lt.append(year_info['dem']['Demand'].values[i])
+
+            # Add all to *_all
+            solar_all.append(year_info['solar']['Solar'].values[i])
+            wind_all.append(year_info['wind']['Wind'].values[i])
+            dem_all.append(year_info['dem']['Demand'].values[i])
+
+
+    # Make DataFrams for easy use of df.corr()
+    df_gtr = pd.DataFrame({'Demand': dem_gtr, 'Solar': solar_gtr, 'Wind': wind_gtr})
+    df_lt = pd.DataFrame({'Demand': dem_lt, 'Solar': solar_lt, 'Wind': wind_lt})
+    df_all = pd.DataFrame({'Demand': dem_all, 'Solar': solar_all, 'Wind': wind_all})
+
+
+    # Make correlations
+    app = '_tx' if TEXAS else ''
+    plot_corr(df_gtr, f'greater{threshold}{app}')
+    plot_corr(df_lt, f'lessThan{threshold}{app}')
+    plot_corr(df_all, f'all{app}')
+
+    # Set solar zeros to np.nan
+    df_gtr['Solar'] = df_gtr['Solar'].where(df_gtr['Solar'] != 0.0, np.nan)
+    df_lt['Solar'] = df_lt['Solar'].where(df_lt['Solar'] != 0.0, np.nan)
+    df_all['Solar'] = df_all['Solar'].where(df_all['Solar'] != 0.0, np.nan)
+
+    plot_corr(df_gtr, f'greater{threshold}_nan{app}')
+    plot_corr(df_lt, f'lessThan{threshold}_nan{app}')
+    plot_corr(df_all, f'all_nan{app}')
+
+
+
+
+
+def plot_corr(df, save_name):
+    corr = df.corr()
+    corr.style.background_gradient(cmap='coolwarm').set_precision(2)
+    #corr.style.background_gradient(cmap='coolwarm').set_properties(**{'font-size': '5pt'})
+    f = plt.figure()
+    plt.imshow(corr, origin='lower', vmax=1, vmin=-1)
+    plt.xticks(range(df.shape[1]), df.columns, fontsize=14, rotation=90)
+    plt.yticks(range(df.shape[1]), df.columns, fontsize=14)
+    ax = plt.gca()
+    cb = plt.colorbar()
+    cb.ax.tick_params(labelsize=14)
+    cb.ax.set_ylim(-1, 1)
+    #plt.title('Correlation Matrix', fontsize=16);
+
+    print(corr)
+
+    for i, col1 in enumerate(corr.columns):
+        for j, col2 in enumerate(corr.index):
+            #print(i, j, col1, col2, round(corr.loc[col1, col2],2))
+            text = ax.text(j, i, round(corr.loc[col1, col2],2),
+                    ha="center", va="center", color='k', fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(f'correlation_matrix_{save_name}.png')
+
+
+    
+    
+    
+    
+    
+    
+    
+# Print basic stats for the input series    
+def print_basic_stats(collection):
+    tmp = {'mean': [], 'min': [], 'max': [], 'std': []}
+    results = {'solar': copy.deepcopy(tmp),
+            'wind': copy.deepcopy(tmp),
+            'dem': copy.deepcopy(tmp),}
+    for i, year_info in collection.items():
+        for k, v in {'dem': 'Demand', 'wind': 'Wind', 'solar': 'Solar'}.items():
+            results[k]['mean'].append(np.mean(year_info[k][v].values))
+            results[k]['min'].append(np.min(year_info[k][v].values))
+            results[k]['max'].append(np.max(year_info[k][v].values))
+            results[k]['std'].append(np.std(year_info[k][v].values))
+
+
+    for k in results.keys():
+        df = pd.DataFrame(results[k])
+        print(k)
+        print(df.head(99))
+        
+    
 
 
 
 #=================================================================================
 
-n_years = 16
+initial_processing = True
+initial_processing = False
+correlations = True
+#correlations = False
+make_plots = True
+make_plots = False
 TEXAS = True
-collection = load_inputs(n_years, TEXAS)
+#TEXAS = False
+
+grid = [0, 5.1, 0.25]
+#grid = [0, 2.1, 0.25]
+
+n_years = 16
+#n_years = 4
+
+threshold = 99
+
+if initial_processing or correlations:
+    collection = load_inputs(n_years, TEXAS)
+
+
+if correlations:
+    run_correlations(collection, threshold, TEXAS)
+    #print_basic_stats(collection)
 
 # wind, solar, idx
 study_regions = OrderedDict()
@@ -232,10 +364,6 @@ study_regions = OrderedDict()
 #study_regions['All Wind'] = [2.0, 0., 3]
 #study_regions['Crazy'] = [4.5, 1.5, 4]
 
-grid = [0, 5.1, 0.25]
-#grid = [0, 2.1, 0.25]
-initial_processing = True
-#initial_processing = False
 
 if initial_processing:
     for i in np.arange(grid[0], grid[1], grid[2]):
@@ -256,7 +384,7 @@ if initial_processing:
     
             ary = np.array(year_info['dem']['Demand'].values - year_info['wind']['Wind'].values*region[0] - year_info['solar']['Solar'].values*region[1])
             std = np.std(ary)
-            qX = np.percentile(ary, 99.9)
+            qX = np.percentile(ary, threshold)
     
             #print(f'  {i} --- std dev {std} qX {qX}')
             ary2 = []
@@ -286,49 +414,50 @@ if initial_processing:
     pickle_file.close()
 
 
-pickle_in = open('tmp.pkl','rb')
-study_regions = pickle.load(pickle_in)
-
-for name, results in study_regions.items():
-    print(name, results[-1])
-
-
-matrix = []
-for i, vi in enumerate(np.arange(grid[0], grid[1], grid[2])):
-    matrix.append([])
-    for j, vj in enumerate(np.arange(grid[0], grid[1], grid[2])):
-        matrix[i].append(study_regions[f'wind{vj}_solar{vi}'][-1])
-
-print(matrix)
-
-
-fig, ax = plt.subplots()
-im = ax.imshow(matrix,interpolation='none',origin='lower')
-cbar = ax.figure.colorbar(im)
-cbar.ax.set_ylabel(f"Unmet Demand ($sigma/$mu)")
-
-axis_vals = np.arange(grid[0], grid[1], grid[2])
-x_labs, y_labs = [], []
-for v in axis_vals:
-    if round(v,1)==v:
-        x_labs.append(v)
-    else:
-        x_labs.append('')
-for v in axis_vals:
-    if int(v)==v:
-        y_labs.append(v)
-    else:
-        y_labs.append('')
-plt.xticks(range(len(axis_vals)), x_labs, rotation=90)
-plt.yticks(range(len(axis_vals)), y_labs)
-plt.xlabel("Wind Cap/Mean Demand")
-plt.ylabel("Solar Cap/Mean Demand")
-
-#plt.tight_layout()
-plt.savefig('matrix.png')
-
-
-
-
-
-
+if make_plots:
+    pickle_in = open('tmp.pkl','rb')
+    study_regions = pickle.load(pickle_in)
+    
+    for name, results in study_regions.items():
+        print(name, results[-1])
+    
+    
+    matrix = []
+    for i, vi in enumerate(np.arange(grid[0], grid[1], grid[2])):
+        matrix.append([])
+        for j, vj in enumerate(np.arange(grid[0], grid[1], grid[2])):
+            matrix[i].append(study_regions[f'wind{vj}_solar{vi}'][-1])
+    
+    print(matrix)
+    
+    
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix,interpolation='none',origin='lower')
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel(f"Unmet Demand ($sigma/$mu)")
+    
+    axis_vals = np.arange(grid[0], grid[1], grid[2])
+    x_labs, y_labs = [], []
+    for v in axis_vals:
+        if round(v,1)==v:
+            x_labs.append(v)
+        else:
+            x_labs.append('')
+    for v in axis_vals:
+        if int(v)==v:
+            y_labs.append(v)
+        else:
+            y_labs.append('')
+    plt.xticks(range(len(axis_vals)), x_labs, rotation=90)
+    plt.yticks(range(len(axis_vals)), y_labs)
+    plt.xlabel("Wind Cap/Mean Demand")
+    plt.ylabel("Solar Cap/Mean Demand")
+    
+    #plt.tight_layout()
+    plt.savefig('matrix.png')
+    
+    
+    
+    
+    
+    
