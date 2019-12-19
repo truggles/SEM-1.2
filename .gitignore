@@ -1,3 +1,5 @@
 Output_Data/*
 *.csv
 plots_*
+test_reli_20*.e*
+test_reli_20*.o*
