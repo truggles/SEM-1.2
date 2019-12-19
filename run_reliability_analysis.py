@@ -600,11 +600,13 @@ if '__main__' in __name__:
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
-        global_name = 'reliability_{}_{}_wind{}'.format(date, version, str(wind_values[-1]).replace('.','p'))
+        global_name += '_wind{}'.format(str(wind_values[-1]).replace('.','p'))
+    if len(solar_values) == 1: # Add solar value to global name for mazama file sorting
+        global_name += '_solar{}'.format(str(solar_values[-1]).replace('.','p'))
     if qmu_scan:
         global_name += '_nukeSF{}'.format(str(round(nuclear_SF,2)).replace('.','p'))
     if post_mazama:
-        global_name = 'reliability_{}_{}_wind*'.format(date, version, str(wind_values[-1]).replace('.','p'))
+        global_name = 'reliability_{}_{}_wind*'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
     results_path = path+'results'
 
