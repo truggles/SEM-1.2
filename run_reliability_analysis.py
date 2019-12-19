@@ -714,6 +714,7 @@ if '__main__' in __name__:
                                 reconfigure_and_run(path, results_path, case_name_base_new, input_file, global_name, 
                                     lead_year_code, year_code, float_reli, cap_solar, cap_wind, cap_NG, 
                                     cap_nuclear, cap_storage, var_cost_unmet_demand)
+        print("\n\nALL DONE")
 
     if make_results_file:
         files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
