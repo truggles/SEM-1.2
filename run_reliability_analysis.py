@@ -195,7 +195,7 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # rel vals, unmet, cap storage, cap nuclear, std dev, abs rel diff, rel diff, unmet, storage, nuclear
-                simp[reliability][solar][wind] = [[], [], [], [], [], [], 0., 0., 0., 0., 0., 0., 0., np.nan, np.nan, 0.]
+                simp[reliability][solar][wind] = [[], [], [], [], [], [], np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
 
     for idx in df.index:
         
@@ -739,7 +739,7 @@ if '__main__' in __name__:
             ## and plot results
             for reliability in reliability_values:
                 #for mthd in [1, 5, 6, 7]:
-                for mthd in [1, 5, 6, 7, 8, 9, 10]:
+                for mthd in [6, 7, 8, 9, 10]:
                     reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
