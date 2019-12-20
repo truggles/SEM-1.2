@@ -75,13 +75,14 @@ def plot_cap_corr(df, unmet, app):
     cb.ax.set_ylim(-1, 1)
     #plt.title('Correlation Matrix', fontsize=16);
 
+    print("Correlation Matrix:")
     print(corr)
 
     for i, col1 in enumerate(corr.columns):
         for j, col2 in enumerate(corr.index):
             #print(i, j, col1, col2, round(corr.loc[col1, col2],2))
             text = ax.text(j, i, round(corr.loc[col1, col2],2),
-                    ha="center", va="center", color='k', fontsize=12)
+                    ha="center", va="center", color='r', fontsize=12)
 
     plt.tight_layout()
     plt.savefig('plots/single_cap_corr_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
@@ -136,13 +137,17 @@ def print_variance(df):
         info = ['capacity wind (kW)', 'capacity solar (kW)',
                 'capacity nuclear (kW)', 'capacity storage (kW)']
 
-        for col in df.columns:
-            if col not in info:
-                continue
-            print(col, round(np.std(df[col]),4), round(np.std(df[col])/np.mean(df[col]),4), 
-                    round((max(df[col]) - min(df[col]))/np.mean(df[col]),4), 
-                    round(np.mean(df[col]),4),
-                    round(np.mean(df[col])*us_mean_dem,4))
+        print("\n")
+        for col in info:
+            #print(col, round(np.std(df[col]),4), round(np.std(df[col])/np.mean(df[col]),4), 
+            #        round((max(df[col]) - min(df[col]))/np.mean(df[col]),4), 
+            #        round(np.mean(df[col]),4),
+            #        round(np.mean(df[col])*us_mean_dem,4))
+            print(col, 
+                    round(np.mean(df[col]),3),
+                    round(np.min(df[col]),3),
+                    round(np.max(df[col]),3),
+                    round(np.std(df[col])/np.mean(df[col]),3))
     
 
 file_map = { # Results file : associated unmet demand
