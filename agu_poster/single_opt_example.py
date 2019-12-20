@@ -54,6 +54,40 @@ def plot_caps(df, unmet, app):
     plt.savefig('plots/single_cap_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
 
 
+def plot_cap_corr(df, unmet, app):
+
+    to_test = ['capacity wind (kW)', 'capacity solar (kW)', 'capacity nuclear (kW)',
+            'capacity storage (kW)']
+    df = df[to_test]
+
+    plt.close()
+    corr = df.corr()
+    corr.style.background_gradient(cmap='coolwarm').set_precision(2)
+    #corr.style.background_gradient(cmap='coolwarm').set_properties(**{'font-size': '5pt'})
+    f = plt.figure()
+    plt.imshow(corr, origin='lower', vmax=1, vmin=-1)
+    abbrev = [name.replace('capacity','cap.').replace('storage (kW)','storage (kWh)').replace(' (', '\n(')for name in to_test]
+    plt.xticks(range(df.shape[1]), abbrev, fontsize=14, rotation=90)
+    plt.yticks(range(df.shape[1]), abbrev, fontsize=14)
+    ax = plt.gca()
+    cb = plt.colorbar()
+    cb.ax.tick_params(labelsize=14)
+    cb.ax.set_ylim(-1, 1)
+    #plt.title('Correlation Matrix', fontsize=16);
+
+    print(corr)
+
+    for i, col1 in enumerate(corr.columns):
+        for j, col2 in enumerate(corr.index):
+            #print(i, j, col1, col2, round(corr.loc[col1, col2],2))
+            text = ax.text(j, i, round(corr.loc[col1, col2],2),
+                    ha="center", va="center", color='k', fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig('plots/single_cap_corr_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
+
+
+
 def plot_unmet(df, unmet, app):
 
     plt.close()
@@ -123,6 +157,7 @@ for f, info in file_map.items():
     master, results = split_df(df)
     
     plot_caps(master, info[0], info[1])
+    plot_cap_corr(master, info[0], info[1])
     plot_unmet(results, info[0], info[1])
     print_variance(master)
 
