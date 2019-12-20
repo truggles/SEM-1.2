@@ -32,7 +32,7 @@ def split_df(df):
     return df_master, df_results
 
 
-def plot_caps(df, unmet):
+def plot_caps(df, unmet, app):
 
     plt.close()
     fig, ax = plt.subplots(figsize=(4.5*adj,4*adj))
@@ -47,11 +47,14 @@ def plot_caps(df, unmet):
     ax.set_ylabel('Nameplate Capacity (kW or kWh)')
     plt.xticks(range(4), ['Wind (kW)', 'Solar (kW)', 'Nuclear (kW)', 'Storage (kWh)'])
     plt.legend(loc='lower right')
+    if app == 'ERCOT':
+        ax.set_ylim(0, 3)
+        plt.legend(loc='upper left', ncol=3)
     plt.tight_layout()
-    plt.savefig('plots/single_cap_'+str(unmet).replace('.','p')+'.'+save_type)
+    plt.savefig('plots/single_cap_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
 
 
-def plot_unmet(df, unmet):
+def plot_unmet(df, unmet, app):
 
     plt.close()
     fig, ax = plt.subplots(figsize=(4.5*adj,4*adj))
@@ -76,7 +79,7 @@ def plot_unmet(df, unmet):
     i = 0
     for k, v in years.items():
         #ax.scatter([i for _ in range(len(v))], v, marker='o', label=f'Year {i+1}')
-        ax.plot([i for _ in range(len(v))], v, 'o', markersize=10, label=f'Year {i+1}')
+        ax.plot([i for _ in range(len(v))], v, 'o', markersize=10, label=f'Year {i+1}', alpha=0.5)
         i += 1
 
 
@@ -86,10 +89,14 @@ def plot_unmet(df, unmet):
     ax.set_ylim(0, max_v*1.5)
     ax.set_xlim(-0.25, 0.25+len(years)-1)
     ax.set_ylabel('Normalized Unmet Demand')
-    plt.xticks(range(4), [f'Year {i+1}\nConfig.' for i in range(4)])
+    plt.xticks(range(len(v)+1), [f'Year {i+1}\nConfig.' for i in range(len(v)+1)])
     plt.legend(loc='upper right')
+    if app == 'ERCOT':
+        plt.xticks(range(len(v)+1), [f'Yr {i+1} Cfg.' for i in range(len(v)+1)], rotation=90)
+        ax.set_ylim(0, 0.01)
+        plt.legend(loc='upper left', ncol=3)
     plt.tight_layout()
-    plt.savefig('plots/single_unmet_'+str(unmet).replace('.','p')+'.'+save_type)
+    plt.savefig('plots/single_unmet_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
 
 def print_variance(df):
         info = ['capacity wind (kW)', 'capacity solar (kW)',
@@ -105,17 +112,18 @@ def print_variance(df):
     
 
 file_map = { # Results file : associated unmet demand
-    'Results_reliability_20191201_v1_wind.csv' : 0.001,
+    '../results/Results_reliability_20191201_v1_wind.csv' : [0.001, 'CONUS'],
+    '../results/Results_reliability_20191219_v1TX0.999_wind.csv' : [0.001, 'ERCOT'],
     #'Results_reliability_20191201_v2_wind.csv' : 0.0003,
 }
 
-for f, unmet in file_map.items():
-    print(unmet, f)
+for f, info in file_map.items():
+    print(info, f)
     df = pd.read_csv(f, index_col=False)
     master, results = split_df(df)
     
-    plot_caps(master, unmet)
-    plot_unmet(results, unmet)
+    plot_caps(master, info[0], info[1])
+    plot_unmet(results, info[0], info[1])
     print_variance(master)
 
 
