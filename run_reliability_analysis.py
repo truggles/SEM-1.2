@@ -195,7 +195,7 @@ def simplify_results(results_file):
         for solar in solar_values:
             simp[reliability][solar] = {}
             for wind in wind_values:            # rel vals, unmet, cap storage, cap nuclear, std dev, abs rel diff, rel diff, unmet, storage, nuclear
-                simp[reliability][solar][wind] = [[], [], [], [], [], [], np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
+                simp[reliability][solar][wind] = [[], [], [], [], [], [], np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
 
     for idx in df.index:
         
@@ -255,6 +255,8 @@ def simplify_results(results_file):
                 if np.mean(simp[reli][solar][wind][5]) > 0:
                     simp[reli][solar][wind][adj+8] = np.std(simp[reli][solar][wind][5])/np.mean(simp[reli][solar][wind][5])
                 simp[reli][solar][wind][adj+9] = np.std(simp[reli][solar][wind][1])/np.mean(simp[reli][solar][wind][1])
+                simp[reli][solar][wind][adj+10] = np.mean(simp[reli][solar][wind][1])/max((1.-reli),1e-10)
+                simp[reli][solar][wind][adj+11] = np.std(simp[reli][solar][wind][1])/max((1.-reli),1e-10)
 
     return simp
 
@@ -390,6 +392,8 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
             8 : 'Capacity Storage', # sigma/mu
             9 : 'Capacity Nuclear', # sigma/mu
             10 : 'Unmet Demand', # sigma/mu
+            11 : 'Mean Unmet Demand', # mu
+            12 : 'Unmet Demand Std', # sigma
     }
     
     print(f"Reliability {reliability} using method {mthd}, {names[mthd]}")
@@ -429,6 +433,12 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
     if mthd in [8, 9, 10]:
         cbar.ax.set_ylabel(f"{names[mthd]}"+' ($\sigma/\mu$)')
         plt.title(f"{names[mthd]}"+' ($\sigma/\mu$)')
+    if mthd == 11:
+        cbar.ax.set_ylabel('Mean/Target (%)')
+        plt.title('Mean Unmet Demand')
+    if mthd == 12:
+        cbar.ax.set_ylabel('$\sigma$/Target (%)')
+        plt.title('Spread in Unmet Demand')
     #plt.tight_layout()
     # Modify save_name to make more LaTeX-able
     if 'ZS' in save_name:
@@ -739,7 +749,8 @@ if '__main__' in __name__:
             ## and plot results
             for reliability in reliability_values:
                 #for mthd in [1, 5, 6, 7]:
-                for mthd in [6, 7, 8, 9, 10]:
+                #for mthd in [6, 7, 8, 9, 10, 11, 12]:
+                for mthd in [11, 12]:
                     reliability_matrix(mthd, results, reliability, solar_values, wind_values, f'{date}_{version}')
 
 
