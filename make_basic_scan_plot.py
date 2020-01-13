@@ -49,8 +49,11 @@ def get_renewable_fraction(year, wind_factor, solar_factor, im, demand, wind, so
 
 
 
-
-def plot_matrix(matrix, solar_values, wind_values, save_name):
+# Ideas for 2nd x and y axis showing generation potential (CF x cap)
+# Spines or 2nd axes - https://stackoverflow.com/questions/31803817/how-to-add-second-x-axis-at-the-bottom-of-the-first-one-in-matplotlib
+# Parasite axes - https://matplotlib.org/3.1.0/gallery/axisartist/demo_parasite_axes2.html
+# For now, try second row of text
+def plot_matrix(matrix, solar_values, wind_values, cf_wind, cf_solar, save_name):
 
 
     fig, ax = plt.subplots()#figsize=(4.5, 4))
@@ -66,18 +69,18 @@ def plot_matrix(matrix, solar_values, wind_values, save_name):
     wind_labs, solar_labs = [], []
     for v in wind_values:
         if int(v)==v:
-            wind_labs.append(v)
+            wind_labs.append("%.1f\n(%.2f)" % (v, v * cf_wind))
         else:
             wind_labs.append('')
     for v in solar_values:
         if int(v)==v:
-            solar_labs.append(v)
+            solar_labs.append("%.1f\n(%.2f)" % (v, v * cf_solar))
         else:
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("Wind Cap./Mean Demand")
-    plt.ylabel("Solar Cap./Mean Demand")
+    plt.xlabel("Normalized Wind Capacity\n(Total Generation)")
+    plt.ylabel("Normalized Solar Capacity\n(Total Generation)")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f"Renewable Energy Fraction (%)")
     plt.title(f"")
@@ -88,7 +91,9 @@ def plot_matrix(matrix, solar_values, wind_values, save_name):
     plt.clf()
 
 
+def get_CF(df, name, im):
 
+    return np.mean(df.loc[ df[im[name][3]] == year, im[name][2] ].values)
 
 region = 'CONUS'
 im = return_file_info_map(region)
@@ -100,7 +105,7 @@ year = 2018
 mean = np.mean(demand.loc[ demand[im['demand'][3]] == year, im['demand'][2] ])
 print(f"Mean normalized demand for year {year} = {mean}")
 
-to_explore = [0, 4, 0.25]
+to_explore = [0, 4.001, 0.1]
 r_vals = np.arange(to_explore[0], to_explore[1], to_explore[2])
 tgt_len = len(r_vals)
 
@@ -115,7 +120,10 @@ for i, solar_factor in enumerate(r_vals):
         matrix[i].append(val)
 
 ary = np.array(matrix)
-plot_matrix(matrix, r_vals, r_vals, 'test')
+
+cf_wind = get_CF(wind, 'wind', im)
+cf_solar = get_CF(solar, 'solar', im)
+plot_matrix(matrix, r_vals, r_vals, cf_wind, cf_solar, 'test')
 
 
 
