@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scipy.stats import rankdata
+from collections import OrderedDict
 
 
 def return_file_info_map(region):
@@ -89,33 +91,164 @@ def plot_matrix(matrix, solar_values, wind_values, save_name):
 
 
 
+def get_annual_df(year, df, tgt, im):
+
+    print(len(df))
+    df2 = df[ df[ im[tgt][3]] == year]
+    print(len(df2))
+    return df2
+
+
+# demand_threshold is in percent
+def return_ordered_df(demand, wind, solar, im, demand_threshold):
+
+    #rank_mthd='ordinal'
+    rank_mthd='min'
+    to_map = OrderedDict()
+    to_map['demand'] = demand[im['demand'][2]].values
+    to_map['demand_rank'] = rankdata(demand[im['demand'][2]].values, method=rank_mthd)
+    to_map['demand_pct_of_max'] = demand[im['demand'][2]].values/np.max(demand[im['demand'][2]])
+    to_map['wind'] = wind[im['wind'][2]].values
+    to_map['wind_rank'] = rankdata(wind[im['wind'][2]].values, method=rank_mthd)
+    to_map['wind_pct_of_max'] = wind[im['wind'][2]].values/np.max(wind[im['wind'][2]])
+    to_map['solar'] = solar[im['solar'][2]].values
+    to_map['solar_rank'] = rankdata(solar[im['solar'][2]].values, method=rank_mthd)
+    to_map['solar_pct_of_max'] = solar[im['solar'][2]].values/np.max(solar[im['solar'][2]])
+
+    df = pd.DataFrame(to_map)
+    df = df.sort_values(by='demand_rank', ascending=0)
+
+    df = df.drop(df[df['demand_rank'] < (len(df.index) * (100. - demand_threshold)/100.)].index, axis=0)
+    return df
+
+
+def make_ordering_plot(dfs, save_name, wind_factor=1., solar_factor=1.):
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand']-df['wind']*wind_factor, df['solar']*solar_factor, '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand - wind gen')
+    ax.set_ylabel('solar gen')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_dem_min_wind_vs_solar.png")
+    plt.clf()
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand']-df['solar']*solar_factor, df['wind']*wind_factor, '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand - solar gen')
+    ax.set_ylabel('wind gen')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_dem_min_solar_vs_wind.png")
+    plt.clf()
+
+
+    plt.close()
+    fig, ax = plt.subplots()
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand'], df['solar'], '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand')
+    ax.set_ylabel('solar CF')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_solar.png")
+    plt.clf()
+
+    plt.close()
+    fig, ax = plt.subplots()
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand'], df['wind'],  '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand')
+    ax.set_ylabel('wind CF')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_wind.png")
+    plt.clf()
+
+
+    plt.close()
+    fig, ax = plt.subplots()
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand_rank'], df['solar_rank'], '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand rank')
+    ax.set_ylabel('solar rank')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_solar_rank.png")
+    plt.clf()
+
+    plt.close()
+    fig, ax = plt.subplots()
+    for year, df in dfs.items():
+        print(year)
+        ax.plot(df['demand_rank'], df['wind_rank'],  '.', alpha=0.2, label=year)
+    ax.set_xlabel('demand rank')
+    ax.set_ylabel('wind rank')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend()
+    plt.savefig(f"plots_new/{save_name}_wind_rank.png")
+    plt.clf()
+
+
 
 region = 'CONUS'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
-print(demand.head())
 
 
-year = 2018
-mean = np.mean(demand.loc[ demand[im['demand'][3]] == year, im['demand'][2] ])
-print(f"Mean normalized demand for year {year} = {mean}")
 
-to_explore = [0, 4, 0.25]
-r_vals = np.arange(to_explore[0], to_explore[1], to_explore[2])
-tgt_len = len(r_vals)
 
-matrix = []
+test_ordering = True
+#test_ordering = False
+if test_ordering:
+    dfs = OrderedDict()
+    years = [2016,2017,2018]
+    for year in years:
+        d_yr = get_annual_df(year, demand, 'demand', im)
+        w_yr = get_annual_df(year, wind, 'wind', im)
+        s_yr = get_annual_df(year, solar, 'solar', im)
+        dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
-zero_negative=True
-for i, solar_factor in enumerate(r_vals):
-    matrix.append([])
-    for wind_factor in r_vals:
-        val = get_renewable_fraction(year, wind_factor, solar_factor, im, demand, wind, solar, zero_negative)
-        #print(f" - Wind:Solar:RenewableFraction {wind_factor}:\t{solar_factor}:\t{round(val,3)}")
-        matrix[i].append(val)
+    make_ordering_plot(dfs, f'ordering_{region}')
+        
 
-ary = np.array(matrix)
-plot_matrix(matrix, r_vals, r_vals, 'test')
+
+
+make_scan = True
+make_scan = False
+if make_scan:
+
+    year = 2018
+    mean = np.mean(demand.loc[ demand[im['demand'][3]] == year, im['demand'][2] ])
+    print(f"Mean normalized demand for year {year} = {mean}")
+    
+    to_explore = [0, 4, 0.25]
+    r_vals = np.arange(to_explore[0], to_explore[1], to_explore[2])
+    tgt_len = len(r_vals)
+    
+    matrix = []
+    
+    zero_negative=True
+    for i, solar_factor in enumerate(r_vals):
+        matrix.append([])
+        for wind_factor in r_vals:
+            val = get_renewable_fraction(year, wind_factor, solar_factor, im, demand, wind, solar, zero_negative)
+            #print(f" - Wind:Solar:RenewableFraction {wind_factor}:\t{solar_factor}:\t{round(val,3)}")
+            matrix[i].append(val)
+    
+    ary = np.array(matrix)
+    plot_matrix(matrix, r_vals, r_vals, 'test')
 
 
 

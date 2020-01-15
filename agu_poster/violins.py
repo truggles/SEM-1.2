@@ -333,9 +333,9 @@ def print_basic_stats(collection):
 initial_processing = True
 initial_processing = False
 correlations = True
-#correlations = False
+correlations = False
 make_plots = True
-make_plots = False
+#make_plots = False
 TEXAS = True
 #TEXAS = False
 
