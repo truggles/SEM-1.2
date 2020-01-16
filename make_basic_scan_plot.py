@@ -27,11 +27,9 @@ def return_file_info_map(region):
     return info_map[region]
 
 
-# Normalize demand
 def get_dem_wind_solar(im):
 
     demand = pd.read_csv(im['demand'][0], header=im['demand'][1])
-    demand[im['demand'][2]] = demand[im['demand'][2]]/np.mean(demand[im['demand'][2]])
     wind = pd.read_csv(im['wind'][0], header=im['wind'][1])
     solar = pd.read_csv(im['solar'][0], header=im['solar'][1])
 
@@ -97,6 +95,7 @@ def plot_matrix(matrix, solar_values, wind_values, cf_wind, cf_solar, save_name)
 def plot_matrix_thresholds(matrix, solar_values, wind_values, save_name):
 
 
+    plt.close()
     fig, ax = plt.subplots()#figsize=(4.5, 4))
     #im = ax.imshow(matrix,interpolation='none',origin='lower')
     im = ax.imshow(matrix,interpolation='none',origin='lower')
@@ -130,7 +129,15 @@ def get_CF(df, name, im):
 
     return np.mean(df.loc[ df[im[name][3]] == year, im[name][2] ].values)
 
+# only for demand
+def print_vals(df, year, im):
 
+    print(f"Peak demand events for year {year}")
+    print("year:month:day:hour:demand")
+    dfX = df.sort_values(by=['demand (MW)'], ascending=False)
+    for i, idx in enumerate(dfX.index):
+        print(f"{dfX.loc[idx, 'year']}:{dfX.loc[idx, 'month']}:{dfX.loc[idx, 'day']}:{dfX.loc[idx, 'hour']}:{dfX.loc[idx, 'demand (MW)']}")
+        if i > 9: break
 
 def get_annual_df(year, df, tgt, im):
 
@@ -139,6 +146,7 @@ def get_annual_df(year, df, tgt, im):
     # Normalize
     if tgt == 'demand':
         df2[im[tgt][2]] = df2[im[tgt][2]]/np.mean(df2[im[tgt][2]])
+        print_vals(df2, year, im)
     return df2
 
 
@@ -172,32 +180,53 @@ def get_range(vect):
 
 def make_ordering_plotsX(dfs, save_name, wind_factor=1., solar_factor=1., thresholds=[1,], cnt=0):
     plt.close()
-    fig, ax = plt.subplots()
-    #ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
     vects = []
     for t in thresholds:
         vects.append([])
     for year, df in dfs.items():
-        ax.plot(df['demand']-df['solar']*solar_factor-df['wind']*wind_factor, df['solar'], '.', alpha=0.2, label=year)
         vals = df['demand'].values - df['solar'].values * solar_factor - df['wind'].values * wind_factor
+        axs[0].plot(vals, df['solar'], '.', alpha=0.2, label=year)
         vals.sort()
-        ax.plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-') 
-        ax.plot([vals[-100] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='--') 
-        #ax.plot([vals[-50] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-.') 
+        axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
+        axs[0].plot([vals[-150] for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
         for i, t in enumerate(thresholds):
             vects[i].append(vals[-1 * t])
-    ax.set_xlabel('demand - solar gen')
-    ax.set_ylabel('wind gen')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    ax.set_xlim(1.3, 2)
+    axs[0].set_xlabel(f'demand - (wind x {round(wind_factor,3)}) - (solar x {round(solar_factor,3)})')
+    axs[0].set_ylabel('solar CF')
+    axs[0].set_ylim(0, 1)
+    axs[0].set_xlim(0, 2)
+    for year, df in dfs.items():
+        vals = df['demand'].values - df['solar'].values * solar_factor - df['wind'].values * wind_factor
+        axs[1].plot(vals, df['wind'], '.', alpha=0.2, label=year)
+        vals.sort()
+        axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
+        axs[1].plot([vals[-150] for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
+    axs[1].set_xlabel(f'demand - (wind x {round(wind_factor,3)}) - (solar x {round(solar_factor,3)})')
+    axs[1].set_ylabel('wind CF')
+    axs[1].set_ylim(0, 1)
+    axs[1].set_xlim(0, 2)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(f"plots_new/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(solar_factor,3)).replace('.','p')}_windSF{str(round(wind_factor,3)).replace('.','p')}.png")
     plt.clf()
 
     out = []
+    out2 = []
+    out3 = []
     for vect in vects:
         out.append(get_range(vect))
-    return out
+        out2.append(np.std(vect))
+        distances = []
+        for i in range(len(vect)):
+            for j in range(len(vect)):
+                if i == j:
+                    continue
+                distances.append(vect[i] - vect[j])
+        out3.append(np.std(distances))
+
+
+    return out, out2, out3
 
 
 
@@ -309,7 +338,7 @@ tgt_len = len(r_vals)
 thresholds = [1, 3, 5, 10, 20, 30, 40, 50, 75, 100, 150, 200]
 
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 if test_ordering:
     dfs = OrderedDict()
     years = [2016,2017,2018]
@@ -329,8 +358,8 @@ if test_ordering:
         mapper[str(round(solar_factor,2))] = OrderedDict()
         print(f"Solar factor {solar_factor}")
         for wind_factor in steps:
-            vects = make_ordering_plotsX(dfs, f'ordering_{region}', wind_factor, solar_factor, thresholds, cnt)
-            mapper[str(round(solar_factor,2))][str(round(wind_factor,2))] = vects
+            vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_factor, solar_factor, thresholds, cnt)
+            mapper[str(round(solar_factor,2))][str(round(wind_factor,2))] = [vects1, vects2, vects3]
             cnt += 1
 
     #print("Solar Wind max_range 100th_range")
@@ -338,30 +367,50 @@ if test_ordering:
     #    for wind, vals in info.items():
     #        print(solar, wind, vals)
         
-    pickle_file = open('tmp2.pkl', 'wb')
+    pickle_file = open('tmp4.pkl', 'wb')
     pickle.dump(mapper, pickle_file)
     pickle_file.close()
 
 make_plots = True
 #make_plots = False
 if make_plots:
-    pickle_in = open('tmp2.pkl','rb')
+    pickle_in = open('tmp4.pkl','rb')
     study_regions = pickle.load(pickle_in)
     steps = r_vals
 
 
     for t, threshold in enumerate(thresholds):
         print(threshold)
+        # Range of dem - wind - solar
         matrix = []
         for i, solar_factor in enumerate(steps):
             matrix.append([])
             for wind_factor in steps:
-                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][t]
+                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][0][t]
                 matrix[i].append(val)
         ary = np.array(matrix)
-        plot_matrix_thresholds(matrix, r_vals, r_vals, f'threshold{threshold:03}')
+        plot_matrix_thresholds(matrix, r_vals, r_vals, f'threshold_range_{threshold:03}')
 
+        # Std dev of dem - wind - solar
+        matrix = []
+        for i, solar_factor in enumerate(steps):
+            matrix.append([])
+            for wind_factor in steps:
+                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][1][t]
+                matrix[i].append(val)
+        ary = np.array(matrix)
+        plot_matrix_thresholds(matrix, r_vals, r_vals, f'threshold_std_{threshold:03}')
 
+        # Std dev of all distances between dem - wind - solar (closest to MEM reliability)
+        # results I have shown
+        matrix = []
+        for i, solar_factor in enumerate(steps):
+            matrix.append([])
+            for wind_factor in steps:
+                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][2][t]
+                matrix[i].append(val)
+        ary = np.array(matrix)
+        plot_matrix_thresholds(matrix, r_vals, r_vals, f'threshold_std_of_distances_{threshold:03}')
 
 
 make_scan = True
