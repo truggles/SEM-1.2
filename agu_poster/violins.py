@@ -190,7 +190,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
     ax2.set_xlabel('$pp$')
     ax2.set_ylabel('dem - wind - solar (kW)')
 
-    plt.savefig(f'plots/hist_{name.replace(" ","_")}.png')
+    plt.savefig(f'plots/hist_cnt{cnt:03}_{name.replace(" ","_")}.png')
     #plt.gcf()
     #ax.set_yscale('log')
     #ax.set_ylim(0.5, ax.get_ylim()[1])
@@ -206,7 +206,7 @@ def integrated_threshold(data, data_long, cnt, name, pp):
             results.append(rslt)
 
     print(f"Results for {name}: len: {len(results)}, coeff of var: {round(np.std(results)/np.mean(results),4)}")
-    return np.std(results)/np.mean(results)
+    return np.std(results), np.mean(results)
 
 # Apply a threshod from a given index to another
 # year and return the unmet demand
@@ -331,7 +331,7 @@ def print_basic_stats(collection):
 #=================================================================================
 
 initial_processing = True
-initial_processing = False
+#initial_processing = False
 correlations = True
 correlations = False
 make_plots = True
@@ -339,13 +339,14 @@ make_plots = True
 TEXAS = True
 #TEXAS = False
 
-grid = [0, 5.1, 0.25]
-#grid = [0, 2.1, 0.25]
+grid = [0, 4.1, 0.25]
+#grid = [0, 1.1, 0.25]
 
 n_years = 16
 #n_years = 4
 
-threshold = 99
+threshold = 99.00
+threshold = 100.00
 
 if initial_processing or correlations:
     collection = load_inputs(n_years, TEXAS)
@@ -409,13 +410,13 @@ if initial_processing:
                 data_to_plot2, data_to_plot, cnt, name, pp))
         cnt += 1
     
-    pickle_file = open('tmp.pkl', 'wb')
+    pickle_file = open(f'plk_{str(threshold)}.pkl', 'wb')
     pickle.dump(study_regions, pickle_file)
     pickle_file.close()
 
 
 if make_plots:
-    pickle_in = open('tmp.pkl','rb')
+    pickle_in = open(f'pkl_{str(threshold)}.pkl','rb')
     study_regions = pickle.load(pickle_in)
     
     for name, results in study_regions.items():
@@ -426,7 +427,7 @@ if make_plots:
     for i, vi in enumerate(np.arange(grid[0], grid[1], grid[2])):
         matrix.append([])
         for j, vj in enumerate(np.arange(grid[0], grid[1], grid[2])):
-            matrix[i].append(study_regions[f'wind{vj}_solar{vi}'][-1])
+            matrix[i].append(study_regions[f'wind{vj}_solar{vi}'][-1][0])
     
     print(matrix)
     
@@ -454,7 +455,7 @@ if make_plots:
     plt.ylabel("Solar Cap/Mean Demand")
     
     #plt.tight_layout()
-    plt.savefig('matrix.png')
+    plt.savefig(f'matrix_{round(threshold,2)}.png')
     
     
     
