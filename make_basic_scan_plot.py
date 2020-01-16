@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import rankdata
 from collections import OrderedDict
 import pickle
+from glob import glob
+import os
+from shutil import copy2
 
 
 def return_file_info_map(region):
@@ -26,6 +29,19 @@ def return_file_info_map(region):
     }
     return info_map[region]
 
+# Sort output pngs into folders for easy scrolling
+def make_dirs(base, tgt):
+    files = glob(tgt)
+    to_make = []
+    for f in files:
+        print(f)
+        f1 = f.strip('.png')
+        info = f1.split('_')
+        for piece in info:
+            if 'solarSF' in piece or 'windSF' in piece:
+                if not os.path.exists(base+piece):
+                    os.makedirs(base+piece)
+                copy2(f, base+piece)
 
 def get_dem_wind_solar(im):
 
@@ -370,6 +386,11 @@ if test_ordering:
     pickle_file = open('tmp4.pkl', 'wb')
     pickle.dump(mapper, pickle_file)
     pickle_file.close()
+
+    # Sort plots
+    base = 'plots_new/'
+    tgt = base+'ordering*'
+    make_dirs(base, files)
 
 make_plots = True
 #make_plots = False
