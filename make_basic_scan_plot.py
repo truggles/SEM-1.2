@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from scipy.stats import rankdata
 from collections import OrderedDict
+import pickle
 
 
 def return_file_info_map(region):
@@ -93,6 +94,38 @@ def plot_matrix(matrix, solar_values, wind_values, cf_wind, cf_solar, save_name)
     plt.clf()
 
 
+def plot_matrix_thresholds(matrix, solar_values, wind_values, save_name):
+
+
+    fig, ax = plt.subplots()#figsize=(4.5, 4))
+    #im = ax.imshow(matrix,interpolation='none',origin='lower')
+    im = ax.imshow(matrix,interpolation='none',origin='lower')
+
+    wind_labs, solar_labs = [], []
+    for v in wind_values:
+        if int(v)==v:
+            wind_labs.append("%.1f" % (v))
+        else:
+            wind_labs.append('')
+    for v in solar_values:
+        if int(v)==v:
+            solar_labs.append("%.1f" % (v))
+        else:
+            solar_labs.append('')
+    plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
+    plt.yticks(range(len(solar_values)), solar_labs)
+    plt.xlabel("Normalized Wind Capacity")
+    plt.ylabel("Normalized Solar Capacity")
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel(f"Spread in Dem - Wind - Solar")
+    plt.title(f"")
+    plt.tight_layout()
+
+
+    plt.savefig(f"plots_new/{save_name}.png")
+    plt.clf()
+
+
 def get_CF(df, name, im):
 
     return np.mean(df.loc[ df[im[name][3]] == year, im[name][2] ].values)
@@ -132,16 +165,18 @@ def return_ordered_df(demand, wind, solar, im, demand_threshold):
     return df
 
 
+def get_range(vect):
+    return np.max(vect) - np.min(vect)
 
 
 
-
-def make_ordering_plotsX(dfs, save_name, wind_factor=1., solar_factor=1., cnt=0):
+def make_ordering_plotsX(dfs, save_name, wind_factor=1., solar_factor=1., thresholds=[1,], cnt=0):
     plt.close()
     fig, ax = plt.subplots()
     #ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
-    max_vals = []
-    hundredth_vals = []
+    vects = []
+    for t in thresholds:
+        vects.append([])
     for year, df in dfs.items():
         ax.plot(df['demand']-df['solar']*solar_factor-df['wind']*wind_factor, df['solar'], '.', alpha=0.2, label=year)
         vals = df['demand'].values - df['solar'].values * solar_factor - df['wind'].values * wind_factor
@@ -149,8 +184,8 @@ def make_ordering_plotsX(dfs, save_name, wind_factor=1., solar_factor=1., cnt=0)
         ax.plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-') 
         ax.plot([vals[-100] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='--') 
         #ax.plot([vals[-50] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-.') 
-        max_vals.append(vals[-1])
-        hundredth_vals.append(vals[-100])
+        for i, t in enumerate(thresholds):
+            vects[i].append(vals[-1 * t])
     ax.set_xlabel('demand - solar gen')
     ax.set_ylabel('wind gen')
     ax.set_ylim(0, ax.get_ylim()[1])
@@ -159,7 +194,10 @@ def make_ordering_plotsX(dfs, save_name, wind_factor=1., solar_factor=1., cnt=0)
     plt.savefig(f"plots_new/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(solar_factor,3)).replace('.','p')}_windSF{str(round(wind_factor,3)).replace('.','p')}.png")
     plt.clf()
 
-    return max_vals, hundredth_vals
+    out = []
+    for vect in vects:
+        out.append(get_range(vect))
+    return out
 
 
 
@@ -265,12 +303,13 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 
 
-to_explore = [0, 4.001, 0.1]
+to_explore = [0, 3.001, 0.1]
 r_vals = np.arange(to_explore[0], to_explore[1], to_explore[2])
 tgt_len = len(r_vals)
+thresholds = [1, 3, 5, 10, 20, 30, 40, 50, 75, 100, 150, 200]
 
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 if test_ordering:
     dfs = OrderedDict()
     years = [2016,2017,2018]
@@ -283,23 +322,45 @@ if test_ordering:
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
     wind_factor=0.
-    steps = np.arange(0, 1.001, .1)
+    steps = r_vals
     mapper = OrderedDict()
     cnt = 0
     for solar_factor in steps:
-        mapper[solar_factor] = OrderedDict()
+        mapper[str(round(solar_factor,2))] = OrderedDict()
+        print(f"Solar factor {solar_factor}")
         for wind_factor in steps:
-            max_vals, hundredth_vals = make_ordering_plotsX(dfs, f'ordering_{region}', wind_factor, solar_factor, cnt)
-            #max_vals.sort()
-            #hundredth_vals.sort()
-            mapper[solar_factor][wind_factor] = [max_vals, hundredth_vals]
+            vects = make_ordering_plotsX(dfs, f'ordering_{region}', wind_factor, solar_factor, thresholds, cnt)
+            mapper[str(round(solar_factor,2))][str(round(wind_factor,2))] = vects
             cnt += 1
 
-    print("Solar Wind max_range 100th_range")
-    for solar, info in mapper.items():
-        for wind, vals in info.items():
-            print(solar, wind, round(np.max(vals[0]) - np.min(vals[0]),4), round(np.max(vals[1]) - np.min(vals[1]),4))
+    #print("Solar Wind max_range 100th_range")
+    #for solar, info in mapper.items():
+    #    for wind, vals in info.items():
+    #        print(solar, wind, vals)
         
+    pickle_file = open('tmp2.pkl', 'wb')
+    pickle.dump(mapper, pickle_file)
+    pickle_file.close()
+
+make_plots = True
+#make_plots = False
+if make_plots:
+    pickle_in = open('tmp2.pkl','rb')
+    study_regions = pickle.load(pickle_in)
+    steps = r_vals
+
+
+    for t, threshold in enumerate(thresholds):
+        print(threshold)
+        matrix = []
+        for i, solar_factor in enumerate(steps):
+            matrix.append([])
+            for wind_factor in steps:
+                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][t]
+                matrix[i].append(val)
+        ary = np.array(matrix)
+        plot_matrix_thresholds(matrix, r_vals, r_vals, f'threshold{threshold:03}')
+
 
 
 
