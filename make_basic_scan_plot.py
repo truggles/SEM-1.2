@@ -101,9 +101,11 @@ def get_CF(df, name, im):
 
 def get_annual_df(year, df, tgt, im):
 
-    print(len(df))
     df2 = df[ df[ im[tgt][3]] == year]
-    print(len(df2))
+
+    # Normalize
+    if tgt == 'demand':
+        df2[im[tgt][2]] = df2[im[tgt][2]]/np.mean(df2[im[tgt][2]])
     return df2
 
 
@@ -130,87 +132,103 @@ def return_ordered_df(demand, wind, solar, im, demand_threshold):
     return df
 
 
-def make_ordering_plot(dfs, save_name, wind_factor=1., solar_factor=1.):
+def make_ordering_plot(dfs, save_name, wind_factor=1., solar_factor=1., cnt=0):
+
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    #for year, df in dfs.items():
+    #    print(year)
+    #    ax.plot(df['demand']-df['wind']*wind_factor, df['solar']*solar_factor, '.', alpha=0.2, label=year)
+    #ax.set_xlabel('demand - wind gen')
+    #ax.set_ylabel('solar gen')
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    #plt.legend()
+    #plt.savefig(f"plots_new/{save_name}_dem_min_wind_vs_solar.png")
+    #plt.clf()
 
     plt.close()
     fig, ax = plt.subplots()
-    ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    #ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
+    max_vals = []
+    hundredth_vals = []
     for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand']-df['wind']*wind_factor, df['solar']*solar_factor, '.', alpha=0.2, label=year)
-    ax.set_xlabel('demand - wind gen')
-    ax.set_ylabel('solar gen')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f"plots_new/{save_name}_dem_min_wind_vs_solar.png")
-    plt.clf()
-
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.plot(np.linspace(0,1,100), np.linspace(0,1,100), 'k-')
-    for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand']-df['solar']*solar_factor, df['wind']*wind_factor, '.', alpha=0.2, label=year)
+        ax.plot(df['demand']-df['solar']*solar_factor, df['solar'], '.', alpha=0.2, label=year)
+        vals = df['demand'].values - df['solar'].values * solar_factor
+        vals.sort()
+        ax.plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-') 
+        ax.plot([vals[-100] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='--') 
+        #ax.plot([vals[-50] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-.') 
+        max_vals.append(vals[-1])
+        hundredth_vals.append(vals[-100])
     ax.set_xlabel('demand - solar gen')
     ax.set_ylabel('wind gen')
     ax.set_ylim(0, ax.get_ylim()[1])
+    ax.set_xlim(1.3, 2)
     plt.legend()
-    plt.savefig(f"plots_new/{save_name}_dem_min_solar_vs_wind.png")
+    plt.savefig(f"plots_new/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(solar_factor,3)).replace('.','p')}_windSF{str(round(wind_factor,3)).replace('.','p')}.png")
     plt.clf()
 
+    return max_vals, hundredth_vals
 
-    plt.close()
-    fig, ax = plt.subplots()
-    for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand'], df['solar'], '.', alpha=0.2, label=year)
-    ax.set_xlabel('demand')
-    ax.set_ylabel('solar CF')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f"plots_new/{save_name}_solar.png")
-    plt.clf()
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #for year, df in dfs.items():
+    #    ax.plot(df['demand'], df['solar'], '.', alpha=0.2, label=year)
+    #    vals = df['demand'].values
+    #    vals.sort()
+    #    ax.plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-') 
+    #    ax.plot([vals[-100] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='--') 
+    #    #ax.plot([vals[-50] for _ in range(10)], np.arange(0,1,.1), color=plt.gca().lines[-1].get_color(), linestyle='-.') 
+    #ax.set_xlabel('demand')
+    #ax.set_ylabel('solar CF')
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    #ax.set_xlim(1.5, ax.get_xlim()[1])
+    #plt.legend()
+    #plt.savefig(f"plots_new/{save_name}_solar.png")
+    #plt.clf()
 
-    plt.close()
-    fig, ax = plt.subplots()
-    for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand'], df['wind'],  '.', alpha=0.2, label=year)
-    ax.set_xlabel('demand')
-    ax.set_ylabel('wind CF')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f"plots_new/{save_name}_wind.png")
-    plt.clf()
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #for year, df in dfs.items():
+    #    print(year)
+    #    ax.plot(df['demand'], df['wind'],  '.', alpha=0.2, label=year)
+    #ax.set_xlabel('demand')
+    #ax.set_ylabel('wind CF')
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    #plt.legend()
+    #plt.savefig(f"plots_new/{save_name}_wind.png")
+    #plt.clf()
 
 
-    plt.close()
-    fig, ax = plt.subplots()
-    for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand_rank'], df['solar_rank'], '.', alpha=0.2, label=year)
-    ax.set_xlabel('demand rank')
-    ax.set_ylabel('solar rank')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f"plots_new/{save_name}_solar_rank.png")
-    plt.clf()
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #for year, df in dfs.items():
+    #    print(year)
+    #    ax.plot(df['demand_rank'], df['solar_rank'], '.', alpha=0.2, label=year)
+    #ax.set_xlabel('demand rank')
+    #ax.set_ylabel('solar rank')
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    #plt.legend()
+    #plt.savefig(f"plots_new/{save_name}_solar_rank.png")
+    #plt.clf()
 
-    plt.close()
-    fig, ax = plt.subplots()
-    for year, df in dfs.items():
-        print(year)
-        ax.plot(df['demand_rank'], df['wind_rank'],  '.', alpha=0.2, label=year)
-    ax.set_xlabel('demand rank')
-    ax.set_ylabel('wind rank')
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f"plots_new/{save_name}_wind_rank.png")
-    plt.clf()
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #for year, df in dfs.items():
+    #    print(year)
+    #    ax.plot(df['demand_rank'], df['wind_rank'],  '.', alpha=0.2, label=year)
+    #ax.set_xlabel('demand rank')
+    #ax.set_ylabel('wind rank')
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    #plt.legend()
+    #plt.savefig(f"plots_new/{save_name}_wind_rank.png")
+    #plt.clf()
 
 
 
 region = 'CONUS'
+region = 'TEXAS'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -225,13 +243,31 @@ test_ordering = True
 if test_ordering:
     dfs = OrderedDict()
     years = [2016,2017,2018]
+    years = [y for y in range(2005, 2019)]
+    #years = [y for y in range(2005, 2009)]
     for year in years:
         d_yr = get_annual_df(year, demand, 'demand', im)
         w_yr = get_annual_df(year, wind, 'wind', im)
         s_yr = get_annual_df(year, solar, 'solar', im)
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
-    make_ordering_plot(dfs, f'ordering_{region}')
+    wind_factor=0.
+    steps = np.arange(0, 1.001, .05)
+    mapper = OrderedDict()
+    cnt = 0
+    for solar_factor in steps:
+        mapper[solar_factor] = OrderedDict()
+        for wind_factor in steps:
+            max_vals, hundredth_vals = make_ordering_plot(dfs, f'ordering_{region}', wind_factor, solar_factor, cnt)
+            #max_vals.sort()
+            #hundredth_vals.sort()
+            mapper[solar_factor][wind_factor] = [max_vals, hundredth_vals]
+            cnt += 1
+
+    print("Solar Wind max_range 100th_range")
+    for solar, info in mapper.items():
+        for wind, vals in info.items():
+            print(k, round(np.max(vals[0]) - np.min(vals[0]),4), round(np.max(vals[1]) - np.min(vals[1]),4))
         
 
 
