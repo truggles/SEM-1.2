@@ -152,7 +152,8 @@ def print_variance(df):
 
 file_map = { # Results file : associated unmet demand
     '../results/Results_reliability_20191201_v1_wind.csv' : [0.001, 'CONUS'],
-    '../results/Results_reliability_20191219_v1TX0.999_wind.csv' : [0.001, 'ERCOT'],
+    #'../results/Results_reliability_20191219_v1TX0.999_wind.csv' : [0.001, 'ERCOT'],
+    '../results/Results_reliability_20191218_v10NTX0.999_wind_short.csv' : [0.001, 'ERCOT'], # wind 0.75, solar 0.5
     #'Results_reliability_20191201_v2_wind.csv' : 0.0003,
 }
 

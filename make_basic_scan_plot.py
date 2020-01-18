@@ -29,6 +29,64 @@ def return_file_info_map(region):
     }
     return info_map[region]
 
+
+### FIXME
+assert(False)
+# Take all yearly inputs and split into two sets:
+# 1 - all hours with demand < threshold
+# 2 - all hours with demand > threshold
+def run_correlations(collection, threshold, TEXAS):
+
+    # Arrays to hold >= and < threshold, defined on each year of inputs
+    solar_gtr, wind_gtr, dem_gtr = [], [], []
+
+    # Loop over all years and hours and split
+    # The split is defined w.r.t. demand percentile
+    for i, year_info in collection.items():
+        
+        thr = np.percentile(year_info['dem']['Demand'].values, threshold)
+
+        for i, dem in enumerate(year_info['dem']['Demand'].values):
+            if dem >= thr:
+                solar_gtr.append(year_info['solar']['Solar'].values[i])
+                wind_gtr.append(year_info['wind']['Wind'].values[i])
+                dem_gtr.append(year_info['dem']['Demand'].values[i])
+
+
+    # Make DataFrams for easy use of df.corr()
+    df_gtr = pd.DataFrame({'Demand': dem_gtr, 'Solar': solar_gtr, 'Wind': wind_gtr})
+    plot_corr(df_gtr, f'greater{threshold}_{app}')
+
+def plot_corr(df, save_name):
+    corr = df.corr()
+    corr.style.background_gradient(cmap='coolwarm').set_precision(2)
+    #corr.style.background_gradient(cmap='coolwarm').set_properties(**{'font-size': '5pt'})
+    f = plt.figure()
+    plt.imshow(corr, origin='lower', vmax=1, vmin=-1)
+    plt.xticks(range(df.shape[1]), df.columns, fontsize=14, rotation=90)
+    plt.yticks(range(df.shape[1]), df.columns, fontsize=14)
+    ax = plt.gca()
+    cb = plt.colorbar()
+    cb.ax.tick_params(labelsize=14)
+    cb.ax.set_ylim(-1, 1)
+    #plt.title('Correlation Matrix', fontsize=16);
+
+    print(corr)
+
+    for i, col1 in enumerate(corr.columns):
+        for j, col2 in enumerate(corr.index):
+            #print(i, j, col1, col2, round(corr.loc[col1, col2],2))
+            text = ax.text(j, i, round(corr.loc[col1, col2],2),
+                    ha="center", va="center", color='k', fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(f'correlation_matrix_{save_name}.png')
+
+
+
+
+
+
 # Sort output pngs into folders for easy scrolling
 def make_dirs(base, tgt):
     files = glob(tgt)
@@ -199,7 +257,6 @@ def get_range(vect):
 def get_integrated_threshold(vals, threshold_pct):
 
     int_threshold = len(vals) * (1. - threshold_pct)
-    print(int_threshold)
     int_tot = 0.
     hours = 0
     prev_val = vals[-1] # to initialize
@@ -237,11 +294,12 @@ def make_ordering_plotsX(dfs, save_name, wind_factor, solar_factor, thresholds, 
         vals = df['demand'].values - df['solar'].values * solar_factor - df['wind'].values * wind_factor
         axs[0].plot(vals, df['solar'], '.', alpha=0.2, label=year)
         vals.sort()
+        pct = get_integrated_threshold(vals, threshold_pct)
         axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
-        axs[0].plot([vals[-150] for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
+        axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
         for i, t in enumerate(thresholds):
             vects[i].append(vals[-1 * t])
-        vects[-1].append(get_integrated_threshold(vals, threshold_pct))
+        vects[-1].append(pct)
     axs[0].set_xlabel(f'demand - (wind x {round(wind_factor,3)}) - (solar x {round(solar_factor,3)})')
     axs[0].set_ylabel('solar CF')
     axs[0].set_ylim(0, 1)
@@ -250,8 +308,9 @@ def make_ordering_plotsX(dfs, save_name, wind_factor, solar_factor, thresholds, 
         vals = df['demand'].values - df['solar'].values * solar_factor - df['wind'].values * wind_factor
         axs[1].plot(vals, df['wind'], '.', alpha=0.2, label=year)
         vals.sort()
+        pct = get_integrated_threshold(vals, threshold_pct)
         axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
-        axs[1].plot([vals[-150] for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
+        axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
     axs[1].set_xlabel(f'demand - (wind x {round(wind_factor,3)}) - (solar x {round(solar_factor,3)})')
     axs[1].set_ylabel('wind CF')
     axs[1].set_ylim(0, 1)
@@ -264,7 +323,6 @@ def make_ordering_plotsX(dfs, save_name, wind_factor, solar_factor, thresholds, 
     out = []
     out2 = []
     out3 = []
-    print(f"Len: {len(vects)}  len T {len(thresholds)}")
     for vect in vects:
         out.append(get_range(vect))
         out2.append(np.std(vect))
@@ -377,7 +435,7 @@ def make_ordering_plot(dfs, save_name, wind_factor=1., solar_factor=1., cnt=0):
 
 
 region = 'CONUS'
-#region = 'TEXAS'
+region = 'TEXAS'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -394,11 +452,13 @@ if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
-#make_scan = False
+make_scan = False
+run_correlations = True
+#run_correlations = False
 
 
 
@@ -511,6 +571,9 @@ if make_scan:
     cf_solar = get_CF(solar, 'solar', im)
     plot_matrix(plot_base, matrix, r_vals, r_vals, cf_wind, cf_solar, 'testX')
 
+
+
+if run_correlations:
 
 
 

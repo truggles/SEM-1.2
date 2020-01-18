@@ -255,8 +255,13 @@ def simplify_results(results_file):
                 if np.mean(simp[reli][solar][wind][5]) > 0:
                     simp[reli][solar][wind][adj+8] = np.std(simp[reli][solar][wind][5])/np.mean(simp[reli][solar][wind][5])
                 simp[reli][solar][wind][adj+9] = np.std(simp[reli][solar][wind][1])/np.mean(simp[reli][solar][wind][1])
-                simp[reli][solar][wind][adj+10] = np.mean(simp[reli][solar][wind][1])/max((1.-reli),1e-10)
-                simp[reli][solar][wind][adj+11] = np.std(simp[reli][solar][wind][1])/max((1.-reli),1e-10)
+                # Do other if will divide by zero
+                if reli == 1.:
+                    simp[reli][solar][wind][adj+10] = np.mean(simp[reli][solar][wind][1])
+                    simp[reli][solar][wind][adj+11] = np.std(simp[reli][solar][wind][1])
+                else:
+                    simp[reli][solar][wind][adj+10] = np.mean(simp[reli][solar][wind][1])(1.-reli)
+                    simp[reli][solar][wind][adj+11] = np.std(simp[reli][solar][wind][1])/(1.-reli)
 
     return simp
 
@@ -435,9 +440,13 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
         plt.title(f"{names[mthd]}"+' ($\sigma/\mu$)')
     if mthd == 11:
         cbar.ax.set_ylabel('Mean/Target (%)')
+        if '1p0' in save_name:
+            cbar.ax.set_ylabel('Mean')
         plt.title('Mean Unmet Demand')
     if mthd == 12:
         cbar.ax.set_ylabel('$\sigma$/Target (%)')
+        if '1p0' in save_name:
+            cbar.ax.set_ylabel('$\sigma$')
         plt.title('Spread in Unmet Demand')
     #plt.tight_layout()
     # Modify save_name to make more LaTeX-able
@@ -445,7 +454,7 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
         save_name = 'ZeroStorage'
     else:
         save_name = 'Normal'
-    plt.savefig("plots_reli/reliability_uncert_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].replace(' ','_').replace('(','').replace(')','')))
+    plt.savefig("plots_reli_Jan17/reliability_uncert_{}_for_target_{}_{}.png".format(save_name, str(reliability).replace('.','p'), names[mthd].replace(' ','_').replace('(','').replace(')','')))
     plt.clf()
 
 
