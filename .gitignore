@@ -3,3 +3,5 @@ Output_Data/*
 plots_*
 test_reli_20*.e*
 test_reli_20*.o*
+*.pkl
+*.png

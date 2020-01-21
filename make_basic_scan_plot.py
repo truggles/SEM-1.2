@@ -30,13 +30,13 @@ def return_file_info_map(region):
     return info_map[region]
 
 
-### FIXME
-assert(False)
 # Take all yearly inputs and split into two sets:
 # 1 - all hours with demand < threshold
 # 2 - all hours with demand > threshold
 def run_correlations(collection, threshold, TEXAS):
 
+    ### FIXME
+    assert(False)
     # Arrays to hold >= and < threshold, defined on each year of inputs
     solar_gtr, wind_gtr, dem_gtr = [], [], []
 
@@ -199,7 +199,15 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     plt.clf()
 
 
-def get_CF(df, name, im):
+def get_avg_CF(dfs, name, im):
+    to_avg = []
+    for df in dfs:
+        print(len(df.index, im[name][2])
+        to_avg.append(np.mean(df[im[name][2]].values))
+    return np.mean(to_avg)
+
+
+def get_annual_CF(df, name, im, year):
 
     return np.mean(df.loc[ df[im[name][3]] == year, im[name][2] ].values)
 
@@ -220,7 +228,7 @@ def get_annual_df(year, df, tgt, im):
     # Normalize
     if tgt == 'demand':
         df2[im[tgt][2]] = df2[im[tgt][2]]/np.mean(df2[im[tgt][2]])
-        print_vals(df2, year, im)
+        #print_vals(df2, year, im)
     return df2
 
 
@@ -280,6 +288,38 @@ def get_integrated_threshold(vals, threshold_pct):
         #print(f"  === tot_needed {tot_needed}   frac {frac}   dist {dist}   to_return {to_return}")
         return to_return
 
+
+# Make box plots showing the wind and solar CFs for the top X thresholds
+def make_box_plots(dfs, save_name, wind_factor, solar_factor, box_thresholds, cnt, base):
+
+    to_plot = [[] for _ in range(len(box_thresholds)*2)]
+    for i, threshold in enumerate(box_thresholds):
+        for year, df in dfs.items():
+            mod_df = df
+            mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_factor - df['wind'] * wind_factor
+            mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
+            for j, idx in enumerate(mod_df.index):
+                to_plot[i].append(mod_df.loc[idx, 'wind'])
+                to_plot[len(box_thresholds)+i].append(mod_df.loc[idx, 'solar'])
+                if j == threshold: break
+
+    plt.close()
+    fig, ax = plt.subplots(figsize=(7,5))
+    ax.yaxis.grid(True)
+    ax.set_title(f'Dem - wind CF x {round(wind_factor,2)} - solar CF x {round(solar_factor,2)}: whiskers at 5%/95%')
+    medianprops = dict(linestyle='-', linewidth=2.5)
+    bplot = ax.boxplot(to_plot, whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
+    x_labels = []
+    for val in box_thresholds:
+        x_labels.append(f'Wind CFs\nTop {val} Hours')
+    for val in box_thresholds:
+        x_labels.append(f'Solar CFs\nTop {val} Hours')
+    plt.xticks([i for i in range(1, len(box_thresholds)*2+1)], x_labels, rotation=30)
+    ax.set_ylabel('Wind or Solar CF')
+    plt.tight_layout()
+    for patch in bplot['boxes']:
+        patch.set_facecolor('lightblue')
+    plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:03}_solarSF{str(round(solar_factor,3)).replace('.','p')}_windSF{str(round(wind_factor,3)).replace('.','p')}.png")
 
 
 
@@ -441,13 +481,13 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 
 
-to_explore = [0, 3.001, 0.1]
+to_explore = [0, 2.001, 0.1]
 r_vals = np.arange(to_explore[0], to_explore[1], to_explore[2])
 tgt_len = len(r_vals)
 thresholds = [1, 3, 5, 10, 20, 30, 40, 50, 75, 100, 150, 200]
 int_threshold = 0.999
 
-plot_base = 'plots_new_Jan17'
+plot_base = 'plots_new_Jan21'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
@@ -457,7 +497,7 @@ make_plots = True
 #make_plots = False
 make_scan = True
 make_scan = False
-run_correlations = True
+#run_correlations = True
 #run_correlations = False
 
 
@@ -474,6 +514,8 @@ if test_ordering:
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
 
+    print(get_avg_CF(dfs, 'wind', im))
+    print(get_avg_CF(dfs, 'solar', im))
     wind_factor=0.
     steps = r_vals
     mapper = OrderedDict()
@@ -484,6 +526,10 @@ if test_ordering:
         for wind_factor in steps:
             vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_factor, solar_factor, thresholds, int_threshold, cnt, plot_base)
             mapper[str(round(solar_factor,2))][str(round(wind_factor,2))] = [vects1, vects2, vects3]
+
+            box_thresholds = [20, 100, 500]
+            make_box_plots(dfs, f'ordering_{region}', wind_factor, solar_factor, box_thresholds, cnt, plot_base)
+
             cnt += 1
 
     #print("Solar Wind max_range 100th_range")
@@ -491,7 +537,7 @@ if test_ordering:
     #    for wind, vals in info.items():
     #        print(solar, wind, vals)
         
-    pickle_file = open('tmp5.pkl', 'wb')
+    pickle_file = open('tmp6.pkl', 'wb')
     pickle.dump(mapper, pickle_file)
     pickle_file.close()
 
@@ -500,7 +546,7 @@ if test_ordering:
     make_dirs(plot_base, tgt)
 
 if make_plots:
-    pickle_in = open('tmp5.pkl','rb')
+    pickle_in = open('tmp6.pkl','rb')
     study_regions = pickle.load(pickle_in)
     steps = r_vals
 
@@ -527,17 +573,6 @@ if make_plots:
                 matrix[i].append(val)
         ary = np.array(matrix)
         plot_matrix_thresholds(plot_base, matrix, r_vals, r_vals, f'threshold_std_{threshold:03}')
-
-        # Std dev of all distances between dem - wind - solar (closest to MEM reliability)
-        # results I have shown
-        matrix = []
-        for i, solar_factor in enumerate(steps):
-            matrix.append([])
-            for wind_factor in steps:
-                val = study_regions[str(round(solar_factor,2))][str(round(wind_factor,2))][2][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(plot_base, matrix, r_vals, r_vals, f'threshold_std_of_distances_{threshold:03}')
 
 
 if make_scan:
@@ -567,13 +602,13 @@ if make_scan:
     
     ary = np.array(matrix)
 
-    cf_wind = get_CF(wind, 'wind', im)
-    cf_solar = get_CF(solar, 'solar', im)
+    cf_wind = get_annual_CF(wind, 'wind', im, year)
+    cf_solar = get_annual_CF(solar, 'solar', im, year)
     plot_matrix(plot_base, matrix, r_vals, r_vals, cf_wind, cf_solar, 'testX')
 
 
 
-if run_correlations:
+#if run_correlations:
 
 
 
