@@ -18,8 +18,8 @@ def load_inputs(n_years, TEXAS=False):
     }
     TX_map = { # column of interest, file path, rows to skip at start
             'Demand' : ['demand (MW)', '../Input_Data/TEXAS/TX_demand_unnormalized.csv', 6],
-            'Wind' : ['solar capacity', '../Input_Data/TEXAS/windCF_lei_TI_nonormalized.csv', 5],
-            'Solar' : ['solar capacity', '../Input_Data/TEXAS/solarCF_lei_TI_nonormalized.csv', 5],
+            'Wind' : ['solar capacity', '../Input_Data/TEXAS/TI_wind_thresh.csv', 5],
+            'Solar' : ['solar capacity', '../Input_Data/TEXAS/TI_solar_thresh.csv', 5],
             }
     
     collection = {}
