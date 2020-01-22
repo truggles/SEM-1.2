@@ -150,7 +150,11 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
     # Contours
-    n_levels = 8
+    n_levels = np.arange(0,.1,.01)
+    if '0.999' in save_name:
+        n_levels = np.arange(0,.1,.01)
+        n_levels = np.append(n_levels, [0.025,])
+        n_levels.sort()
     cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
     # inline labels
     ax.clabel(cs, inline=1, fontsize=10)
@@ -159,20 +163,20 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     wind_labs, solar_labs = [], []
     for v in wind_values:
         if int(v*2)==v*2:
-            wind_labs.append("%.2f" % (v))
+            wind_labs.append(f"{int(v*100)}%")
         else:
             wind_labs.append('')
     for v in solar_values:
         if int(v*4)==v*4:
-            solar_labs.append("%.2f" % (v))
+            solar_labs.append(f"{int(v*100)}%")
         else:
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("Mean Wind Generation (kWh)")
-    plt.ylabel("Mean Solar Generation (kWh)")
+    plt.xlabel("Wind Generation as % of Total Demand")
+    plt.ylabel("Solar Generation as % of Total Demand")
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"$\sigma$ of Thershold Location")
+    cbar.ax.set_ylabel(f"Spread of Thershold Locations ($\sigma$)")
     plt.title(f"")
     plt.tight_layout()
 
@@ -421,7 +425,7 @@ int_thresholds = [0.9997, 0.999]
 solar_max = 1.
 wind_max = 2.
 steps = 41
-steps = 3
+#steps = 3
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
@@ -432,14 +436,14 @@ if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
 make_scan = False
 
-#pkl_file = 'tmp6' # At home 41x41
-pkl_file = 'test'
+pkl_file = 'tmp6' # At home 41x41
+#pkl_file = 'test'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -499,15 +503,6 @@ if make_plots:
         thresholds.append(int_threshold)
     for t, threshold in enumerate(thresholds):
         print(threshold)
-        ## Range of dem - wind - solar
-        #matrix = []
-        #for i, solar_install_cap in enumerate(solar_gen_steps):
-        #    matrix.append([])
-        #    for j, wind_install_cap in enumerate(wind_gen_steps):
-        #        val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0][t]
-        #        matrix[i].append(val)
-        #ary = np.array(matrix)
-        #plot_matrix_thresholds(plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_range_{threshold:03}')
 
         # Std dev of dem - wind - solar
         matrix = []
