@@ -30,32 +30,6 @@ def return_file_info_map(region):
     return info_map[region]
 
 
-# Take all yearly inputs and split into two sets:
-# 1 - all hours with demand < threshold
-# 2 - all hours with demand > threshold
-def run_correlations(collection, threshold, TEXAS):
-
-    ### FIXME
-    assert(False)
-    # Arrays to hold >= and < threshold, defined on each year of inputs
-    solar_gtr, wind_gtr, dem_gtr = [], [], []
-
-    # Loop over all years and hours and split
-    # The split is defined w.r.t. demand percentile
-    for i, year_info in collection.items():
-        
-        thr = np.percentile(year_info['dem']['Demand'].values, threshold)
-
-        for i, dem in enumerate(year_info['dem']['Demand'].values):
-            if dem >= thr:
-                solar_gtr.append(year_info['solar']['Solar'].values[i])
-                wind_gtr.append(year_info['wind']['Wind'].values[i])
-                dem_gtr.append(year_info['dem']['Demand'].values[i])
-
-
-    # Make DataFrams for easy use of df.corr()
-    df_gtr = pd.DataFrame({'Demand': dem_gtr, 'Solar': solar_gtr, 'Wind': wind_gtr})
-    plot_corr(df_gtr, f'greater{threshold}_{app}')
 
 def plot_corr(df, save_name):
     corr = df.corr()
@@ -463,8 +437,6 @@ make_plots = True
 #make_plots = False
 make_scan = True
 make_scan = False
-#run_correlations = True
-#run_correlations = False
 
 #pkl_file = 'tmp6' # At home 41x41
 pkl_file = 'test'
@@ -577,8 +549,6 @@ if make_scan:
     plot_matrix(plot_base, matrix, solar_gen_steps, wind_gen_steps, 'testX')
 
 
-
-#if run_correlations:
 
 
 
