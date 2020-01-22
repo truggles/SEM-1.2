@@ -175,6 +175,13 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     #im = ax.imshow(matrix,interpolation='none',origin='lower')
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
+    # Contours
+    n_levels = 8
+    cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+    # inline labels
+    ax.clabel(cs, inline=1, fontsize=10)
+
+
     wind_labs, solar_labs = [], []
     for v in wind_values:
         if int(v*2)==v*2:
@@ -182,7 +189,7 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
         else:
             wind_labs.append('')
     for v in solar_values:
-        if int(v*2)==v*2:
+        if int(v*4)==v*4:
             solar_labs.append("%.2f" % (v))
         else:
             solar_labs.append('')
@@ -191,7 +198,7 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     plt.xlabel("Mean Wind Generation (kWh)")
     plt.ylabel("Mean Solar Generation (kWh)")
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"Spread in Dem - Wind - Solar")
+    cbar.ax.set_ylabel(f"$\sigma$ of Thershold Location")
     plt.title(f"")
     plt.tight_layout()
 
@@ -291,19 +298,30 @@ def get_integrated_threshold(vals, threshold_pct):
         return to_return
 
 
-def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
+def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0], threshold_pcts=[]):
 
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10,5))
     axs[0].set_title(f'Load Duration Curve: Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
     axs[1].set_title(f'PDF: Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
 
+    good_max = 0
     for year, df in dfs.items():
         mod_df = df
         mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
-        axs[0].plot(np.linspace(0,1,len(mod_df.index)), mod_df['mod_dem'], linestyle='-')
-        n, bins, patches = axs[1].hist(mod_df['mod_dem'], 100, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color())
+        axs[0].plot(np.linspace(0,1,len(mod_df.index)), mod_df['mod_dem'], linestyle='-', linewidth=0.5)
+        n, bins, patches = axs[1].hist(mod_df['mod_dem'], 100, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
+        if np.max(n) > good_max:
+            good_max = np.max(n)
+
+        # If threshold_pcts has unique values
+        for i, t in enumerate(threshold_pcts):
+            vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
+            vals.sort()
+            pct = get_integrated_threshold(vals, t)
+            axs[0].plot(np.linspace(0,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+            axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
 
     axs[0].yaxis.grid(True)
     axs[0].set_xlim(0, 1)
@@ -312,6 +330,7 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
     axs[1].yaxis.grid(True)
     axs[1].set_ylabel('Demand - Wind - Solar (kWh)')
     axs[1].set_xlabel('Hours / Bin')
+    axs[1].set_xlim(0, good_max * 1.2)
     #axs[1].set_xlabel('Demand - Wind - Solar (kWh)')
     plt.tight_layout()
     plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
@@ -351,23 +370,27 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
 
 
 
-def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pct, cnt, base, gens=[0, 0]):
+def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pcts, cnt, base, gens=[0, 0]):
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
     vects = []
     for t in thresholds:
         vects.append([])
-    vects.append([]) # One extra for threshold_pct
+    for t in threshold_pcts:
+        vects.append([]) # One extra for threshold_pct
     for year, df in dfs.items():
         vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
         axs[0].plot(vals, df['solar'], '.', alpha=0.2, label=year)
         vals.sort()
-        pct = get_integrated_threshold(vals, threshold_pct)
         axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
-        axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
         for i, t in enumerate(thresholds):
             vects[i].append(vals[-1 * t])
-        vects[-1].append(pct)
+
+        for i, t in enumerate(threshold_pcts):
+            pct = get_integrated_threshold(vals, t)
+            if i == 0:
+                axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
+            vects[len(thresholds)+i].append(pct)
     axs[0].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
     axs[0].set_ylabel('solar CF')
     axs[0].set_ylim(0, 1)
@@ -376,7 +399,7 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
         axs[1].plot(vals, df['wind'], '.', alpha=0.2, label=year)
         vals.sort()
-        pct = get_integrated_threshold(vals, threshold_pct)
+        pct = get_integrated_threshold(vals, threshold_pcts[0]) # Just plot the first one
         axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
         axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
     axs[1].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
@@ -418,18 +441,19 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 ### HERE
 thresholds = [1, 3, 5, 10, 20, 30, 40, 50, 75, 100, 150, 200]
-int_threshold = 0.999
+int_thresholds = [0.9997, 0.999]
 
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
 wind_max = 2.
-steps = 21
+steps = 41
+steps = 3
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = 'plots_new_Jan21_new_files'
+plot_base = 'plots_new_Jan21_new_filesX'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
@@ -442,7 +466,8 @@ make_scan = False
 #run_correlations = True
 #run_correlations = False
 
-
+#pkl_file = 'tmp6' # At home 41x41
+pkl_file = 'test'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -470,13 +495,13 @@ if test_ordering:
         print(f"Solar cap {solar_install_cap}, solar gen {solar_gen}")
         for j, wind_install_cap in enumerate(wind_cap_steps):
             wind_gen = wind_gen_steps[j]
-            vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_threshold, cnt, plot_base, [wind_gen, solar_gen])
+            vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vects1, vects2, vects3]
 
             box_thresholds = [20, 100, 500]
             make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
-            load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+            load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
 
             cnt += 1
 
@@ -485,7 +510,7 @@ if test_ordering:
     #    for wind, vals in info.items():
     #        print(solar, wind, vals)
         
-    pickle_file = open('tmp6.pkl', 'wb')
+    pickle_file = open(f'{pkl_file}.pkl', 'wb')
     pickle.dump(mapper, pickle_file)
     pickle_file.close()
 
@@ -494,22 +519,23 @@ if test_ordering:
     make_dirs(plot_base, tgt)
 
 if make_plots:
-    pickle_in = open('tmp6.pkl','rb')
+    pickle_in = open(f'{pkl_file}.pkl','rb')
     study_regions = pickle.load(pickle_in)
 
 
-    thresholds.append(int_threshold)
+    for int_threshold in int_thresholds:
+        thresholds.append(int_threshold)
     for t, threshold in enumerate(thresholds):
         print(threshold)
-        # Range of dem - wind - solar
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_range_{threshold:03}')
+        ## Range of dem - wind - solar
+        #matrix = []
+        #for i, solar_install_cap in enumerate(solar_gen_steps):
+        #    matrix.append([])
+        #    for j, wind_install_cap in enumerate(wind_gen_steps):
+        #        val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0][t]
+        #        matrix[i].append(val)
+        #ary = np.array(matrix)
+        #plot_matrix_thresholds(plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_range_{threshold:03}')
 
         # Std dev of dem - wind - solar
         matrix = []
