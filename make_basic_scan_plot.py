@@ -23,8 +23,8 @@ def return_file_info_map(region):
         },
         'TEXAS': { 
             'demand': ['Input_Data/TEXAS/TX_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
-            'wind': ['Input_Data/TEXAS/windCF_lei_TI_nonormalized.csv', 5, 'solar capacity', 'year'],
-            'solar': ['Input_Data/TEXAS/solarCF_lei_TI_nonormalized.csv', 5, 'solar capacity', 'year'],
+            'wind': ['Input_Data/TEXAS/TI_wind_thresh.csv', 5, 'wind capacity', 'year'],
+            'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
         }
     }
     return info_map[region]
@@ -429,14 +429,14 @@ wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = 'plots_new_Jan21'
+plot_base = 'plots_new_Jan21_new_files'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
 #test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
 make_scan = False
 #run_correlations = True
