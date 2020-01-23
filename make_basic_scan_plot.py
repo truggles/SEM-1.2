@@ -255,12 +255,12 @@ def get_integrated_threshold(vals, threshold_pct):
     int_tot = 0.
     hours = 0
     prev_val = vals[-1] # to initialize
-    for i in range(len(vals)):
-        current = hours * (prev_val - vals[-(i+1)])
-        #print(f"{i} --- int_tot {int_tot}   hours {hours}   prev_val {prev_val}   current val {vals[-(i+1)]}   current {current}")
+    for i, val in enumerate(reversed(vals)):
+        current = hours * (prev_val - val)
+        #print(f"{i} --- Running total: {round(int_tot,5)}   Hours: {hours}   Current val {round(val,5)}   To add? {round(current,5)}")
         if current + int_tot < int_threshold:
             hours += 1
-            prev_val = vals[-(i+1)]
+            prev_val = val
             int_tot += current
             continue
 
@@ -270,18 +270,31 @@ def get_integrated_threshold(vals, threshold_pct):
         # Find fraction of 'current' needed
         frac = tot_needed / current
         # Return that frac as a distance between val i and val i-1 (going bkwards)
-        dist = prev_val - vals[-(i+1)]
-        to_return = prev_val + dist * frac
+        dist = prev_val - val
+        to_return = prev_val - dist * frac
         #print(f"  === tot_needed {tot_needed}   frac {frac}   dist {dist}   to_return {to_return}")
         return to_return
+
+# Check method
+def check_pct(vals, threshold_pct, threshold):
+
+    tot = 0
+    for v in reversed(vals):
+        if v < threshold:
+            break
+        tot += v - threshold
+
+    int_threshold = len(vals) * (1. - threshold_pct)
+    print(f"Tgt: {int_threshold} == {tot}? {round(int_threshold,4) == round(tot,4)}")
 
 
 def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0], threshold_pcts=[]):
 
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10,5))
-    axs[0].set_title(f'Load Duration Curve: Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
-    axs[1].set_title(f'PDF: Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
+    fig.suptitle(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
+    axs[0].set_title(f'Load Duration Curve')
+    axs[1].set_title(f'PDF')
 
     good_max = 0
     for year, df in dfs.items():
@@ -298,19 +311,25 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
             vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
             vals.sort()
             pct = get_integrated_threshold(vals, t)
-            axs[0].plot(np.linspace(0,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
-            axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+            #check_pct(vals, t, pct)
+            #if i == 0:
+            #    #print(f"Adding threshold lines for {t}")
+            #    axs[0].plot(np.linspace(-0.1,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+            #    axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
 
-    axs[0].yaxis.grid(True)
-    axs[0].set_xlim(0, 1)
+    #axs[0].yaxis.grid(True)
+    axs[0].set_xlim(-0.005, 1)
+    axs[0].set_ylim(0, axs[0].get_ylim()[1])
     axs[0].set_ylabel('Demand - Wind - Solar (kWh)')
     axs[0].set_xlabel('Operating duration (% of year)')
-    axs[1].yaxis.grid(True)
+    #axs[1].yaxis.grid(True)
     axs[1].set_ylabel('Demand - Wind - Solar (kWh)')
     axs[1].set_xlabel('Hours / Bin')
     axs[1].set_xlim(0, good_max * 1.2)
+    axs[1].set_ylim(0, axs[1].get_ylim()[1])
+    axs[1].yaxis.set_tick_params(labelleft=True)
     #axs[1].set_xlabel('Demand - Wind - Solar (kWh)')
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
 
 
@@ -386,7 +405,8 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
     axs[1].set_xlim(0, 2)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+    if wind_install_cap == 0:
+        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
     plt.clf()
 
     out = []
@@ -425,30 +445,31 @@ int_thresholds = [0.9997, 0.999]
 solar_max = 1.
 wind_max = 2.
 steps = 41
-#steps = 3
+steps = 3
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = 'plots_new_Jan21_new_filesX'
+plot_base = 'plots_new_Jan22'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
-#make_plots = False
+make_plots = False
 make_scan = True
 make_scan = False
 
 pkl_file = 'tmp6' # At home 41x41
-#pkl_file = 'test'
+pkl_file = 'test'
 
 if test_ordering:
     dfs = OrderedDict()
     years = [2016,2017,2018]
-    years = [y for y in range(2005, 2019)]
+    years = [y for y in range(2003, 2019)]
+    print(len(years))
     #years = [y for y in range(2005, 2009)]
     for year in years:
         d_yr = get_annual_df(year, demand, 'demand', im)
@@ -474,10 +495,11 @@ if test_ordering:
             vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vects1, vects2, vects3]
 
-            box_thresholds = [20, 100, 500]
-            make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
+            if wind_gen == 0:
+                box_thresholds = [20, 100, 500]
+                make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
-            load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
+                load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
 
             cnt += 1
 
