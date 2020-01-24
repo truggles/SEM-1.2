@@ -412,9 +412,9 @@ def reliability_matrix(mthd, results, reliability, solar_values, wind_values, sa
     if reliability == 0.9997:
         false_z_max = reli_matrix.flatten()
         false_z_max.sort()
-        im = ax.imshow(reli_matrix,interpolation='none',origin='lower',vmax=false_z_max[-2])
+        im = ax.imshow(reli_matrix*100.,interpolation='none',origin='lower',vmax=false_z_max[-2])
     else:
-        im = ax.imshow(reli_matrix,interpolation='none',origin='lower')
+        im = ax.imshow(reli_matrix*100.,interpolation='none',origin='lower')
 
     wind_labs, solar_labs = [], []
     for v in wind_values:

@@ -151,10 +151,8 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
 
     # Contours
     n_levels = np.arange(0,.1,.01)
-    if '0.999' in save_name:
-        n_levels = np.arange(0,.1,.01)
-        n_levels = np.append(n_levels, [0.025,])
-        n_levels.sort()
+    n_levels = np.append(n_levels, [0.025,])
+    n_levels.sort()
     cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
     # inline labels
     ax.clabel(cs, inline=1, fontsize=10)
@@ -302,7 +300,8 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
         mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
         axs[0].plot(np.linspace(0,1,len(mod_df.index)), mod_df['mod_dem'], linestyle='-', linewidth=0.5)
-        n, bins, patches = axs[1].hist(mod_df['mod_dem'], 100, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
+        to_bins = np.linspace(-10,2,601)
+        n, bins, patches = axs[1].hist(mod_df['mod_dem'], to_bins, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
         if np.max(n) > good_max:
             good_max = np.max(n)
 
@@ -312,21 +311,23 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
             vals.sort()
             pct = get_integrated_threshold(vals, t)
             #check_pct(vals, t, pct)
-            #if i == 0:
-            #    #print(f"Adding threshold lines for {t}")
-            #    axs[0].plot(np.linspace(-0.1,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
-            #    axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+            if i == 0:
+                #print(f"Adding threshold lines for {t}")
+                axs[0].plot(np.linspace(-0.1,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+                axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
 
     #axs[0].yaxis.grid(True)
     axs[0].set_xlim(-0.005, 1)
-    axs[0].set_ylim(0, axs[0].get_ylim()[1])
+    #axs[0].set_ylim(0, axs[0].get_ylim()[1])
+    axs[0].set_ylim(0, 2)
     axs[0].set_ylabel('Demand - Wind - Solar (kWh)')
     axs[0].set_xlabel('Operating duration (% of year)')
     #axs[1].yaxis.grid(True)
     axs[1].set_ylabel('Demand - Wind - Solar (kWh)')
     axs[1].set_xlabel('Hours / Bin')
     axs[1].set_xlim(0, good_max * 1.2)
-    axs[1].set_ylim(0, axs[1].get_ylim()[1])
+    #axs[1].set_ylim(0, axs[1].get_ylim()[1])
+    axs[1].set_ylim(0, 2)
     axs[1].yaxis.set_tick_params(labelleft=True)
     #axs[1].set_xlabel('Demand - Wind - Solar (kWh)')
     #plt.tight_layout()
@@ -445,24 +446,25 @@ int_thresholds = [0.9997, 0.999]
 solar_max = 1.
 wind_max = 2.
 steps = 41
-steps = 3
+#steps = 3
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = 'plots_new_Jan22'
+plot_base = 'plots_new_Jan23'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
 #test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
 make_scan = False
 
 pkl_file = 'tmp6' # At home 41x41
+pkl_file = 'Jan23_41x41'
 pkl_file = 'test'
 
 if test_ordering:
@@ -491,12 +493,15 @@ if test_ordering:
         mapper[str(round(solar_gen,2))] = OrderedDict()
         print(f"Solar cap {solar_install_cap}, solar gen {solar_gen}")
         for j, wind_install_cap in enumerate(wind_cap_steps):
+            #if j > 0:
+            #    cnt += 1
+            #    continue
             wind_gen = wind_gen_steps[j]
             vects1, vects2, vects3 = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vects1, vects2, vects3]
 
             if wind_gen == 0:
-                box_thresholds = [20, 100, 500]
+                box_thresholds = [20, 500]
                 make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
                 load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
