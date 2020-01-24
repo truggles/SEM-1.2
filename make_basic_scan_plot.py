@@ -13,18 +13,32 @@ from shutil import copy2
 
 
 def return_file_info_map(region):
-    assert(region in ['CONUS', 'TEXAS'])
+    assert(region in ['CONUS', 'ERCOT', 'NYISO', 'TEXAS'])
 
     info_map = { # region : # f_path, header rows
         'CONUS': {
-            'demand': ['Input_Data/Lei_Solar_Wind/US_demand_unnormalized.csv', 8, 'demand (MW)', 'year'],
-            'wind': ['Input_Data/Lei_Solar_Wind/US_capacity_wind_25pctTop_unnormalized.csv', 5, 'wind 25% top', 'Year'], 
-            'solar': ['Input_Data/Lei_Solar_Wind/US_capacity_solar_25pctTop_unnormalized.csv', 5, 'solar 25% top', 'Year'],
+            'demand': ['Input_Data/ReliabilityPaper/CONUS_demand_unnormalized.csv', 8, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/CONUS_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'], 
+            'solar': ['Input_Data/ReliabilityPaper/CONUS_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+            'years' : [2016,2017,2018],
         },
-        'TEXAS': { 
-            'demand': ['Input_Data/TEXAS/TX_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
+        'ERCOT': { 
+            'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+            'years' : [y for y in range(2003, 2019)],
+        },
+        'TEXAS': {
+            'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
             'wind': ['Input_Data/TEXAS/TI_wind_thresh.csv', 5, 'wind capacity', 'year'],
             'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
+            'years' : [y for y in range(2003, 2019)],
+        },
+        'NYISO': { 
+            'demand': ['Input_Data/ReliabilityPaper/NYISO_demand_unnormalized.csv', 5, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/NYISO_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/NYISO_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+            'years' : [y for y in range(2004, 2019)],
         }
     }
     return info_map[region]
@@ -146,14 +160,14 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
 
     plt.close()
     fig, ax = plt.subplots()#figsize=(4.5, 4))
-    #im = ax.imshow(matrix,interpolation='none',origin='lower')
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
     # Contours
     n_levels = np.arange(0,.1,.01)
     n_levels = np.append(n_levels, [0.025,])
     n_levels.sort()
-    cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+    #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+    cs = ax.contour(matrix, n_levels, colors='w')
     # inline labels
     ax.clabel(cs, inline=1, fontsize=10)
 
@@ -295,6 +309,7 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
     axs[1].set_title(f'PDF')
 
     good_max = 0
+    threshold_vals = []
     for year, df in dfs.items():
         mod_df = df
         mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
@@ -313,8 +328,13 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
             #check_pct(vals, t, pct)
             if i == 0:
                 #print(f"Adding threshold lines for {t}")
+                threshold_vals.append(pct)
                 axs[0].plot(np.linspace(-0.1,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
                 axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+    if len(threshold_vals) > 0:
+        plt.text(0.70, 0.85, f'range: {round(np.max(threshold_vals) - np.min(threshold_vals),3)}\n$\sigma$: {round(np.std(threshold_vals),3)}',
+                horizontalalignment='center', verticalalignment='center', transform=axs[0].transAxes, fontsize=14)
+
 
     #axs[0].yaxis.grid(True)
     axs[0].set_xlim(-0.005, 1)
@@ -433,14 +453,16 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 region = 'CONUS'
-region = 'TEXAS'
+#region = 'ERCOT'
+#region = 'NYISO'
+#region = 'TEXAS'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
 
 ### HERE
 thresholds = [1, 3, 5, 10, 20, 30, 40, 50, 75, 100, 150, 200]
-int_thresholds = [0.9997, 0.999]
+int_thresholds = [0.9997, 0.999, 0.9999]
 
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
@@ -452,7 +474,7 @@ wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = 'plots_new_Jan23'
+plot_base = f'plots_new_Jan23_{region}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
@@ -465,12 +487,11 @@ make_scan = False
 
 pkl_file = 'tmp6' # At home 41x41
 pkl_file = 'Jan23_41x41'
-pkl_file = 'test'
+pkl_file += f'_{region}'
 
 if test_ordering:
     dfs = OrderedDict()
-    years = [2016,2017,2018]
-    years = [y for y in range(2003, 2019)]
+    years = im['years']
     print(len(years))
     #years = [y for y in range(2005, 2009)]
     for year in years:
