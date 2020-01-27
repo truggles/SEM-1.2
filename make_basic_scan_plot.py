@@ -167,7 +167,7 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
     plt.clf()
 
 
-def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_name):
+def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values, save_name):
 
 
     plt.close()
@@ -205,7 +205,7 @@ def plot_matrix_thresholds(plot_base, matrix, solar_values, wind_values, save_na
     plt.tight_layout()
 
 
-    plt.savefig(f"{plot_base}/{save_name}.png")
+    plt.savefig(f"{plot_base}/{region}_{save_name}.png")
     plt.clf()
 
 
@@ -493,7 +493,7 @@ if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
@@ -574,7 +574,7 @@ if make_plots:
                 val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
                 matrix[i].append(val)
         ary = np.array(matrix)
-        plot_matrix_thresholds(plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_std_{threshold:03}')
+        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_std_{threshold:03}')
 
 
 if make_scan:
