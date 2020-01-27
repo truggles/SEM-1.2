@@ -101,7 +101,7 @@ def plot_unmet(df, unmet, app):
     for idx in df.index:
         info = df.loc[idx, 'case name'].split('_')
         if df.loc[idx, 'dispatch unmet demand (kW)'] > max_v:
-            max_v = df.loc[idx, 'dispatch unmet demand (kW)']
+            max_v = df.loc[idx, 'dispatch unmet demand (kW)'] * 100.
         if info[-2] in years.keys(): # This checks the leading (master) year
             years[info[-2]].append(df.loc[idx, 'dispatch unmet demand (kW)'])
         else:
@@ -113,22 +113,23 @@ def plot_unmet(df, unmet, app):
 
     i = 0
     for k, v in years.items():
-        #ax.scatter([i for _ in range(len(v))], v, marker='o', label=f'Year {i+1}')
-        ax.plot([i for _ in range(len(v))], v, 'o', markersize=10, label=f'Year {i+1}', alpha=0.5)
+        v_ary = np.array(v)
+        #ax.scatter([i for _ in range(len(v))], v_ary, marker='o', label=f'Year {i+1}')
+        ax.plot([i for _ in range(len(v))], v_ary*100., 'bo', markersize=10, alpha=0.3)
         i += 1
 
 
-    ax.plot(np.linspace(-1, len(years), 10), np.ones(10)*unmet, 'k--', label='Target Unmet\nDemand')
+    ax.plot(np.linspace(-1, len(years), 10), np.ones(10)*unmet*100., 'k--', label='Target Unmet\nDemand')
 
     #ax.set_ylim(0, ax.get_ylim()[1])
-    ax.set_ylim(0, max_v*1.5)
+    ax.set_ylim(0, 0.3)
     ax.set_xlim(-0.25, 0.25+len(years)-1)
-    ax.set_ylabel('Normalized Unmet Demand')
+    ax.set_ylabel('Unmet Demand (%)')
     plt.xticks(range(len(v)+1), [f'Year {i+1}\nConfig.' for i in range(len(v)+1)])
     plt.legend(loc='upper right')
     if app == 'ERCOT':
         plt.xticks(range(len(v)+1), [f'Yr {i+1} Cfg.' for i in range(len(v)+1)], rotation=90)
-        ax.set_ylim(0, 0.01)
+        ax.set_ylim(0, 0.6)
         plt.legend(loc='upper left', ncol=3)
     plt.tight_layout()
     plt.savefig('plots/single_unmet_'+str(unmet).replace('.','p')+'_'+app+'.'+save_type)
