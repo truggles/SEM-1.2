@@ -124,7 +124,7 @@ def plot_unmet(df, unmet, app):
     #ax.set_ylim(0, ax.get_ylim()[1])
     ax.set_ylim(0, 0.3)
     ax.set_xlim(-0.25, 0.25+len(years)-1)
-    ax.set_ylabel('Unmet Demand (%)')
+    ax.set_ylabel('Unmet Demand (% of Total Demand)')
     plt.xticks(range(len(v)+1), [f'Year {i+1}\nConfig.' for i in range(len(v)+1)])
     plt.legend(loc='upper right')
     if app == 'ERCOT':
