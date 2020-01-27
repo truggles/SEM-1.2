@@ -13,7 +13,7 @@ from shutil import copy2
 
 
 def return_file_info_map(region):
-    assert(region in ['CONUS', 'ERCOT', 'NYISO', 'TEXAS'])
+    #assert(region in ['CONUS', 'ERCOT', 'NYISO', 'TEXAS'])
 
     info_map = { # region : # f_path, header rows
         'CONUS': {
@@ -32,6 +32,18 @@ def return_file_info_map(region):
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
             'wind': ['Input_Data/TEXAS/TI_wind_thresh.csv', 5, 'wind capacity', 'year'],
             'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
+            'years' : [y for y in range(2003, 2019)],
+        },
+        'TXv1': {
+            'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
+            'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
+            'years' : [y for y in range(2003, 2019)],
+        },
+        'TXv2': {
+            'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/TEXAS/TI_wind_thresh.csv', 5, 'wind capacity', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
             'years' : [y for y in range(2003, 2019)],
         },
         'NYISO': { 
@@ -453,9 +465,11 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 region = 'CONUS'
-#region = 'ERCOT'
-#region = 'NYISO'
+region = 'NYISO'
+region = 'ERCOT'
 #region = 'TEXAS'
+#region = 'TXv1'
+#region = 'TXv2'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
