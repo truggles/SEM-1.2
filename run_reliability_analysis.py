@@ -343,7 +343,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
     subprocess.call(["python", "Simple_Energy_Model.py", case_file])
 
     # Read results
-    files = get_output_file_names(path+'/'+global_name+'_2019')
+    files = get_output_file_names(path+'/'+global_name+'_2020')
     # Try to read results, if Gurobi failed ungracefully, try running again
     # If it fails a second time, give up. (don't want to get stuck in some while loop
     # waiting for Gurobi to suceed on an impossible model)
@@ -353,7 +353,7 @@ def reconfigure_and_run(path, results, case_name_base, input_file, global_name,
         while cnt < 10:
             print(f"\n --- Entering retry loop: {cnt}\n")
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-            files = get_output_file_names(path+'/'+global_name+'_2019')
+            files = get_output_file_names(path+'/'+global_name+'_2020')
             if len(files) > 0:
                 break
             # Else retry up to 10 times
@@ -593,7 +593,7 @@ if '__main__' in __name__:
     if qmu_scan:
         storage_SFs = np.arange(1.0, 5.01, 0.25)
 
-    date = '20191119' # default
+    date = '20200127' # default
     version = 'v11'
     for arg in sys.argv:
         if 'date' in arg:
@@ -738,7 +738,7 @@ if '__main__' in __name__:
         print("\n\nALL DONE")
 
     if make_results_file:
-        files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2019')
+        files = get_output_file_names(results_path+'/'+global_name.replace('_wind','')+'_2020')
         results = get_results(files, global_name)
 
     if plot_results:
