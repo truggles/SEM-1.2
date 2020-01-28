@@ -10,6 +10,6 @@
 cd $SLURM_SUBMIT_DIR
 #
 module load anaconda/anaconda3
-module load gurobi752
+module load gurobi
 python run_reliability_analysis.py "date_$DATE" "version_$VERSION" "reliability_$RELIABILITY" "wind_$WIND" "run_sem" $EXTRA_ARGS
 # end script
