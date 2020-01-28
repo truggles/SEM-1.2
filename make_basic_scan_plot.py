@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.stats import rankdata
+from scipy.stats import rankdata, normaltest
 from collections import OrderedDict
 import pickle
 from glob import glob
@@ -452,14 +452,16 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
     out_std = []
     out_mean = []
     out_mean_to_2nd_highest = []
+    out_norm_test_pval = []
     for vect in vects:
         out_range.append(get_range(vect))
         out_std.append(np.std(vect))
         out_mean.append(np.mean(vect))
         out_mean_to_2nd_highest.append(get_2nd_highest(vect))
+        out_norm_test_pval.append(normaltest(vect))
 
 
-    return out_range, out_std, out_mean, out_mean_to_2nd_highest
+    return out_range, out_std, out_mean, out_mean_to_2nd_highest, out_norm_test_pval
 
 
 
@@ -467,9 +469,9 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 region = 'CONUS'
-region = 'NYISO'
-region = 'ERCOT'
-region = 'TEXAS'
+#region = 'NYISO'
+#region = 'ERCOT'
+#region = 'TEXAS'
 #region = 'TXv1'
 #region = 'TXv2'
 im = return_file_info_map(region)
@@ -477,23 +479,6 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 
 ### HERE
-thresholds = [1,]
-int_thresholds = [0.9997, 0.999, 0.9999]
-
-# Define scan space by "Total X Generation Potential" instead of installed Cap
-solar_max = 1.
-wind_max = 2.
-steps = 41
-#steps = 3
-solar_gen_steps = np.linspace(0, solar_max, steps)
-wind_gen_steps = np.linspace(0, wind_max, steps)
-print("Wind gen increments:", wind_gen_steps)
-print("Solar gen increments:", solar_gen_steps)
-
-plot_base = f'plots_new_Jan23_{region}'
-if not os.path.exists(plot_base):
-    os.makedirs(plot_base)
-
 test_ordering = True
 #test_ordering = False
 make_plots = True
@@ -501,9 +486,26 @@ make_plots = True
 make_scan = True
 make_scan = False
 
+thresholds = [1,]
+int_thresholds = [0.9997, 0.999, 0.9999]
+
+# Define scan space by "Total X Generation Potential" instead of installed Cap
+solar_max = 1.
+wind_max = 2.
+steps = 41
+steps = 3
+solar_gen_steps = np.linspace(0, solar_max, steps)
+wind_gen_steps = np.linspace(0, wind_max, steps)
+print("Wind gen increments:", wind_gen_steps)
+print("Solar gen increments:", solar_gen_steps)
+
+plot_base = f'plots_new_Jan23_{region}x'
+if not os.path.exists(plot_base):
+    os.makedirs(plot_base)
+
 pkl_file = 'tmp6' # At home 41x41
 pkl_file = 'Jan23_41x41'
-pkl_file += f'_{region}'
+pkl_file += f'_{region}x'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -518,6 +520,8 @@ if test_ordering:
 
     avg_wind_CF = get_avg_CF(dfs, 'wind', im)
     avg_solar_CF = get_avg_CF(dfs, 'solar', im)
+    print(f"Avg wind CF: {avg_wind_CF}")
+    print(f"Avg solar CF: {avg_solar_CF}")
     wind_cap_steps = np.linspace(0, wind_max/avg_wind_CF, steps)
     solar_cap_steps = np.linspace(0, solar_max/avg_solar_CF, steps)
     print("Wind cap increments:", wind_cap_steps)
@@ -534,8 +538,8 @@ if test_ordering:
             #    cnt += 1
             #    continue
             wind_gen = wind_gen_steps[j]
-            vect_range, vect_std, vect_mean, vect_2nd_from_top = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
-            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top]
+            vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
+            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
 
             if wind_gen == 0:
                 box_thresholds = [20, 500]
@@ -609,6 +613,16 @@ if make_plots:
                 matrix[i].append(val)
         ary = np.array(matrix)
         plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'overbuild_95pct_dispatchablePlusStorage_{threshold:03}')
+
+        # Norm test p_val (null = distribution is based on normal)
+        matrix = []
+        for i, solar_install_cap in enumerate(solar_gen_steps):
+            matrix.append([])
+            for j, wind_install_cap in enumerate(wind_gen_steps):
+                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][4][t]
+                matrix[i].append(val)
+        ary = np.array(matrix)
+        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'norm_pval_{threshold:03}')
 
 
 if make_scan:
