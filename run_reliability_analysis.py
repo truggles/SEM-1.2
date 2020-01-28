@@ -564,6 +564,7 @@ if '__main__' in __name__:
     post_mazama = False # Use after "run_sem" for gathering results and plotting
     qmu_scan = False # Use with fixed wind and solar values to scan nuclear and storage SFs
     texas = False # Default is CONUS
+    region = 'CONUS' # default
     if 'run_sem' in sys.argv:
         run_sem = True
     if 'make_results_file' in sys.argv:
@@ -578,16 +579,38 @@ if '__main__' in __name__:
         qmu_scan = True
     if 'TEXAS' in sys.argv:
         texas = True
+        region = 'TEXAS'
+    if 'NYISO' in sys.argv:
+        texas = True
+        region = 'NYISO'
 
     # Default scans
-    reliability_values = [1.0, 0.9999, 0.9997, 0.999, 0.995, 0.99]
-    wind_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0]
-    solar_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0]
-    #wind_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    #solar_values = [0.0,]# 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    solar_max = 1.
+    wind_max = 2.
+    steps = 21
+    wind_gen_values = np.linspace(0, wind_max, steps)
+    solar_gen_values = np.linspace(0, solar_max, steps)
+    # Average CFs over the years analyzed for each region
+    avg_CFs = {
+        'CONUS': {
+            'wind': 0.42792439404259935, # Input_Data/ReliabilityPaper/CONUS_wind_top25pct_unnormalized.csv
+            'solar': 0.27649168958259435, # Input_Data/ReliabilityPaper/CONUS_solar_top25pct_unnormalized.csv
+        },
+        'TEXAS': {
+            'wind': 0.4407133256749137, # Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv
+            'solar': 0.2775177200559198, # Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv
+        },
+        'NYISO': {
+            'wind': 0.24368842191176743, # Input_Data/ReliabilityPaper/NYISO_wind_top25pct_unnormalized.csv
+            'solar': 0.21096134128817148, # Input_Data/ReliabilityPaper/NYISO_solar_top25pct_unnormalized.csv
+        },
+    }
+    wind_values = np.linspace(0, wind_max/avg_CFs[region]['wind'], steps)
+    solar_values = np.linspace(0, solar_max/avg_CFs[region]['solar'], steps)
+
+
+
     reliability_values = [0.9997,]
-    #wind_values = [0.0, 0.25, 1.0]
-    #solar_values = [0.0, 0.25, 1.0]
     nuclear_SF = 1.0
     storage_SFs = [1.0,]
     if qmu_scan:
@@ -601,9 +624,11 @@ if '__main__' in __name__:
         if 'version' in arg:
             version = arg.split('_')[1]
         if 'wind' in arg:
-            wind_values = [float(arg.split('_')[1]),]
+            wind_values = [float(arg.split('_')[1])/avg_CFs[region]['wind'],]
+            wind_gen_values = [float(arg.split('_')[1]),]
         if 'solar' in arg:
-            solar_values = [float(arg.split('_')[1]),]
+            solar_values = [float(arg.split('_')[1])/avg_CFs[region]['solar'],]
+            solar_gen_values = [float(arg.split('_')[1]),]
         if 'reliability' in arg and not 'analysis' in arg:
             reliability_values = [float(arg.split('_')[1]),]
         if 'nuclear_SF' in arg:
@@ -619,9 +644,9 @@ if '__main__' in __name__:
     version = f'{version}'
     global_name = 'reliability_{}_{}'.format(date, version)
     if len(wind_values) == 1: # Add wind value to global name for mazama file sorting
-        global_name += '_wind{}'.format(str(wind_values[-1]).replace('.','p'))
+        global_name += '_wind{}'.format(str(round(wind_values[-1],2)).replace('.','p'))
     if len(solar_values) == 1: # Add solar value to global name for mazama file sorting
-        global_name += '_solar{}'.format(str(solar_values[-1]).replace('.','p'))
+        global_name += '_solar{}'.format(str(round(solar_values[-1],2)).replace('.','p'))
     if qmu_scan:
         global_name += '_nukeSF{}'.format(str(round(nuclear_SF,2)).replace('.','p'))
     if post_mazama:
@@ -636,8 +661,10 @@ if '__main__' in __name__:
     print(f'Results path {results_path}')
     print(f'Input File: {input_file}')
     print(f'Reliability Values: {reliability_values}')
-    print(f'Wind Values: {wind_values}')
-    print(f'Solar Values: {solar_values}')
+    print(f'Wind Gen Pct Values: {wind_gen_values}')
+    print(f'Wind Capacity Values: {wind_values}')
+    print(f'Solar Gen Pct Values: {solar_gen_values}')
+    print(f'Solar Capacity Values: {solar_values}')
     if qmu_scan:
         print(f'Nuclear SF: {nuclear_SF}')
         print(f'Storage SFs: {storage_SFs}')
@@ -657,7 +684,7 @@ if '__main__' in __name__:
             '15-16' : [2015, 2016],
             '16-17' : [2016, 2017],
             '17-18' : [2017, 2018],
-            '18-19' : [2018, 2019],
+            #'18-19' : [2018, 2019],
     }
 
     if texas:
