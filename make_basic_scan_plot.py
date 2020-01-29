@@ -20,7 +20,7 @@ def return_file_info_map(region):
             'demand': ['Input_Data/ReliabilityPaper/CONUS_demand_unnormalized.csv', 8, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/CONUS_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'], 
             'solar': ['Input_Data/ReliabilityPaper/CONUS_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
-            'years' : [2016,2017,2018],
+            'years' : [2015, 2016,2017,2018],
         },
         'ERCOT': { 
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
@@ -233,6 +233,8 @@ def print_vals(df, year, im):
         print(f"{dfX.loc[idx, 'year']}:{dfX.loc[idx, 'month']}:{dfX.loc[idx, 'day']}:{dfX.loc[idx, 'hour']}:{dfX.loc[idx, 'demand (MW)']}")
         if i > 9: break
 
+
+
 def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
 
     hours = []
@@ -294,9 +296,25 @@ def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap,
     plt.savefig(f"{base}/{save_name}_top{top_X:03}_2D_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
 
 
-def get_annual_df(year, df, tgt, im):
+
+# CONUS is short enough we want to squeeze 4 years out.
+# The others are simple
+def get_annual_df(region, year, df, tgt, im):
 
     df2 = df[ df[ im[tgt][3]] == year]
+    # FIXME - add this section once we have 2019 wind / solar data for CONUS
+    #if region == 'CONUS':
+    #    df3 = df[ df[ im[tgt][3]] == year+1]
+    #    df2a = df2[ df2['month'] >= 8]
+    #    df3a = df3[ df3['month'] < 8]
+    #    print(f"len df2a {len(df2a.index)}")
+    #    print(f"len df3a {len(df3a.index)}")
+    #    df2a = df2a.append(df3a, ignore_index=True)
+    #    print(f"len df2a {len(df2a.index)}")
+    #    df2 = df2a
+    #    print(f"len df2 {len(df2.index)}")
+    #    print(df2.head())
+    #    print(df2.tail())
 
     # Normalize
     if tgt == 'demand':
@@ -578,9 +596,9 @@ if test_ordering:
     print(len(years))
     #years = [y for y in range(2005, 2009)]
     for year in years:
-        d_yr = get_annual_df(year, demand, 'demand', im)
-        w_yr = get_annual_df(year, wind, 'wind', im)
-        s_yr = get_annual_df(year, solar, 'solar', im)
+        d_yr = get_annual_df(region, year, demand, 'demand', im)
+        w_yr = get_annual_df(region, year, wind, 'wind', im)
+        s_yr = get_annual_df(region, year, solar, 'solar', im)
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
     avg_wind_CF = get_avg_CF(dfs, 'wind', im)
