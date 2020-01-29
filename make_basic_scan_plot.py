@@ -175,13 +175,14 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
     # Contours
-    n_levels = np.arange(0,.1,.01)
-    n_levels = np.append(n_levels, [0.025,])
-    n_levels.sort()
-    #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
-    cs = ax.contour(matrix, n_levels, colors='w')
-    # inline labels
-    ax.clabel(cs, inline=1, fontsize=10)
+    if not 'pval' in save_name:
+        n_levels = np.arange(0,.1,.01)
+        n_levels = np.append(n_levels, [0.025,])
+        n_levels.sort()
+        #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+        cs = ax.contour(matrix, n_levels, colors='w')
+        # inline labels
+        ax.clabel(cs, inline=1, fontsize=10)
 
 
     wind_labs, solar_labs = [], []
@@ -232,6 +233,67 @@ def print_vals(df, year, im):
         print(f"{dfX.loc[idx, 'year']}:{dfX.loc[idx, 'month']}:{dfX.loc[idx, 'day']}:{dfX.loc[idx, 'hour']}:{dfX.loc[idx, 'demand (MW)']}")
         if i > 9: break
 
+def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
+
+    hours = []
+    months = []
+
+    # hours to local time:
+    if 'ERCOT' in base:
+        adj = -6
+        nm = 'CST'
+    if 'NYISO' in base:
+        adj = -5
+        nm = 'EST'
+    if 'CONUS' in base:
+        adj = -6
+        nm = 'CST'
+
+    m = [[0 for _ in range(24)] for _ in range(12)]
+    for year, df in dfs.items():
+        mod_df = df
+        mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
+        mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
+
+        for i, idx in enumerate(mod_df.index):
+            if i == top_X:
+                break
+            hour = (mod_df.loc[idx, 'hour'] + adj)%24
+            month = mod_df.loc[idx, 'month']
+            hours.append(hour)
+            months.append(month)
+            m[month-1][hour-1] += 1
+
+    hours_ary = np.array(hours)
+    months_ary = np.array(months)
+    plt.close()
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(8,4))
+    n1, bins1, patches1 = axs[0].hist(hours_ary, np.arange(0.5,24.51,1),  density=True, histtype=u'step', linewidth=4)
+    n2, bins2, patches2 = axs[1].hist(months_ary, np.arange(0.5,12.51,1), density=True,  histtype=u'step', linewidth=4)
+
+    axs[0].set_xlim(0.5,24.5)
+    axs[1].set_xlim(0.5,12.5)
+    axs[0].set_xlabel(f'Hours ({nm})')
+    axs[1].set_xlabel('Months')
+    axs[0].set_ylabel(f'Top {top_X} Hours - Normalized')
+    axs[1].set_ylabel(f'Top {top_X} Hours - Normalized')
+
+    
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+
+    plt.close()
+    matrix = np.array(m)
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix/np.sum(matrix.flatten())*100.,interpolation='none',origin='lower',aspect='auto')
+    plt.xticks(range(0, 24), range(0, 24))
+    plt.yticks([i for i in range(0, 12)], ('Jan','Feb','Mar','Apr','May','Jun',
+        'Jul','Aug','Sep','Oct','Nov','Dec'))
+    plt.xlabel(f'Hours ({nm})')
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel(f'Top {top_X} Hours (%)')
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_2D_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+
+
 def get_annual_df(year, df, tgt, im):
 
     df2 = df[ df[ im[tgt][3]] == year]
@@ -249,20 +311,23 @@ def return_ordered_df(demand, wind, solar, im, demand_threshold):
     #rank_mthd='ordinal'
     rank_mthd='min'
     to_map = OrderedDict()
+    to_map['month'] = demand['month'].values
+    to_map['day'] = demand['day'].values
+    to_map['hour'] = demand['hour'].values
     to_map['demand'] = demand[im['demand'][2]].values
-    to_map['demand_rank'] = rankdata(demand[im['demand'][2]].values, method=rank_mthd)
-    to_map['demand_pct_of_max'] = demand[im['demand'][2]].values/np.max(demand[im['demand'][2]])
+    #to_map['demand_rank'] = rankdata(demand[im['demand'][2]].values, method=rank_mthd)
+    #to_map['demand_pct_of_max'] = demand[im['demand'][2]].values/np.max(demand[im['demand'][2]])
     to_map['wind'] = wind[im['wind'][2]].values
-    to_map['wind_rank'] = rankdata(wind[im['wind'][2]].values, method=rank_mthd)
-    to_map['wind_pct_of_max'] = wind[im['wind'][2]].values/np.max(wind[im['wind'][2]])
+    #to_map['wind_rank'] = rankdata(wind[im['wind'][2]].values, method=rank_mthd)
+    #to_map['wind_pct_of_max'] = wind[im['wind'][2]].values/np.max(wind[im['wind'][2]])
     to_map['solar'] = solar[im['solar'][2]].values
-    to_map['solar_rank'] = rankdata(solar[im['solar'][2]].values, method=rank_mthd)
-    to_map['solar_pct_of_max'] = solar[im['solar'][2]].values/np.max(solar[im['solar'][2]])
+    #to_map['solar_rank'] = rankdata(solar[im['solar'][2]].values, method=rank_mthd)
+    #to_map['solar_pct_of_max'] = solar[im['solar'][2]].values/np.max(solar[im['solar'][2]])
 
     df = pd.DataFrame(to_map)
-    df = df.sort_values(by='demand_rank', ascending=0)
+    #df = df.sort_values(by='demand_rank', ascending=0)
 
-    df = df.drop(df[df['demand_rank'] < (len(df.index) * (100. - demand_threshold)/100.)].index, axis=0)
+    #df = df.drop(df[df['demand_rank'] < (len(df.index) * (100. - demand_threshold)/100.)].index, axis=0)
     return df
 
 
@@ -444,8 +509,8 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
     axs[1].set_xlim(0, 2)
     plt.legend()
     plt.tight_layout()
-    if wind_install_cap == 0:
-        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+    #if wind_install_cap == 0:
+    #    plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
     plt.clf()
 
     out_range = []
@@ -458,7 +523,7 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         out_std.append(np.std(vect))
         out_mean.append(np.mean(vect))
         out_mean_to_2nd_highest.append(get_2nd_highest(vect))
-        out_norm_test_pval.append(normaltest(vect))
+        out_norm_test_pval.append(normaltest(vect)[1]) # save p values only
 
 
     return out_range, out_std, out_mean, out_mean_to_2nd_highest, out_norm_test_pval
@@ -468,12 +533,12 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 
+#region = 'TEXAS' # Don't use
+#region = 'TXv1' # Don't use
+#region = 'TXv2' # Don't use
 region = 'CONUS'
 #region = 'NYISO'
-#region = 'ERCOT'
-#region = 'TEXAS'
-#region = 'TXv1'
-#region = 'TXv2'
+region = 'ERCOT'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -493,18 +558,18 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 solar_max = 1.
 wind_max = 2.
 steps = 41
-steps = 3
+#steps = 5
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = f'plots_new_Jan23_{region}x'
+plot_base = f'plots_new_Jan28x_{region}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
 pkl_file = 'tmp6' # At home 41x41
-pkl_file = 'Jan23_41x41'
+pkl_file = 'Jan28_41x41'
 pkl_file += f'_{region}x'
 
 if test_ordering:
@@ -541,6 +606,7 @@ if test_ordering:
             vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
 
+            plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
             if wind_gen == 0:
                 box_thresholds = [20, 500]
                 make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
