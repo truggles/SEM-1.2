@@ -498,6 +498,30 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
     plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
 
 
+def make_threshold_hist(vect, save_name, cnt, base, gens):
+
+    ary = np.array(vect)*100
+    mean = np.mean(ary)
+    std = np.std(ary)
+    #for bin_w in [.1, .25, .5, 1, 2, 2.5, 5]:
+    for bin_w in [1,]:
+        plt.close()
+        matplotlib.rcParams.update({'font.size': 14})
+        fig, ax = plt.subplots()
+        n1, bins1, patches1 = ax.hist(ary, np.arange(150, 185, bin_w), facecolor='k', alpha=0.5, label='threshold\npositions') # histtype=u'step', linewidth=4)
+        y_lim = ax.get_ylim()[1]
+        ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.5, 10), 'r--', label='mean value') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.5, 10), 'b--', label='$\sigma$') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.5, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
+
+        plt.legend()
+        ax.set_xlim(150,180)
+        ax.set_xlabel(f'Demand - VRE\n(% Mean Demand)')
+        ax.set_ylabel(f'Entries / Bin')
+        plt.tight_layout()
+        plt.savefig(f"{base}/{save_name}_threshold_hist_{bin_w}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+
+
 
 def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pcts, cnt, base, gens=[0, 0]):
     plt.close()
@@ -541,6 +565,10 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
     #    plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
     plt.clf()
 
+    # Make hist of threshold locations
+    if cnt == 1:
+        make_threshold_hist(vects[len(thresholds)], save_name, cnt, base, gens)
+
     out_range = []
     out_std = []
     out_mean = []
@@ -573,7 +601,7 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 ### HERE
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
