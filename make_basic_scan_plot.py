@@ -531,12 +531,16 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
         fig, ax = plt.subplots()
         n1, bins1, patches1 = ax.hist(ary, np.arange(150, 185, bin_w), facecolor='k', alpha=0.5, label='threshold\npositions') # histtype=u'step', linewidth=4)
         y_lim = ax.get_ylim()[1]
-        ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.5, 10), 'r--', label='mean value') # histtype=u'step', linewidth=4)
-        ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.5, 10), 'b--', label='$\sigma$') # histtype=u'step', linewidth=4)
-        ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.5, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}%') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}%') # histtype=u'step', linewidth=4)
+        # Below values are w.r.t. to ERCOT's 2019 mean demand of 44 GW
+        #ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}% (73 GW)') # histtype=u'step', linewidth=4)
+        #ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}% (1.5 GW)') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.2, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
 
         plt.legend()
         ax.set_xlim(150,180)
+        ax.set_ylim(0,6)
         ax.set_xlabel(f'Demand - VRE\n(% Mean Demand)')
         ax.set_ylabel(f'Entries / Bin')
         plt.tight_layout()
