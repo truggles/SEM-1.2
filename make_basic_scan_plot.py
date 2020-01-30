@@ -11,6 +11,7 @@ import pickle
 from glob import glob
 import os
 from shutil import copy2
+import copy
 
 
 def return_file_info_map(region):
@@ -179,18 +180,18 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
 
     # Contours
     if not 'pval' in save_name:
-        n_levels = np.arange(0,10,1)
-        n_levels = np.append(n_levels, [0.5, 1.5, 2.5, 3.5, 4.5])
+        n_levels = np.arange(0,10,0.5)
+        #n_levels = np.append(n_levels, [0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
         n_levels.sort()
         #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
         cs = ax.contour(matrix, n_levels, colors='w')
         # inline labels
-        ax.clabel(cs, inline=1, fontsize=12)
+        ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
 
 
     wind_labs, solar_labs = [], []
     for v in wind_values:
-        if int(v*2)==v*2:
+        if int(v*4)==v*4:
             wind_labs.append(f"{int(v*100)}%")
         else:
             wind_labs.append('')
@@ -205,12 +206,32 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     plt.ylabel("Solar Generation\n(% Mean Demand)")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    cb_range = [np.min(matrix), np.max(matrix)]
     plt.title(f"")
     plt.tight_layout()
 
 
     plt.savefig(f"{plot_base}/{region}_{save_name}.png")
     plt.clf()
+
+    ## Make empty plots
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #m_nan = copy.deepcopy(matrix)
+    #for i in range(len(m_nan)):
+    #    for j in range(len(m_nan[i])):
+    #        m_nan[i][j] = np.nan
+    #im = ax.imshow(m_nan,interpolation='none',origin='lower',vmin=cb_range[0],vmax=cb_range[1])
+    #plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
+    #plt.yticks(range(len(solar_values)), solar_labs)
+    #plt.xlabel("Wind Generation\n(% Mean Demand)")
+    #plt.ylabel("Solar Generation\n(% Mean Demand)")
+    #cbar = ax.figure.colorbar(im)
+    #cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    #plt.title(f"")
+    #plt.tight_layout()
+    #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.png")
+    #plt.clf()
 
 
 def get_avg_CF(dfs, name, im):
@@ -601,7 +622,7 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 ### HERE
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
@@ -612,25 +633,25 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
-wind_max = 2.
+wind_max = 1.
 steps = 81
+#solar_max = .25
+#wind_max = .5
+#steps = 21
 #steps = 3
-solar_max = .25
-wind_max = .5
-steps = 21
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
 #plot_base = f'plots_new_Jan28x_{region}' # Used 81 steps solar=1 wind=2
-plot_base = f'plots_new_Jan28y_{region}'
+plot_base = f'plots_new_Jan30_{region}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
-pkl_file = 'Jan28_41x41'
+pkl_file = 'Jan30_81x81'
 #pkl_file += f'_{region}x' # Used 81 steps solar=1 wind=2
-pkl_file += f'_{region}y'
+pkl_file += f'_{region}'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -671,12 +692,12 @@ if test_ordering:
             vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
 
-            plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
-            if wind_gen == 0:
-                box_thresholds = [20, 500]
-                make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
+            #plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+            #if wind_gen == 0:
+            #    box_thresholds = [20, 500]
+            #    make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
-                load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
+            #    load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
 
 
     #print("Solar Wind max_range 100th_range")
