@@ -501,7 +501,7 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
 
     plt.close()
     matplotlib.rcParams.update({'font.size': 14})
-    fig, ax = plt.subplots(figsize=(7,5))
+    fig, ax = plt.subplots(figsize=(5,5))
     ax.yaxis.grid(True)
     #ax.set_title(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}: whiskers at 5%/95%')
     medianprops = dict(linestyle='-', linewidth=2.5)
@@ -513,6 +513,7 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
         x_labels.append(f'Solar:\nTop {val} Hours')
     plt.xticks([i for i in range(1, len(box_thresholds)*2+1)], x_labels, rotation=30)
     ax.set_ylabel('Wind/Solar Capacity Factors')
+    ax.set_ylim(0, 1)
     plt.tight_layout()
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
@@ -626,7 +627,7 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 ### HERE
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
@@ -698,7 +699,7 @@ if test_ordering:
 
             #plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
             #if wind_gen == 0:
-            #    box_thresholds = [20, 500]
+            #    box_thresholds = [20,]
             #    make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
             #    load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
