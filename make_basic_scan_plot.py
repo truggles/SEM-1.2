@@ -36,6 +36,7 @@ def return_file_info_map(region):
             'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
             'years' : [y for y in range(2003, 2019)],
         },
+        # Analysis shows that the difference in Threshold 0.26 vs top 25% for Wind is what leads to large changes in results
         'TXv1': {
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
