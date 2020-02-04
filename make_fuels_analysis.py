@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,6 +17,14 @@ def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyz
     y_ticks_loc = []
     y_ticks_val = []
     #y_ticks = [-0.5]
+    for i, electricity in enumerate(np.linspace(info1[0], info1[1], info1[2])):
+        if round(electricity,2) == electricity:
+            y_ticks_loc.append(i)
+            y_ticks_val.append(str(round(electricity,2)))
+    for j, electrolyzer in enumerate(np.linspace(info2[0], info2[1], info2[2])):
+        if round(electrolyzer,2) == electrolyzer:
+            x_ticks_loc.append(j)
+            x_ticks_val.append(str(round(electrolyzer,2)))
 
     print(f"Initial electrolyzer cost: {system['FIXED_COST_ELECTROLYZER']['value']}")
 
@@ -23,21 +33,19 @@ def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyz
     #y = np.outer(np.ones(info1[2]), np.linspace(info2[0], info2[1], info2[2]))
     z = np.zeros((info1[-1], info2[-1]))
     for i, electricity in enumerate(np.linspace(info1[0], info1[1], info1[2])):
-        if round(electricity,2) == electricity:
-            y_ticks_loc.append(i)
-            y_ticks_val.append(str(round(electricity,2)))
         for j, electrolyzer in enumerate(np.linspace(info2[0], info2[1], info2[2])):
-            if round(electrolyzer,2) == electrolyzer:
-                x_ticks_loc.append(j)
-                x_ticks_val.append(str(round(electrolyzer,2)))
             system['FIXED_COST_ELECTROLYZER']['value'] = electrolyzer
             cost = af.get_fuel_system_costs(syst, electricity)
             z[i][j] = cost
 
     fig, ax = plt.subplots()
-    im = ax.imshow(z, origin='lower', interpolation='spline16')
+    im = ax.imshow(z, origin='lower', interpolation='spline16', vmin=0)
 
-    #plt.xticks(x_ticks_loc, x_ticks_val, rotation=90)
+    n_levels = 5
+    cs = ax.contour(z, n_levels, colors='w')
+    # inline labels
+    ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
+
     plt.xticks(x_ticks_loc, x_ticks_val)
     plt.yticks(y_ticks_loc, y_ticks_val)
     cbar = ax.figure.colorbar(im)
@@ -53,7 +61,7 @@ syst = af.return_fuel_system()
 cost = af.get_fuel_system_costs(syst, 0.06)
 print(cost)
 
-electricity_info = [0.0, 0.1, 51]
+electricity_info = [0.0, 0.2, 51]
 electrolyzer_info = [0, 0.05, 51]
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info)
