@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+from collections import OrderedDict
+import copy
 from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,10 +10,57 @@ import matplotlib.pyplot as plt
 import analytic_fuels as af
 
 
+kWh_to_GGE = 33.4
+
+
+# Plot stacked bars representing total fuel costs for multiple scenarios
+def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
+
+    order = [
+            'fixed cost chem plant',
+            'var cost chem plant',
+            'fixed cost electrolyzer',
+            'var cost electricity',
+            'var cost CO2',
+    ]
+    items = OrderedDict()
+    for o in order:
+        items[o] = []
+    for system, electricity_cost in zip(systems, electricity_costs):
+        for item in items.keys():
+            if item == 'fixed cost electrolyzer':
+                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value'])
+            if item == 'fixed cost chem plant':
+                items[item].append(system['FIXED_COST_CHEM_PLANT']['value'])
+            if item == 'var cost chem plant':
+                items[item].append(system['VAR_COST_CHEM_PLANT']['value'])
+            if item == 'var cost CO2':
+                items[item].append(system['VAR_COST_CO2']['value'])
+            if item == 'var cost electricity':
+                items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value']))
+
+    for units, SF in {'kWh': 1, 'GGE': kWh_to_GGE}.items():
+        plt.close()
+        fig, ax = plt.subplots()
+
+        width = 0.35 # Matplotlib example width
+        btm = np.zeros(len(systems))
+        for item, vals in items.items():
+            vect = np.array(vals)
+            plt.bar(np.arange(len(vect)), vect*SF, width, bottom=btm, label=item)
+            btm += vect*SF
+        plt.xticks(np.arange(len(system_labels)), system_labels)
+        ax.set_ylabel(f'fuel cost ($/{units})')
+        ax.set_ylim(0, max(btm)*1.5)
+        plt.legend()
+        plt.savefig(f'{base}_{save_name}_{units}.png')
+        plt.clf()
+
+
+
 
 def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyzer_info, base):
 
-    print(f"Initial electrolyzer cost: {system['FIXED_COST_ELECTROLYZER']['value']}")
 
     info1 = electricity_info
     info2 = electrolyzer_info
@@ -24,7 +73,7 @@ def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyz
 
     plot_2D(z, electrolyzer_info, electricity_info, 'Electrolyzer CapEx ($/kW/h)', 'Electricity Costs ($/kWh)', 
             'Fuel Cost ($/kWh)', 'scan_electricity_and_electrolyzer_costs_kWh', base)
-    plot_2D(z*33.4, electrolyzer_info, electricity_info, 'Electrolyzer CapEx ($/kW/h)', 'Electricity Costs ($/kWh)', 
+    plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, 'Electrolyzer CapEx ($/kW/h)', 'Electricity Costs ($/kWh)', 
             'Fuel Cost ($/GGE)', 'scan_electricity_and_electrolyzer_costs_GGE', base)
 
 
@@ -75,11 +124,24 @@ if not os.path.exists(base):
 syst = af.return_fuel_system()
 
 cost = af.get_fuel_system_costs(syst, 0.06)
+print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
+print(f"Default fuel cost: {round(cost,4)} $/kWh")
 
 
 electricity_info = [0.0, 0.2, 51]
 electrolyzer_info = [0, 0.05, 51]
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base)
+
+systems = []
+systems.append( copy.deepcopy(syst) )
+systems.append( copy.deepcopy(syst) )
+systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = 0.01
+system_labels = ['Default', 'Expensive Electrolyzer']
+electricity_costs = [0.05, 0.1]
+stacked_plots(systems, system_labels, electricity_costs, 'bar_chart_test', base)
+
+
+
 
 

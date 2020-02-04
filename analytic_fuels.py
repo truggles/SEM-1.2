@@ -78,7 +78,8 @@ FIXED_COST_H2_STORAGE = {
 
 
 VAR_COST_ELECTROLYZER = {
-    'value' : 1.00E-06, # $/kWh, Small, but non-zero value
+    #'value' : 1.00E-06, # $/kWh, Small, but non-zero value
+    'value' : 0., # $/kWh, Small, but non-zero value
     'ref' : 'FIXME - find source saying cost is 99% based on electricity costs'
 
 }
