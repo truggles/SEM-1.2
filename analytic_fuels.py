@@ -55,8 +55,8 @@ FIXED_COST_ELECTROLYZER = {
 
 
 FIXED_COST_CHEM_PLANT = {
-    'capital cost' : ((202+32+32)*CHEM_PLANT_CAP_SF)/690*1000, # ($/kW generation or conversion; $/kWh storage)
-            # ($202+32+32)*4.6/690MW of liquid fuel produced for FT, Hydrocracker, RWGS, Cavern) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
+    'capital cost' : ((202+32+32)*CHEM_PLANT_CAP_SF)/690*1000, # ($/kW generation or conversion)
+            # ($202+32+32)*4.6/690MW of liquid fuel produced for FT, Hydrocracker, RWGS) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
     #'value' : 1.6303E-02 # ($/h)/kW
@@ -64,8 +64,8 @@ FIXED_COST_CHEM_PLANT = {
 
 
 FIXED_COST_H2_STORAGE = {
-    'capital cost' : ((33*10**6))/(973*10**9)*1000, # ($/kW generation or conversion; $/kWh storage)
-            # (33)*4.6/690MW of liquid fuel produced for FT, Hydrocracker, RWGS, Cavern) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
+    'capital cost' : ((33*10**6))/(971*10**9)*1000, # ($/kWh storage)
+            # (33 M$ / 971 GWh) of liquid fuel produced for Cavern) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 80, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
     #'Capital recovery factor' : 0.0703, # (% per year)

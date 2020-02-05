@@ -122,6 +122,13 @@ if not os.path.exists(base):
     os.makedirs(base)
 
 syst = af.return_fuel_system()
+print("Default System:")
+for k1, v1 in syst.items():
+    print(f" - {k1}")
+    for k2, v2 in v1.items():
+        if k2 == 'ref':
+            continue
+        print(f" --- {k2} = {v2}")
 
 cost = af.get_fuel_system_costs(syst, 0.06)
 print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
