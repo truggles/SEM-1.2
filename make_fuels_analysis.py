@@ -63,6 +63,25 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
 
 
 
+def scan_electricity_costs_and_electrolyzer_CFs(system, electricity_info, electrolyzer_info, base):
+
+
+    info1 = electricity_info
+    info2 = electrolyzer_info
+    z = np.zeros((info1[-1], info2[-1]))
+    for i, electricity in enumerate(np.linspace(info1[0], info1[1], info1[2])):
+        for j, electrolyzer in enumerate(np.linspace(info2[0], info2[1], info2[2])):
+            system['FIXED_COST_ELECTROLYZER']['capacity factor'] = electrolyzer
+            cost = af.get_fuel_system_costs(syst, electricity)
+            z[i][j] = cost
+
+    plot_2D(z, electrolyzer_info, electricity_info, 'Electrolyzer CF', 'Electricity Costs ($/kWh)', 
+            'Fuel Cost ($/kWh)', 'scan_electricity_costs_and_electrolyzer_CFs_kWh', base)
+    plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, 'Electrolyzer CF', 'Electricity Costs ($/kWh)', 
+            'Fuel Cost ($/GGE)', 'scan_electricity_costs_and_electrolyzer_CFs_GGE', base)
+
+
+
 def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyzer_info, base):
 
 
@@ -90,21 +109,23 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     x_ticks_val = []
     y_ticks_loc = []
     y_ticks_val = []
+    rounder_x = 2 if 'scan_electricity_and_electrolyzer_costs' in save_name else 1
+    rounder_y = 2
     for i, y_val in enumerate(np.linspace(info1[0], info1[1], info1[2])):
-        if round(y_val,2) == y_val:
+        if round(y_val,rounder_y) == round(y_val,10):
             y_ticks_loc.append(i)
-            y_ticks_val.append(str(round(y_val,2)))
+            y_ticks_val.append(str(round(y_val,rounder_y)))
     for j, x_val in enumerate(np.linspace(info2[0], info2[1], info2[2])):
-        if round(x_val,2) == x_val:
+        if round(x_val,rounder_x) == round(x_val,10):
             x_ticks_loc.append(j)
-            x_ticks_val.append(str(round(x_val,2)))
+            x_ticks_val.append(str(round(x_val,rounder_x)))
 
     fig, ax = plt.subplots()
     im = ax.imshow(z, origin='lower', interpolation='spline16', vmin=0)
 
     n_levels = 5
     cs = ax.contour(z, n_levels, colors='w')
-    ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
+    ax.clabel(cs, inline=1, fontsize=12, fmt='%1.2f')
 
     plt.xticks(x_ticks_loc, x_ticks_val)
     plt.yticks(y_ticks_loc, y_ticks_val)
@@ -143,6 +164,10 @@ electricity_info = [0.0, 0.2, 51]
 electrolyzer_info = [0, 0.05, 51]
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base)
+
+electrolyzer_CF_info = [0.1, 1.00, 46]
+scan_electricity_costs_and_electrolyzer_CFs(syst,
+        electricity_info, electrolyzer_CF_info, base)
 
 # Nov 2019 industrial cost of electricity 0.0673 $/kWh US Avg https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
 us_avg = 0.0673
