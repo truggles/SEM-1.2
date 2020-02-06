@@ -134,6 +134,28 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     #plt.tight_layout()
+
+    # Add baseline reference
+    # Hardcoded FIXME
+    x, y = -1, -1
+    if 'scan_electricity_and_electrolyzer_costs' in save_name:
+        x = 0.014309606239901077
+        y = 0.0673
+    if 'scan_electricity_costs_and_electrolyzer_CFs' in save_name:
+        x = 1.0
+        y = 0.0673
+    x_spacing = (info2[1] - info2[0])/info2[2]
+    y_spacing = (info1[1] - info1[0])/info1[2]
+    x_loc = (x-info2[0])/x_spacing
+    y_loc = (y-info1[0])/y_spacing
+    if x_loc > info2[2]:
+        x_loc = info2[2]
+    if y_loc > info1[2]:
+        y_loc = info1[2]
+
+    if x != -1 and y != -1:
+        ax.scatter( x_loc, y_loc, s=320, marker='*', color='gold')
+
     plt.savefig(base+save_name+'.png')
     plt.clf()
 
