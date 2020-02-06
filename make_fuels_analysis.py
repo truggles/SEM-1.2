@@ -15,6 +15,8 @@ kWh_to_GGE = 33.4
 
 # Plot stacked bars representing total fuel costs for multiple scenarios
 def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
+    assert(len(systems) == len(system_labels))
+    assert(len(system_labels) == len(electricity_costs))
 
     order = [
             'fixed cost chem plant',
@@ -29,7 +31,7 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
     for system, electricity_cost in zip(systems, electricity_costs):
         for item in items.keys():
             if item == 'fixed cost electrolyzer':
-                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value'])
+                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_PLANT']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor']))
             if item == 'fixed cost chem plant':
                 items[item].append(system['FIXED_COST_CHEM_PLANT']['value'])
             if item == 'var cost chem plant':
@@ -41,7 +43,8 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
 
     for units, SF in {'kWh': 1, 'GGE': kWh_to_GGE}.items():
         plt.close()
-        fig, ax = plt.subplots()
+        adj = 1.0 if len(systems) < 6 else 1.4
+        fig, ax = plt.subplots(figsize=(6.4*adj, 4.8))
 
         width = 0.35 # Matplotlib example width
         btm = np.zeros(len(systems))
@@ -53,6 +56,7 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
         ax.set_ylabel(f'fuel cost ($/{units})')
         ax.set_ylim(0, max(btm)*1.5)
         plt.legend()
+        plt.tight_layout()
         plt.savefig(f'{base}_{save_name}_{units}.png')
         plt.clf()
 
@@ -140,12 +144,40 @@ electrolyzer_info = [0, 0.05, 51]
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base)
 
-systems = []
+# Nov 2019 industrial cost of electricity 0.0673 $/kWh US Avg https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
+us_avg = 0.0673
+
+systems, system_labels, electricity_costs = [], [], []
+
+system_labels.append('Default')
+electricity_costs.append(us_avg)
 systems.append( copy.deepcopy(syst) )
+
+system_labels.append('Free\nElectricity')
+electricity_costs.append(0.0)
 systems.append( copy.deepcopy(syst) )
-systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = 0.01
-system_labels = ['Default', 'Expensive Electrolyzer']
-electricity_costs = [0.05, 0.1]
+
+system_labels.append('2x Electrolyzer')
+electricity_costs.append(us_avg)
+systems.append( copy.deepcopy(syst) )
+systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = systems[-1]['FIXED_COST_ELECTROLYZER']['value'] * 2.
+
+system_labels.append('DAC CO2')
+electricity_costs.append(us_avg)
+systems.append( copy.deepcopy(syst) )
+systems[-1]['VAR_COST_CO2']['co2 cost'] = 600
+systems[-1]['VAR_COST_CO2'] = af.var_cost_of_CO2(**systems[-1]['VAR_COST_CO2'])
+
+system_labels.append('50% CF\nElectrolyzer')
+electricity_costs.append(us_avg)
+systems.append( copy.deepcopy(syst) )
+systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.5
+
+system_labels.append('20% CF\nElectrolyzer\nFree\nElectricity')
+electricity_costs.append(0.0)
+systems.append( copy.deepcopy(syst) )
+systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.2
+
 stacked_plots(systems, system_labels, electricity_costs, 'bar_chart_test', base)
 
 

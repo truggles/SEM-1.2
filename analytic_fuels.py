@@ -49,6 +49,7 @@ FIXED_COST_ELECTROLYZER = {
             # $850/kW*1.83 from table 3, cap ex for H2 electrolyzer * scale factor, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
+    'capacity factor' : 1.00, # 100%
     #'value' : 1.4300E-02 # ($/h)/kW
 }
 
@@ -146,7 +147,7 @@ def return_fuel_system():
 
 def get_fuel_system_costs(system, electricity_cost):
     tot = 0.
-    tot += system['FIXED_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value']
+    tot += system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_PLANT']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor'])
     tot += system['FIXED_COST_CHEM_PLANT']['value']
     tot += system['VAR_COST_CHEM_PLANT']['value']
     tot += system['VAR_COST_CO2']['value']
