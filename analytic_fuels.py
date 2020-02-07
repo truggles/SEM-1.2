@@ -147,10 +147,10 @@ def return_fuel_system():
 
 def get_fuel_system_costs(system, electricity_cost):
     tot = 0.
-    tot += system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_PLANT']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor'])
+    tot += system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor']
     tot += system['FIXED_COST_CHEM_PLANT']['value']
-    tot += system['VAR_COST_CHEM_PLANT']['value']
-    tot += system['VAR_COST_CO2']['value']
+    tot += system['VAR_COST_CHEM_PLANT']['value'] * system['EFFICIENCY_CHEM_PLANT']['value']
+    tot += system['VAR_COST_CO2']['value'] # Does not depend on chem plant eff.
     tot += system['VAR_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value']
     tot += electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value'])
     return tot

@@ -19,27 +19,29 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
     assert(len(system_labels) == len(electricity_costs))
 
     order = [
+            'fixed cost electrolyzer',
             'fixed cost chem plant',
             'var cost chem plant',
-            'fixed cost electrolyzer',
-            'var cost electricity',
             'var cost CO2',
+            'var cost electricity',
     ]
     items = OrderedDict()
     for o in order:
         items[o] = []
-    for system, electricity_cost in zip(systems, electricity_costs):
+    for system, electricity_cost, syst_name in zip(systems, electricity_costs, system_labels):
         for item in items.keys():
             if item == 'fixed cost electrolyzer':
-                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_PLANT']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor']))
+                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor'])
             if item == 'fixed cost chem plant':
                 items[item].append(system['FIXED_COST_CHEM_PLANT']['value'])
             if item == 'var cost chem plant':
-                items[item].append(system['VAR_COST_CHEM_PLANT']['value'])
+                items[item].append(system['VAR_COST_CHEM_PLANT']['value'] * system['EFFICIENCY_CHEM_PLANT']['value'])
             if item == 'var cost CO2':
-                items[item].append(system['VAR_COST_CO2']['value'])
+                items[item].append(system['VAR_COST_CO2']['value']) # Does not depend on chem plant eff.
             if item == 'var cost electricity':
                 items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value']))
+            if syst_name == 'Default':
+                print(syst_name, item, items[item][-1])
 
     for units, SF in {'kWh': 1, 'GGE': kWh_to_GGE}.items():
         plt.close()
@@ -56,8 +58,9 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
         ax.set_ylabel(f'fuel cost ($/{units})')
         ax.set_ylim(0, max(btm)*1.5)
         plt.legend()
+        plt.grid(axis='y')
         plt.tight_layout()
-        plt.savefig(f'{base}_{save_name}_{units}.png')
+        plt.savefig(f'{base}{save_name}_{units}.png')
         plt.clf()
 
 
@@ -140,18 +143,19 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     x, y = -1, -1
     if 'scan_electricity_and_electrolyzer_costs' in save_name:
         x = 0.014309606239901077
-        y = 0.0673
+        y = us_avg
     if 'scan_electricity_costs_and_electrolyzer_CFs' in save_name:
         x = 1.0
-        y = 0.0673
+        y = us_avg
     x_spacing = (info2[1] - info2[0])/info2[2]
     y_spacing = (info1[1] - info1[0])/info1[2]
     x_loc = (x-info2[0])/x_spacing
     y_loc = (y-info1[0])/y_spacing
-    if x_loc > info2[2]:
-        x_loc = info2[2]
-    if y_loc > info1[2]:
-        y_loc = info1[2]
+    if x_loc >= info2[2]:
+        x_loc = info2[2]-1.5
+    if y_loc >= info1[2]:
+        y_loc = info1[2]-1.5
+    #print(save_name, x_loc, y_loc, info2[2], info1[2])
 
     if x != -1 and y != -1:
         ax.scatter( x_loc, y_loc, s=320, marker='*', color='gold')
@@ -162,6 +166,8 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
 
 
 
+# Nov 2019 industrial cost of electricity 0.0673 $/kWh US Avg https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
+us_avg = 0.0673
 
 date = 20200204
 base = f'plots_analytic_fuels_{date}/'
@@ -177,25 +183,27 @@ for k1, v1 in syst.items():
             continue
         print(f" --- {k2} = {v2}")
 
-cost = af.get_fuel_system_costs(syst, 0.06)
+cost = af.get_fuel_system_costs(syst, us_avg)
 print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
 print(f"Default fuel cost: {round(cost,4)} $/kWh")
+print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")
 
 
 electricity_info = [0.0, 0.2, 51]
 electrolyzer_info = [0, 0.05, 51]
+syst = af.return_fuel_system() # Get fresh system
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base)
 
-electrolyzer_CF_info = [0.1, 1.00, 46]
+electrolyzer_CF_info = [0.2, 1.00, 41]
+syst = af.return_fuel_system() # Get fresh system
 scan_electricity_costs_and_electrolyzer_CFs(syst,
         electricity_info, electrolyzer_CF_info, base)
 
-# Nov 2019 industrial cost of electricity 0.0673 $/kWh US Avg https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
-us_avg = 0.0673
 
 systems, system_labels, electricity_costs = [], [], []
 
+syst = af.return_fuel_system() # Get fresh system
 system_labels.append('Default')
 electricity_costs.append(us_avg)
 systems.append( copy.deepcopy(syst) )
