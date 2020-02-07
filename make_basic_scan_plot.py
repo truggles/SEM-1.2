@@ -562,16 +562,17 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
         axs[0].plot(vals, df['solar'], '.', alpha=0.2, label=year)
         vals.sort()
-        axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
+        #axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
         for i, t in enumerate(thresholds):
             vects[i].append(vals[-1 * t])
 
         for i, t in enumerate(threshold_pcts):
             pct = get_integrated_threshold(vals, t)
-            if i == 0:
-                axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
+            #if i == 0:
+            #    axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
             vects[len(thresholds)+i].append(pct)
-    axs[0].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    #axs[0].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    axs[0].set_xlabel(f'Demand - VRE\n(% Mean Demand)')
     axs[0].set_ylabel('solar CF')
     axs[0].set_ylim(0, 1)
     axs[0].set_xlim(0, 2)
@@ -580,16 +581,17 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         axs[1].plot(vals, df['wind'], '.', alpha=0.2, label=year)
         vals.sort()
         pct = get_integrated_threshold(vals, threshold_pcts[0]) # Just plot the first one
-        axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
-        axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
-    axs[1].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+        #axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
+        #axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
+    #axs[1].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    axs[1].set_xlabel(f'Demand - VRE\n(% Mean Demand)')
     axs[1].set_ylabel('wind CF')
     axs[1].set_ylim(0, 1)
     axs[1].set_xlim(0, 2)
-    plt.legend()
+    #plt.legend()
     plt.tight_layout()
-    #if wind_install_cap == 0:
-    #    plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+    if wind_install_cap == 0 and solar_install_cap == 0:
+        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
     plt.clf()
 
     # Make hist of threshold locations
