@@ -151,7 +151,7 @@ def core_model (global_dic, case_dic):
     var_cost_csp_storage = case_dic['VAR_COST_CSP_STORAGE']*numerics_cost_scaling
 
     efficiency_fuel_electrolyzer = case_dic['EFFICIENCY_FUEL_ELECTROLYZER']
-    efficiency_fuel_chem_plant = case_dic['EFFICIENCY_FUEL_CHEM_PLANT']
+    efficiency_fuel_chem_conversion = case_dic['EFFICIENCY_FUEL_CHEM_CONVERSION']
     decay_rate_fuel_h2_storage = case_dic['DECAY_RATE_FUEL_H2_STORAGE']
     fuel_value = case_dic['FUEL_VALUE']*numerics_cost_scaling
     fuel_demand = case_dic['FUEL_DEMAND']*numerics_demand_scaling
@@ -383,7 +383,7 @@ def core_model (global_dic, case_dic):
                 dispatch_to_fuel_h2_storage >= 0,
                 dispatch_to_fuel_h2_storage <= capacity_fuel_electrolyzer / efficiency_fuel_electrolyzer,
                 dispatch_from_fuel_h2_storage >= 0,
-                dispatch_from_fuel_h2_storage <= capacity_fuel_chem_plant / efficiency_fuel_chem_plant,
+                dispatch_from_fuel_h2_storage <= capacity_fuel_chem_plant / efficiency_fuel_chem_conversion,
                 fuel_h2_storage >= 0,
                 fuel_h2_storage <= capacity_fuel_h2_storage 
                 ]
@@ -394,16 +394,16 @@ def core_model (global_dic, case_dic):
             capacity_fuel_chem_plant * fixed_cost_fuel_chem_plant +  \
             capacity_fuel_h2_storage * fixed_cost_fuel_h2_storage +  \
             cvx.sum(dispatch_to_fuel_h2_storage * efficiency_fuel_electrolyzer * var_cost_fuel_electrolyzer)/num_time_periods + \
-            cvx.sum(dispatch_from_fuel_h2_storage * (efficiency_fuel_chem_plant * var_cost_fuel_chem_plant + var_cost_fuel_co2))/num_time_periods
+            cvx.sum(dispatch_from_fuel_h2_storage * efficiency_fuel_chem_conversion * (var_cost_fuel_chem_plant + var_cost_fuel_co2))/num_time_periods
 
         # The following negative is from the cost function because we are "selling" it into the fuels market
         # at a fixed price
         if fuel_value > 0:
-            fcn2min -= cvx.sum(dispatch_from_fuel_h2_storage)/num_time_periods * efficiency_fuel_chem_plant * fuel_value 
+            fcn2min -= cvx.sum(dispatch_from_fuel_h2_storage)/num_time_periods * efficiency_fuel_chem_conversion * fuel_value 
 
         if fuel_demand > 0:
             constraints += [
-                    cvx.sum(dispatch_from_fuel_h2_storage) * efficiency_fuel_chem_plant / num_time_periods == fuel_demand
+                    cvx.sum(dispatch_from_fuel_h2_storage) * efficiency_fuel_chem_conversion / num_time_periods == fuel_demand
                 ]
 
         idx_fuel_constraint = len(constraints)-1

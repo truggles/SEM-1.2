@@ -210,8 +210,8 @@ def get_results(files, global_name):
                        info['efficiency fuel electrolyzer'].values[0],
         ]
 
-    print('Writing results to "Results_{}.csv"'.format(global_name))
-    ofile = open('Results_{}.csv'.format(global_name), 'w')
+    print('Writing results to "results/Results_{}.csv"'.format(global_name))
+    ofile = open('results/Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
     ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
     for key in keys:
@@ -408,8 +408,8 @@ def costs_plot(df, **kwargs):
     #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
     f_tot = f_elec+f_chem#+f_store
     v_elec = df['var cost fuel electrolyzer ($/kW/h)'] * df['dispatch to fuel h2 storage (kW)'] * EFFICIENCY_FUEL_ELECTROLYZER / df['fuel demand (kWh)']
-    v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_PLANT / df['fuel demand (kWh)']
-    v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_PLANT / df['fuel demand (kWh)']
+    v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
+    v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
 
 
     # Build stack
@@ -419,6 +419,14 @@ def costs_plot(df, **kwargs):
     ax.fill_between(df['fuel demand (kWh)'], f_tot, f_tot+v_chem, label='variable cost chem plant')
     ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost CO$_{2}$')
     #ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2+v_elec, label='variable cost electrolyzer') # variable cost electrolyzer is set at 1.0E-6 b/c MEM handles electric costs already
+
+    print(" --- Stacked cost plot:")
+    print(f" ----- fixed cost electrolyzer {round(f_elec[0],6)}")
+    print(f" ----- fixed cost chem         {round(f_chem[0],6)}")
+    print(f" ----- variable chem           {round(v_chem[0],6)}")
+    print(f" ----- variable CO2            {round(v_co2[0],6)}")
+    print(f" ----- variable electrolyzer   {round(dollars_per_fuel[0]-(f_tot[0]+v_chem[0]+v_co2[0]),6)}")
+    print(f" ----- TOTAL:                  {round(dollars_per_fuel[0],6)}")
 
 
     # Fill remainder with assumed electricity cost from MEM
@@ -654,7 +662,7 @@ def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, fuel_dem
 
 
 def clean_files(path, global_name, results, case_file):
-    files = get_output_file_names(path+'{}_2019'.format(global_name))
+    files = get_output_file_names(path+'{}_2020'.format(global_name))
     print(files)
 
     # Copy output file
@@ -742,7 +750,7 @@ if '__main__' in __name__:
     if 'make_plots' in sys.argv:
         make_plots = True
 
-    date = '20191022' # default
+    date = '20200209' # default
     case = 'Case6_NuclearWindSolarStorage' # default
     version = 'v3'
     for arg in sys.argv:
@@ -753,7 +761,7 @@ if '__main__' in __name__:
         if 'version' in arg:
             version = arg.split('_')[1]
 
-    input_file = f'fuel_test_191017_{case}.csv'
+    input_file = f'fuel_test_20200209_{case}.csv'
     version = f'{version}_{case}'
     global_name = 'fuel_test_{}_{}'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
@@ -769,10 +777,8 @@ if '__main__' in __name__:
     print(f' - MAKE_PLOTS={make_plots}\n')
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
-    EFFICIENCY_FUEL_ELECTROLYZER=0.676783005
-    EFFICIENCY_FUEL_CHEM_PLANT=0.659
-    EFFICIENCY_COMBINED = 0.446 # 0.676783005 * 0.659
-    MEAN_JAN_2016_WIND_CF = 0.429287634 # From 1st month of 2016 wind, all Jan
+    EFFICIENCY_FUEL_ELECTROLYZER=0.677
+    EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
 
     ### DEFAULTS ###
     settings = {
@@ -782,10 +788,10 @@ if '__main__' in __name__:
         'start_month' : 4,
         'end_month' : 4,
         'system_reliability' : -1, # Use 10 $/kWh
-        'fixed_cost_solar' : 1,
-        'fixed_cost_wind' : 1,
+        'fixed_cost_solar' : -1,
+        'fixed_cost_wind' : -1,
         'fixed_cost_nuclear' : 1,
-        'fixed_cost_storage' : 1,
+        'fixed_cost_storage' : -1,
         'fixed_cost_fuel_electrolyzer' : 1,
         'efficiency_fuel_electrolyzer' : 1,
         'fuel_demand' : 1, # equal fuel output as electric demand
@@ -837,7 +843,7 @@ if '__main__' in __name__:
     if make_results_file:
         base = os.getcwd()
         results = base+'/'+results
-        files = get_output_file_names(results+'{}_2019'.format(global_name))
+        files = get_output_file_names(results+'{}_2020'.format(global_name))
         results = get_results(files, global_name)
 
     if not make_plots:
@@ -845,7 +851,7 @@ if '__main__' in __name__:
 
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
-    df = pd.read_csv('Results_{}.csv'.format(global_name), index_col=False)
+    df = pd.read_csv('results/Results_{}.csv'.format(global_name), index_col=False)
 
     save_dir = './plots_{}/'.format(version)
     if not os.path.isdir(save_dir):
@@ -1074,7 +1080,7 @@ if '__main__' in __name__:
     ylims = [0.0, 1.1]
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
-                df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_PLANT/df['capacity fuel chem plant (kW)'].values,], # y values 
+                df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,], # y values 
             ['electrolyzer capacity factor', 'chem plant capacity factor'], # labels
             'fuel demand (kWh)', 'Fuel System Capacity Factors', 
             'Fuel System Capacity Factors', 'ratiosFuelSystemCFsVsFuelCost', False, ylims)
@@ -1084,7 +1090,7 @@ if '__main__' in __name__:
     # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
-                df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_PLANT/df['capacity fuel chem plant (kW)'].values,
+                df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
                 df['fuel h2 storage (kWh)'].values/df['capacity fuel h2 storage (kWh)'].values,
                 df['dispatch nuclear (kW)'].values/df['capacity nuclear (kW)'].values,
                 df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values,

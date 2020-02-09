@@ -403,6 +403,9 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['efficiency fuel electrolyzer']
         series_list.append( case_list_dic['EFFICIENCY_FUEL_ELECTROLYZER'] )
 
+        header_list += ['efficiency fuel chem conversion']
+        series_list.append( case_list_dic['EFFICIENCY_FUEL_CHEM_CONVERSION'] )
+
         header_list += ['fuel cost ($/GGE)']
         series_list.append( case_list_dic['FUEL_VALUE'] )
 
