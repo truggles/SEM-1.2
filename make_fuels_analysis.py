@@ -43,9 +43,9 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
                 items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value']))
             if syst_name == 'Default':
                 default_total += items[item][-1]
-                print(syst_name, item, items[item][-1])
+                print(syst_name, item, round(items[item][-1],4))
     if 'Default' in system_labels:
-        print(f"Default system total: {default_total} $/kWh")
+        print(f"Default system total: {round(default_total,4)} $/kWh")
 
     for units, SF in {'kWh': 1, 'GGE': kWh_to_GGE}.items():
         plt.close()
@@ -192,6 +192,9 @@ cost = af.get_fuel_system_costs(syst, us_avg, verbose)
 print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
 print(f"Default fuel cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")
+cost = af.get_fuel_system_costs(syst, 0.0)
+print(f"Free electricity fuel cost: {round(cost,4)} $/kWh")
+print(f"                        or: {round(cost*kWh_to_GGE,4)} $/GGE")
 
 
 electricity_info = [0.0, 0.2, 51]

@@ -45,7 +45,7 @@ ELECTROLYZER_CAP_SF = 1.83
 CHEM_PLANT_CAP_SF = 4.6
 
 FIXED_COST_ELECTROLYZER = {
-    'capital cost' : 850*ELECTROLYZER_CAP_SF, # ($/kW generation or conversion; $/kWh storage)
+    'capital cost' : 850*ELECTROLYZER_CAP_SF, # ($/kW generation)
             # $850/kW*1.83 from table 3, cap ex for H2 electrolyzer * scale factor, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
