@@ -28,20 +28,24 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
     items = OrderedDict()
     for o in order:
         items[o] = []
+    default_total = 0.
     for system, electricity_cost, syst_name in zip(systems, electricity_costs, system_labels):
         for item in items.keys():
             if item == 'fixed cost electrolyzer':
-                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor'])
+                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor']))
             if item == 'fixed cost chem plant':
                 items[item].append(system['FIXED_COST_CHEM_PLANT']['value'])
             if item == 'var cost chem plant':
-                items[item].append(system['VAR_COST_CHEM_PLANT']['value'] * system['EFFICIENCY_CHEM_PLANT']['value'])
+                items[item].append(system['VAR_COST_CHEM_PLANT']['value']) # Values from Konig already incorporate chem plant eff.
             if item == 'var cost CO2':
                 items[item].append(system['VAR_COST_CO2']['value']) # Does not depend on chem plant eff.
             if item == 'var cost electricity':
-                items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value']))
+                items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value']))
             if syst_name == 'Default':
+                default_total += items[item][-1]
                 print(syst_name, item, items[item][-1])
+    if 'Default' in system_labels:
+        print(f"Default system total: {default_total} $/kWh")
 
     for units, SF in {'kWh': 1, 'GGE': kWh_to_GGE}.items():
         plt.close()
@@ -183,7 +187,8 @@ for k1, v1 in syst.items():
             continue
         print(f" --- {k2} = {v2}")
 
-cost = af.get_fuel_system_costs(syst, us_avg)
+verbose = True
+cost = af.get_fuel_system_costs(syst, us_avg, verbose)
 print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
 print(f"Default fuel cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")

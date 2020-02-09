@@ -79,8 +79,8 @@ FIXED_COST_H2_STORAGE = {
 
 
 VAR_COST_ELECTROLYZER = {
-    #'value' : 1.00E-06, # $/kWh, Small, but non-zero value
-    'value' : 0., # $/kWh, Small, but non-zero value
+    'value' : 1.00E-06, # $/kWh, Small, but non-zero value
+    #'value' : 0., # $/kWh, Small, but non-zero value
     'ref' : 'FIXME - find source saying cost is 99% based on electricity costs'
 
 }
@@ -116,6 +116,12 @@ EFFICIENCY_ELECTROLYZER = {
 }
 
 
+EFFICIENCY_CHEM_CONVERSION = {
+    'value' : 0.682,
+    'ref' : 'table 2, eta_CCE accounts for losses when converting H2 and CO2 into liquid hydrocarbons, D.H. König et al. / Fuel 159 (2015) 289–297'
+}
+
+
 EFFICIENCY_CHEM_PLANT = {
     'value' : 0.659,
     'ref' : 'table 2, eta_plant = chem plant efficiency, D.H. König et al. / Fuel 159 (2015) 289–297'
@@ -137,6 +143,7 @@ def return_fuel_system():
         'VAR_COST_CO2' : VAR_COST_CO2,
         'EFFICIENCY_ELECTROLYZER' : EFFICIENCY_ELECTROLYZER,
         'EFFICIENCY_CHEM_PLANT' : EFFICIENCY_CHEM_PLANT,
+        'EFFICIENCY_CHEM_CONVERSION' : EFFICIENCY_CHEM_CONVERSION,
         'DECAY_RATE_H2_STORAGE' : DECAY_RATE_H2_STORAGE,
     }
     for vals in ['FIXED_COST_ELECTROLYZER', 'FIXED_COST_CHEM_PLANT', 'FIXED_COST_H2_STORAGE']:
@@ -145,12 +152,27 @@ def return_fuel_system():
     system['VAR_COST_CO2'] = var_cost_of_CO2(**system['VAR_COST_CO2'])
     return system
 
-def get_fuel_system_costs(system, electricity_cost):
+def get_fuel_system_costs(system, electricity_cost, verbose=False):
     tot = 0.
-    tot += system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor']
+    tot += system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor'])
+    if verbose:
+        print(f" to add: {system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor'])}, new total {tot}")
+    tot += system['VAR_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_CONVERSION']['value']
+    if verbose:
+        print(f" to add: {system['VAR_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_CONVERSION']['value']}, new total {tot}")
+    tot += electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])
+    if verbose:
+        print(f" to add: {electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])}, new total {tot}")
+    tot += system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 / system['EFFICIENCY_CHEM_CONVERSION']['value'] # 30 days x 24 hours for 1 month of storage capacity
+    if verbose:
+        print(f" to add: {system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 / system['EFFICIENCY_CHEM_CONVERSION']['value']}, new total {tot}")
     tot += system['FIXED_COST_CHEM_PLANT']['value']
-    tot += system['VAR_COST_CHEM_PLANT']['value'] * system['EFFICIENCY_CHEM_PLANT']['value']
+    if verbose:
+        print(f" to add: {system['FIXED_COST_CHEM_PLANT']['value']}, new total {tot}")
+    tot += system['VAR_COST_CHEM_PLANT']['value'] # Values from Konig already incorporate chem plant eff.
+    if verbose:
+        print(f" to add: {system['VAR_COST_CHEM_PLANT']['value']}, new total {tot}")
     tot += system['VAR_COST_CO2']['value'] # Does not depend on chem plant eff.
-    tot += system['VAR_COST_ELECTROLYZER']['value'] / system['EFFICIENCY_CHEM_PLANT']['value']
-    tot += electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_PLANT']['value'])
+    if verbose:
+        print(f" to add: {system['VAR_COST_CO2']['value']}, new total {tot}")
     return tot
