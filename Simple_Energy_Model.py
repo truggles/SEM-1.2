@@ -71,12 +71,12 @@ save_basic_results(global_dic, case_dic_list)
 #   The Verbose field in SOLVE function in CORE_MODEL.PY determined if a gurobi.log is generated.
 #   delete the gurobi log to eliminate cumulations from previous runs.
 
-if os.path.exists("./gurobi.log"):    
-   copy2("./gurobi.log", output_folder)
-   try:
-       os.remove("./gurobi.log")
-   except:
-       print ('gurboi.log not erased')
+#if os.path.exists("./gurobi.log"):    
+#   copy2("./gurobi.log", output_folder)
+#   try:
+#       os.remove("./gurobi.log")
+#   except:
+#       print ('gurboi.log not erased')
      
 
 # -----------------------------------------------------------------------------
