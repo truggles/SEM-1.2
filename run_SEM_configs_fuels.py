@@ -394,12 +394,8 @@ def costs_plot(df, **kwargs):
     ax.set_ylabel('fuel cost ($/kWh)')
     plt.title('Cost Breakdown For Fuels')
 
-    # $/GGE fuel line above
-    # subtract off the base-case (least fuel demand, should be zero in the future FIXME) system cost
-    dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
-    # divide by fuel produced in that scenario
-    dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
-    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, color='black', label='Fuel Cost ($/kWh)')
+    # $/GGE fuel line use Dual Value
+    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label='Fuel Cost ($/kWh)')
 
 
     # Stacked components
@@ -418,37 +414,31 @@ def costs_plot(df, **kwargs):
     #ax.fill_between(df['fuel demand (kWh)'], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost storage') # fixed cost storage set at 2.72E-7
     ax.fill_between(df['fuel demand (kWh)'], f_tot, f_tot+v_chem, label='variable cost chem plant')
     ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost CO$_{2}$')
-    #ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2+v_elec, label='variable cost electrolyzer') # variable cost electrolyzer is set at 1.0E-6 b/c MEM handles electric costs already
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='variable cost electrolyzer')
 
-    print(" --- Stacked cost plot:")
-    print(f" ----- fixed cost electrolyzer {round(f_elec[0],6)}")
-    print(f" ----- fixed cost chem         {round(f_chem[0],6)}")
-    print(f" ----- variable chem           {round(v_chem[0],6)}")
-    print(f" ----- variable CO2            {round(v_co2[0],6)}")
-    print(f" ----- variable electrolyzer   {round(dollars_per_fuel[0]-(f_tot[0]+v_chem[0]+v_co2[0]),6)}")
-    print(f" ----- TOTAL:                  {round(dollars_per_fuel[0],6)}")
+    print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}:")
+    print(f" ----- fixed cost electrolyzer {round(f_elec[1],6)}")
+    print(f" ----- fixed cost chem         {round(f_chem[1],6)}")
+    print(f" ----- variable chem           {round(v_chem[1],6)}")
+    print(f" ----- variable CO2            {round(v_co2[1],6)}")
+    print(f" ----- variable electrolyzer   {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}")
+    print(f" ----- TOTAL:                  {round(df.loc[1, 'fuel price ($/kWh)'],6)}")
 
 
-    # Fill remainder with assumed electricity cost from MEM
-    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, dollars_per_fuel, label='variable cost electrolyzer')
     # To print the estimated MEM electricity cost per point
-    #print(dollars_per_fuel)
-    #print(dollars_per_fuel - (f_tot+v_chem+v_co2))
-    ax.scatter(df['fuel demand (kWh)'], dollars_per_fuel, color='black', label='_nolegend_')
+    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
 
 
     plt.xscale('log', nonposx='clip')
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
-    #ax.set_ylim(0, max(dollars_per_fuel.loc[1:len(dollars_per_fuel)-1])*1.7)
     ax.set_ylim(0, 0.55)
     plt.grid()
     plt.legend(loc='upper left')
 
-    # Second y-axis for duals
+    # Second y-axis for electricity dual
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel('dual value costs ($/kWh)', color='magenta')  # we already handled the x-label with ax1
-    ax2.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='magenta', label='fuel dual ($/kWh)', marker='v')
-    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='electric dual ($/kWh)', marker='X')
+    ax2.set_ylabel('mean electricity cost ($/kWh)', color='magenta')  # we already handled the x-label with ax1
+    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='mean electricity cost ($/kWh)', marker='X')
     ax2.tick_params(axis='y', labelcolor='magenta')
     plt.legend(loc='upper right')
     ax2.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]) # mimic 1st y-axis
@@ -761,7 +751,9 @@ if '__main__' in __name__:
         if 'version' in arg:
             version = arg.split('_')[1]
 
-    input_file = f'fuel_test_20200209_{case}.csv'
+    input_file = 'fuel_test_20200209_AllCases_EIAPrices.csv'
+    if 'Case0' in case:
+        input_file = 'fuel_test_20200209_Case0_NuclearFlatDemand.csv'
     version = f'{version}_{case}'
     global_name = 'fuel_test_{}_{}'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
@@ -788,15 +780,37 @@ if '__main__' in __name__:
         'start_month' : 4,
         'end_month' : 4,
         'system_reliability' : -1, # Use 10 $/kWh
-        'fixed_cost_solar' : -1,
-        'fixed_cost_wind' : -1,
+        'fixed_cost_solar' : 1,
+        'fixed_cost_wind' : 1,
         'fixed_cost_nuclear' : 1,
-        'fixed_cost_storage' : -1,
+        'fixed_cost_storage' : 1,
         'fixed_cost_fuel_electrolyzer' : 1,
         'efficiency_fuel_electrolyzer' : 1,
         'fuel_demand' : 1, # equal fuel output as electric demand
         'fuel_value' : 0,
     }
+    # Adjust included techs based on desired case:
+    if case == 'Case0_NuclearFlatDemand':
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_wind'] = -1
+        settings['fixed_cost_storage'] = -1
+    if case == 'Case1_Nuclear':
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_wind'] = -1
+        settings['fixed_cost_storage'] = -1
+    if case == 'Case2_NuclearStorage':
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_wind'] = -1
+    if case == 'Case3_WindStorage':
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_nuclear'] = -1
+    if case == 'Case4_SolarStorage':
+        settings['fixed_cost_wind'] = -1
+        settings['fixed_cost_nuclear'] = -1
+    if case == 'Case5_WindSolarStorage':
+        settings['fixed_cost_nuclear'] = -1
+    #if case == 'Case6_NuclearWindSolarStorage':
+    # Includes all by default
 
     vre_start = 0.1
     vre_end = 1.5
@@ -852,6 +866,8 @@ if '__main__' in __name__:
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
     df = pd.read_csv('results/Results_{}.csv'.format(global_name), index_col=False)
+    df = df.sort_values('fuel demand (kWh)', axis=0)
+    df = df.reset_index()
 
     save_dir = './plots_{}/'.format(version)
     if not os.path.isdir(save_dir):
@@ -938,14 +954,6 @@ if '__main__' in __name__:
 
 
 
-    # $/GGE fuel
-    # subtract off the base-case (least fuel demand, should be zero in the future FIXME) system cost
-    dollars_per_fuel = df['system cost ($/kW/h)'] - df.loc[df['fuel demand (kWh)'] == 0.0, 'system cost ($/kW/h)'].values
-    # divide by fuel produced in that scenario
-    dollars_per_fuel = dollars_per_fuel / df['fuel demand (kWh)']
-    simple_plot(save_dir, df['fuel demand (kWh)'].values, [dollars_per_fuel.values,], ['Cost of Fuel ($/kWh)',], 'fuel demand (kWh)', 'Cost of Fuel ($/kWh)', 
-            'fuel demand vs. fuel cost', 'fuelDemandVsFuelCost')
-
     # Fuel price dual_value
     ylims = [0.05, 1000]
     simple_plot(save_dir, df['fuel demand (kWh)'].values, [df['mean price ($/kWh)'].values, df['max price ($/kWh)'].values, df['fuel price ($/kWh)'].values,], ['Mean Demand Dual ($/kWh)', 'Max Demand Dual ($/kWh)', 'Fuel Price Dual ($/kWh)',], 'fuel demand (kWh)', 'Dual Values ($/kWh)', 
@@ -975,7 +983,7 @@ if '__main__' in __name__:
 
     ### These should be defaults for all of them
     ### Reset them if needed
-    idx_max = 125
+    idx_max = len(df.index)-1
     kwargs = {}
     kwargs['save_dir'] = save_dir
     kwargs['stacked_min'] = min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)])
