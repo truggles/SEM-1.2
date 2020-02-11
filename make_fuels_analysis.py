@@ -171,7 +171,11 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
 
 
 # Nov 2019 industrial cost of electricity 0.0673 $/kWh US Avg https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
-us_avg = 0.0673
+# https://www.eia.gov/electricity/annual/html/epa_01_01.html
+# Table 1.1. Total Electric Power Industry Summary Statistics, 2018 and 2017
+# Average Price of Electricity to Ultimate Customers (cents/kWh)
+# https://www.eia.gov/electricity/annual/pdf/epa.pdf
+us_avg = 0.0692
 
 date = 20200204
 base = f'plots_analytic_fuels_{date}/'
