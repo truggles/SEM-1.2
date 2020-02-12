@@ -44,8 +44,13 @@ def fixed_cost_per_hr(**dic):
 ELECTROLYZER_CAP_SF = 1.83
 CHEM_PLANT_CAP_SF = 4.6
 
+# https://www.usinflationcalculator.com/ 11 Feb 2020
+USD2005_to_USD2020 = 1.31
+USD2008_to_USD2020 = 1.19
+USD2015_to_USD2020 = 1.08
+
 FIXED_COST_ELECTROLYZER = {
-    'capital cost' : 850*ELECTROLYZER_CAP_SF, # ($/kW generation)
+    'capital cost' : 850*ELECTROLYZER_CAP_SF*USD2005_to_USD2020, # ($/kW generation)
             # $850/kW*1.83 from table 3, cap ex for H2 electrolyzer * scale factor, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
@@ -56,7 +61,7 @@ FIXED_COST_ELECTROLYZER = {
 
 
 FIXED_COST_CHEM_PLANT = {
-    'capital cost' : ((202+32+32)*CHEM_PLANT_CAP_SF)/690*1000, # ($/kW generation or conversion)
+    'capital cost' : ((202+32+32)*CHEM_PLANT_CAP_SF)/690*1000*USD2015_to_USD2020, # ($/kW generation or conversion)
             # ($202+32+32)*4.6/690MW of liquid fuel produced for FT, Hydrocracker, RWGS) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
@@ -65,7 +70,7 @@ FIXED_COST_CHEM_PLANT = {
 
 
 FIXED_COST_H2_STORAGE = {
-    'capital cost' : ((33*10**6))/(971*10**9)*1000, # ($/kWh storage)
+    'capital cost' : 0.02*USD2008_to_USD2020, # ($/kWh storage)
             # (33 M$ / 971 GWh) of liquid fuel produced for Cavern) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 80, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
@@ -89,7 +94,7 @@ VAR_COST_ELECTROLYZER = {
 VAR_COST_CHEM_PLANT = {
     #'value' : 6.91E-02, # $/kWh = 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu)  # Variable O&M cost ($/MWh)
                                     # order is: maintenance, taxes & incentives, utilities, clean water
-    'value' : 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu) * (1./1000), # Variable O&M cost ($/kWh)
+    'value' : 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu) * (1./1000)*USD2015_to_USD2020, # Variable O&M cost ($/kWh)
     'ref' : 'Fig 4b, cost break down of $/GGE, excluding electrolyzer and cap annual, D.H. König et al. / Fuel 159 (2015) 289–297'
 
 }
