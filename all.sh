@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 
-Date="20200227"
-version="v3"
+Date="20200228"
+version="v1"
 #ARGS="run_sem make_results_file"
 #ARGS="make_results_file"
 ARGS="make_results_file make_plots"

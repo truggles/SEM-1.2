@@ -611,11 +611,18 @@ def save_basic_results( global_dic, case_dic_list ):
         if 'PRICE_FUEL' in result_dic.keys():
             header_list += ['fuel price ($/kWh)']
             series_list.append( [ result_dic['PRICE_FUEL'].flatten().item(0) ] )
+            print(" --- price fuel ($/kWh) = {}".format(result_dic['PRICE_FUEL'].flatten().item(0)))
+            print(" --- fuel demand (kWh/h) = {}".format(case_list_dic['FUEL_DEMAND'][0]))
             header_list += ['mean price ($/kWh)']
             series_list.append( [ np.mean( result_dic['PRICE'] * demand_series_vect ) ] )
-            print(" --- mean price ($/kWh) = {}".format(series_list[-1]))
+            print(" --- mean price electricity ($/kWh) = {}".format(np.mean( result_dic['PRICE'] * demand_series_vect )))
             header_list += ['max price ($/kWh)']
             series_list.append( [ np.max(result_dic['PRICE'].flatten()) ] )
+            print(f" --- TOTAL = {result_dic['PRICE_FUEL'].flatten().item(0)} * {case_list_dic['FUEL_DEMAND'][0]} + {np.mean( result_dic['PRICE'] * demand_series_vect )}")
+            tot = result_dic['PRICE_FUEL'].flatten().item(0) * case_list_dic['FUEL_DEMAND'][0] + np.mean( result_dic['PRICE'] * demand_series_vect )
+            print(f" --- TOTAL = {tot}")
+            print(f" --- DIFF = {tot - case_list_dic['SYSTEM_COST']}")
+
      
 
         header_list += ['fuel h2 storage (kWh)']

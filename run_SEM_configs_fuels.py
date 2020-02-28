@@ -824,7 +824,7 @@ if '__main__' in __name__:
         else:
             keys = ['fuel_demand',]
             #ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
-            ranges = [[0,],] # start, end, steps
+            ranges = [[0,.01,.1,1.],] # start, end, steps
 
         scan_map = make_scan_map(keys, ranges)
         print("Variables to scan")
