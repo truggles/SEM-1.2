@@ -12,6 +12,7 @@ import os
 import matplotlib
 from datetime import datetime, timedelta
 import copy
+from helpers import get_fuel_demands
 
 
 def marker_list():
@@ -438,7 +439,8 @@ def costs_plot(df, **kwargs):
     # Second y-axis for electricity dual
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
     ax2.set_ylabel('mean electricity cost ($/kWh)', color='magenta')  # we already handled the x-label with ax1
-    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='mean electricity cost ($/kWh)', marker='X')
+    #ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='mean electricity cost ($/kWh)', marker='X')
+    ax2.scatter(df['fuel demand (kWh)'], df['system cost ($/kW/h)'] - df['fuel price ($/kWh)']*df['fuel demand (kWh)'], color='magenta', label='mean electricity cost ($/kWh)', marker='X')
     ax2.tick_params(axis='y', labelcolor='magenta')
     plt.legend(loc='upper right')
     ax2.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]) # mimic 1st y-axis
@@ -663,15 +665,6 @@ def clean_files(path, global_name, results, case_file):
     return
 
 
-def get_fuel_demands(start, end, steps):
-    fuel_demands = [0., start,]
-    while True:
-        if fuel_demands[-1] > end:
-            break
-        fuel_demands.append(round(fuel_demands[-1]*steps,5))
-    return fuel_demands
-
-
 def set_up_new_cfg(input_file, version, run, **settings):
     case_descrip = f'Run_{run:03}_fuelD'+str(round(settings['fuel_demand'],5))+'kWh'
     case_descrip += '_solarX'+str(round(settings['fixed_cost_solar'],4))
@@ -751,7 +744,7 @@ if '__main__' in __name__:
         if 'version' in arg:
             version = arg.split('_')[1]
 
-    input_file = 'fuel_test_20200209_AllCases_EIAPrices.csv'
+    input_file = 'fuel_test_20200209_AllCases_EIAPrices_ExpNuke.csv'
     if 'Case0' in case:
         input_file = 'fuel_test_20200209_Case0_NuclearFlatDemand.csv'
     version = f'{version}_{case}'
@@ -830,7 +823,8 @@ if '__main__' in __name__:
             ranges = [vre_scan, vre_scan]
         else:
             keys = ['fuel_demand',]
-            ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
+            #ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
+            ranges = [[0,],] # start, end, steps
 
         scan_map = make_scan_map(keys, ranges)
         print("Variables to scan")
@@ -869,7 +863,7 @@ if '__main__' in __name__:
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
 
-    save_dir = './plots_{}/'.format(version)
+    save_dir = f'./plots_{date}_{version}/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 

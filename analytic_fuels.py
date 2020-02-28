@@ -47,13 +47,14 @@ CHEM_PLANT_CAP_SF = 4.6
 # https://www.usinflationcalculator.com/ 11 Feb 2020
 USD2005_to_USD2020 = 1.31
 USD2008_to_USD2020 = 1.19
+USD2010_to_USD2020 = 1.17 
 USD2015_to_USD2020 = 1.08
 
 FIXED_COST_ELECTROLYZER = {
-    'capital cost' : 850*ELECTROLYZER_CAP_SF*USD2005_to_USD2020, # ($/kW generation)
-            # $850/kW*1.83 from table 3, cap ex for H2 electrolyzer * scale factor, D.H. König et al. / Fuel 159 (2015) 289–297
-    'assumed lifetime' : 30, # (yr)
-            # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
+    'capital cost' : 1490*USD2010_to_USD2020, # ($/kW generation)
+            # From NREL: Current Central Hydrogen Production from Grid PEM Electrolysis: "H2A_NREL_current-central-pem-electrolysis-v3-2018"
+            # Total installed cost / (Total system power * electrolyzer efficiency) =  $118,258,606 / (113,125 kW * .70) = 1,490 $/kW H2 in USD 2010
+    'assumed lifetime' : 10, # (yr) Schmit, 2017
     'capacity factor' : 1.00, # 100%
     #'value' : 1.4300E-02 # ($/h)/kW
 }

@@ -242,6 +242,7 @@ def save_basic_results( global_dic, case_dic_list ):
     
     case_dic_list_0 = copy.deepcopy(case_dic_list)
     
+    demand_series_vect = case_dic_list_0[0]['DEMAND_SERIES']
     # if anything in case_dic_list_0 is a vector, take its mean
     for i in range(len(case_dic_list_0)):
         for key in list(case_dic_list_0[i]):
@@ -611,7 +612,8 @@ def save_basic_results( global_dic, case_dic_list ):
             header_list += ['fuel price ($/kWh)']
             series_list.append( [ result_dic['PRICE_FUEL'].flatten().item(0) ] )
             header_list += ['mean price ($/kWh)']
-            series_list.append( [ np.mean(result_dic['PRICE'].flatten()) ] )
+            series_list.append( [ np.mean( result_dic['PRICE'] * demand_series_vect ) ] )
+            print(" --- mean price ($/kWh) = {}".format(series_list[-1]))
             header_list += ['max price ($/kWh)']
             series_list.append( [ np.max(result_dic['PRICE'].flatten()) ] )
      
@@ -691,6 +693,8 @@ def save_basic_results( global_dic, case_dic_list ):
     if 'UNMET_DEMAND' in components: 
         header_list += ['dispatch unmet demand (kW)']
         series_list.append( case_list_dic['DISPATCH_UNMET_DEMAND'])
+        print(" --- avg dispatch unmet demand (kW) {}".format( case_list_dic['DISPATCH_UNMET_DEMAND'][0] ))
+        print(f" --- value unmet demand: avg * $10 = {case_list_dic['DISPATCH_UNMET_DEMAND'][0] * 10}")
 
     #=========================================================================
     # set missing vector means to zero

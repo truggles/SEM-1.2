@@ -9,6 +9,15 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
+def get_fuel_demands(start, end, steps):
+    fuel_demands = [0., start,]
+    while True:
+        if fuel_demands[-1] > end:
+            break
+        fuel_demands.append(round(fuel_demands[-1]*steps,5))
+    return fuel_demands
+
+
 
 def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False):
 
@@ -67,7 +76,7 @@ def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False
 
     ax.plot(xs, np.ones(len(xs))*cap_nuke, 'r-', linewidth=1, label='Capacity Nuclear')
 
-    ax.set_ylim(0, max_demand*1.5)
+    ax.set_ylim(0, 2.25)#cap_nuke*1.3)
     if ldc:
         ax.set_xlim(0, 1)
     else:
@@ -80,12 +89,70 @@ def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False
 
 if '__main__' in __name__:
 
-    out_file_name = 'Output_Data/fuel_test_20200210_v1_Case1_Nuclear/'
-    out_file_name += 'fuel_test_20200210_v1_Case1_Nuclear_Run_034_fuelD0.02074kWh_solarX-1_windX-1_nukeX1_battX-1_electoX1_elecEffX1.csv'
     save_dir = 'out_plots'
-    save_name = 'test1'
-    techs = ['nuclear',]
-    plot_peak_demand_system(out_file_name, techs, save_dir, save_name)
-    print("Now LDC")
-    plot_peak_demand_system(out_file_name, techs, save_dir, save_name+'_ldc', True)
+    date = '20200210_v1'
+    base = 'Output_Data/'
+
+    cases = {
+            "Case1_Nuclear" : ['nuclear',], 
+            #"Case0_NuclearFlatDemand", 
+            #"Case2_NuclearStorage", 
+            #"Case3_WindStorage", 
+            #"Case4_SolarStorage", 
+            #"Case5_WindSolarStorage", 
+            #"Case6_NuclearWindSolarStorage",
+    }
+
+    possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
+
+    tgt_fuel_dems = [
+            '0.012',
+            '0.02489',
+            '0.05161',
+            '0.07432',
+            '0.10702',
+            '0.2219',
+            #'0.31954',
+            #'1.14497',
+            #'10.20862',
+    ]
+
+    for case, techs in cases.items():
+
+        print(f"Plotting for {case} with techs {techs}")
+        for idx, dem in enumerate(reversed(possible_dem_vals)):
+            if str(dem) not in tgt_fuel_dems:
+                continue
+            out_file_name = f'{base}fuel_test_{date}_{case}/'
+            out_file_name += f'fuel_test_{date}_{case}_Run_{idx:03d}_fuelD{dem}kWh_solarX-1_windX-1_nukeX1_battX-1_electoX1_elecEffX1.csv'
+            save_name = f"{case}_fuelD{dem}kWh"
+            plot_peak_demand_system(out_file_name, techs, save_dir, save_name)
+            print("Now LDC")
+            plot_peak_demand_system(out_file_name, techs, save_dir, 'ldc_'+save_name, True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
