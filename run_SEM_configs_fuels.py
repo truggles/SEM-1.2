@@ -12,6 +12,7 @@ import os
 import matplotlib
 from datetime import datetime, timedelta
 import copy
+from helpers import get_fuel_demands
 
 
 def marker_list():
@@ -663,15 +664,6 @@ def clean_files(path, global_name, results, case_file):
     return
 
 
-def get_fuel_demands(start, end, steps):
-    fuel_demands = [0., start,]
-    while True:
-        if fuel_demands[-1] > end:
-            break
-        fuel_demands.append(round(fuel_demands[-1]*steps,5))
-    return fuel_demands
-
-
 def set_up_new_cfg(input_file, version, run, **settings):
     case_descrip = f'Run_{run:03}_fuelD'+str(round(settings['fuel_demand'],5))+'kWh'
     case_descrip += '_solarX'+str(round(settings['fixed_cost_solar'],4))
@@ -869,7 +861,7 @@ if '__main__' in __name__:
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
 
-    save_dir = './plots_{}/'.format(version)
+    save_dir = f'./plots_{date}_{version}/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
