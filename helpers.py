@@ -23,6 +23,8 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
     plt.close()
     matplotlib.rcParams["figure.figsize"] = (7, 9)
     matplotlib.rcParams["font.size"] = 9
+    matplotlib.rcParams['lines.linewidth'] = 0.5
+    matplotlib.rcParams['hatch.linewidth'] = 0.5
     axs = []
     for j, dem in enumerate(reversed(tgt_fuel_dems)):
         i = len(tgt_fuel_dems) - j + 1
@@ -79,39 +81,40 @@ def plot_peak_demand_system(ax, out_file_name, techs, save_dir, set_max=-1, ldc=
         xs = dfs['time (hr)']
     cap_nuke = np.max(df['dispatch nuclear (kW)'])
 
+    fblw = 0.25
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='Power from solar')
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='Power from solar', lw=fblw)
         bottom += dfs['dispatch solar (kW)'].values
     if 'wind' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='Power from wind')
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='Power from wind', lw=fblw)
         bottom += dfs['dispatch wind (kW)'].values
     if 'nuclear' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch nuclear (kW)'], color='tan', alpha=0.5, label='Power from nuclear')
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch nuclear (kW)'], color='tan', alpha=0.5, label='Power from nuclear', lw=fblw)
         bottom += dfs['dispatch nuclear (kW)'].values
     if 'storage' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='Power from storage')
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='Power from storage', lw=fblw)
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='Power to demand')
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='Power to demand', lw=fblw)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
-    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='Power to electrolyzer')
+    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='Power to electrolyzer', lw=fblw)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
-        ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxx', label='Power to storage')
+        ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='Power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='Unmet demand')
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='Unmet demand', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=2, label='Demand')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='Demand')
 
     bottom3 = np.zeros(len(xs))
     lab = 'Gen.'
     if 'solar' in techs:
         lab += ' Solar'
-        ax.plot(xs, bottom3 + dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)'], 'y-', linewidth=2, label=lab)
+        ax.plot(xs, bottom3 + dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)'], 'y-', linewidth=fblw, label=lab)
         bottom3 += dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)']
         lab = lab.replace('Solar', 'Sol.')
     if 'wind' in techs:
@@ -119,14 +122,14 @@ def plot_peak_demand_system(ax, out_file_name, techs, save_dir, set_max=-1, ldc=
             lab += ' + Wind'
         else:
             lab += ' Wind'
-        ax.plot(xs, bottom3 + dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)'], 'b-', linewidth=2, label=lab)
+        ax.plot(xs, bottom3 + dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)'], 'b-', linewidth=fblw, label=lab)
         bottom3 += dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)']
     if 'nuclear' in techs:
         if 'solar' in techs or 'wind' in techs:
             lab += ' + Nuclear Cap.'
         else:
             lab = 'Capacity Nuclear'
-        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_nuke, 'r-', linewidth=1, label=lab)
+        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_nuke, 'r-', linewidth=fblw, label=lab)
 
     if set_max == -1:
         set_max = ax.get_ylim()[1]
