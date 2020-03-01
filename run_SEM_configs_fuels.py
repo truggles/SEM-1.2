@@ -429,6 +429,25 @@ def costs_plot(df, **kwargs):
     # To print the estimated MEM electricity cost per point
     ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
 
+    # Add vertical bars deliniating 3 regions:
+    # 1) cheapest fuel cost --> +5%
+    # 2) cheapest + 5% --> most expensive - 5%
+    # 3) most expensive - 5% --> most expensive
+    cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
+    most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
+    for idx in df.index:
+        if df.loc[idx, 'fuel price ($/kWh)'] >= cheapest_fuel * 1.05:
+            fuel_dem_split_1 = df.loc[idx, 'fuel demand (kWh)']
+            break
+    for idx in df.index:
+        if df.loc[idx, 'fuel price ($/kWh)'] >= most_expensive_fuel * 0.95:
+            fuel_dem_split_2 = df.loc[idx, 'fuel demand (kWh)']
+            break
+    print(cheapest_fuel, most_expensive_fuel)
+    print(fuel_dem_split_1, fuel_dem_split_2)
+    ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
+    ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
+
 
     plt.xscale('log', nonposx='clip')
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
