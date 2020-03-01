@@ -18,7 +18,7 @@ def get_fuel_demands(start, end, steps):
     return fuel_demands
 
 
-def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False):
+def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, set_max=-1, ldc=False):
 
     # Open out file as df
     full_file_name = glob(out_file_name)
@@ -49,7 +49,7 @@ def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False
 
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.2, label='Power from solar')
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='Power from solar')
         bottom += dfs['dispatch solar (kW)'].values
     if 'wind' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='Power from wind')
@@ -75,16 +75,37 @@ def plot_peak_demand_system(out_file_name, techs, save_dir, save_name, ldc=False
 
     ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=2, label='Demand')
 
-    ax.plot(xs, np.ones(len(xs))*cap_nuke, 'r-', linewidth=1, label='Capacity Nuclear')
+    bottom3 = np.zeros(len(xs))
+    lab = 'Gen.'
+    if 'solar' in techs:
+        lab += ' Solar'
+        ax.plot(xs, bottom3 + dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)'], 'y-', linewidth=2, label=lab)
+        bottom3 += dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)']
+    if 'wind' in techs:
+        if 'solar' in techs:
+            lab += ' + Wind'
+        else:
+            lab += ' Wind'
+        ax.plot(xs, bottom3 + dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)'], 'b-', linewidth=2, label=lab)
+        bottom3 += dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)']
+    if 'nuclear' in techs:
+        if 'solar' in techs or 'wind' in techs:
+            lab += ' + Nuclear Cap.'
+        else:
+            lab = 'Capacity Nuclear'
+        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_nuke, 'r-', linewidth=1, label=lab)
 
-    ax.set_ylim(0, 2.25)#cap_nuke*1.3)
+    if set_max == -1:
+        set_max = ax.get_ylim()[1]
+    ax.set_ylim(0, set_max)
     if ldc:
         ax.set_xlim(0, 1)
     else:
         ax.set_xlim(lo, hi-1)
     plt.tight_layout()
     plt.legend(ncol=2)
-    fig.savefig(f'{save_dir}/{save_name}.png')
+    fig.savefig(f"{save_dir}/{save_name.replace('.','p')}.png")
+    fig.savefig(f"{save_dir}/pdf/{save_name.replace('.','p')}.pdf")
 
 
 
@@ -94,13 +115,13 @@ if '__main__' in __name__:
     date = '20200228_v1'
     base = 'Output_Data/'
     cases = {
-            #"Case0_NuclearFlatDemand" : ['nuclear',],
-            "Case1_Nuclear" : ['nuclear',],
-            "Case2_NuclearStorage" : ['nuclear','storage'],
-            #"Case3_WindStorage",
-            #"Case4_SolarStorage",
-            #"Case5_WindSolarStorage",
-            #"Case6_NuclearWindSolarStorage",
+            #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
+            "Case1_Nuclear" : [['nuclear',], 2],
+            "Case2_NuclearStorage" : [['nuclear','storage'], 2],
+            "Case3_WindStorage" : [['wind', 'storage'], 7],
+            "Case4_SolarStorage" : [['solar', 'storage'], 6],
+            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 5],
+            "Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 4],
     }
 
     possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
@@ -117,18 +138,18 @@ if '__main__' in __name__:
             #'10.20862',
     ]
 
-    for case, techs in cases.items():
+    for case, info in cases.items():
 
-        print(f"Plotting for {case} with techs {techs}")
+        print(f"Plotting for {case} with techs {info[0]} and max = {info[1]}")
         for idx, dem in enumerate(reversed(possible_dem_vals)):
             if str(dem) not in tgt_fuel_dems:
                 continue
             out_file_name = f'{base}fuel_test_{date}_{case}/'
             out_file_name += f'fuel_test_{date}_{case}_Run_{idx:03d}_fuelD{dem}kWh_*.csv'
             save_name = f"{case}_Run{idx}_fuelD{dem}kWh"
-            plot_peak_demand_system(out_file_name, techs, save_dir, save_name)
+            plot_peak_demand_system(out_file_name, info[0], save_dir, save_name, info[1])
             print("Now LDC")
-            plot_peak_demand_system(out_file_name, techs, save_dir, save_name.replace('Run', 'ldc_Run'), True)
+            plot_peak_demand_system(out_file_name, info[0], save_dir, save_name.replace('Run', 'ldc_Run'), info[1], True)
 
 
 
