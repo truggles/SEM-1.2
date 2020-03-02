@@ -20,13 +20,24 @@ def get_fuel_demands(start, end, steps):
 
 def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, ldc=False):
 
+    # Open out file as df
+    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{tgt_fuel_dems[0]}')
+    full_file_name = glob(f_name)
+    assert(len(full_file_name) == 1)
+    df = pd.read_csv(full_file_name[0])
+
+    # Find the idx to center to time series upon
+    center_idx = find_centering_hour_idx(df, case)
+
     plt.close()
-    matplotlib.rcParams["figure.figsize"] = (7, 9)
+    matplotlib.rcParams["figure.figsize"] = (7, 8)
     matplotlib.rcParams["font.size"] = 9
     matplotlib.rcParams['lines.linewidth'] = 0.5
     matplotlib.rcParams['hatch.linewidth'] = 0.5
     axs = []
     for j, dem in enumerate(reversed(tgt_fuel_dems)):
+
+
         i = len(tgt_fuel_dems) - j + 1
         this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
         if j == 0:
@@ -37,7 +48,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             plt.setp(axs[-1].get_xticklabels(), visible=False)
         axs[-1].set_ylabel('Power (kW)')
 
-        plot_peak_demand_system(axs[-1], this_file, info[0], save_dir, info[1])
+        plot_peak_demand_system(axs[-1], center_idx, this_file, info[0], save_dir, case, info[1])
         
         if j == 0:
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1]) )
@@ -47,31 +58,70 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1], sharex=axs[1]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
             plt.setp(axs[-1].get_xticklabels(), visible=False)
-        plot_peak_demand_system(axs[-1], this_file, info[0], save_dir, info[1], True)
+        plot_peak_demand_system(axs[-1], center_idx, this_file, info[0], save_dir, case, info[1], True)
 
     plt.tight_layout()
     horiz = -1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
     plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, 2))
+    plt.subplots_adjust(top=1)
     fig = plt.gcf()
     fig.savefig(f"{save_dir}/{case}.png")
     fig.savefig(f"{save_dir}/pdf/{case}.pdf")
 
 
-def plot_peak_demand_system(ax, out_file_name, techs, save_dir, set_max=-1, ldc=False):
+def find_centering_hour_idx(df, case):
+
+    # Nuclear only: center on peak demand
+    if case in ['Case1_Nuclear', 'Case2_NuclearStorage']:
+        return df[ df['demand (kW)'] == np.max(df['demand (kW)'])].index
+    # Wind heavy: lowest 5 hours
+    if case in ['Case3_WindStorage', 'Case6_NuclearWindSolarStorage']:
+        #return df[ df['dispatch wind (kW)'] == np.min(df['dispatch wind (kW)'])].index
+        fiveHrs = []
+        lowest_val = 999
+        lowest_idx = 999
+        for idx in df.index:
+            fiveHrs.append( df.loc[idx, 'dispatch wind (kW)'] )
+            if len(fiveHrs) > 5:
+                fiveHrs.pop(0) # Get rid of oldes val
+                mean = np.mean(fiveHrs)
+                if mean < lowest_val:
+                    lowest_val = mean
+                    lowest_idx = idx
+        return [lowest_idx - 2,]
+    # Solar heavy: center on lowest 48 hours
+    if case in ['Case4_SolarStorage','Case5_WindSolarStorage']:
+        fourtyEightHrs = []
+        lowest_val = 999
+        lowest_idx = 999
+        for idx in df.index:
+            fourtyEightHrs.append( df.loc[idx, 'dispatch solar (kW)'] )
+            if len(fourtyEightHrs) > 48:
+                fourtyEightHrs.pop(0) # Get rid of oldes val
+                mean = np.mean(fourtyEightHrs)
+                if mean < lowest_val:
+                    lowest_val = mean
+                    lowest_idx = idx
+        return [lowest_idx - 24,]
+    else:
+        return [int(len(df.index)/2),] # middle
+
+def plot_peak_demand_system(ax, center_idx, out_file_name, techs, save_dir, case, set_max=-1, ldc=False):
 
     # Open out file as df
     full_file_name = glob(out_file_name)
     assert(len(full_file_name) == 1)
     df = pd.read_csv(full_file_name[0])
 
-    # Find the peak hour
-    peak_idxs = df[ df['demand (kW)'] == np.max(df['demand (kW)'])].index
-    assert(len(peak_idxs) == 1), f"\n\nThere are multiple instances of peak demand value, {peak_idxs}\n\n"
-    peak_idx = peak_idxs[0]
+    assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
+    peak_idx = center_idx[0]
     max_demand = np.max(df['demand (kW)'])
 
-    lo = peak_idx - 24*4
-    hi = peak_idx + 24*3
+    lo = peak_idx - 24*7
+    hi = peak_idx + 24*7
+    if hi > len(df.index):
+        hi = hi - (hi - len(df.index))
+        lo = lo - (hi - len(df.index))
     dfs = df.iloc[lo:hi]
     if ldc:
         dfs = dfs.sort_values('demand (kW)', ascending=False)
@@ -138,6 +188,7 @@ def plot_peak_demand_system(ax, out_file_name, techs, save_dir, set_max=-1, ldc=
         ax.set_xlim(0, 1)
     else:
         ax.set_xlim(lo, hi-1)
+    
 
 
 
