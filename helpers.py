@@ -48,7 +48,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             plt.setp(axs[-1].get_xticklabels(), visible=False)
         axs[-1].set_ylabel('Power (kW)')
 
-        plot_peak_demand_system(axs[-1], center_idx, this_file, info[0], save_dir, case, info[1])
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, info[1])
         
         if j == 0:
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1]) )
@@ -58,11 +58,15 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1], sharex=axs[1]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
             plt.setp(axs[-1].get_xticklabels(), visible=False)
-        plot_peak_demand_system(axs[-1], center_idx, this_file, info[0], save_dir, case, info[1], True)
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, info[1], True)
 
     plt.tight_layout()
     horiz = -1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
-    plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, 2))
+    vert = 2
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if len(handles) > 9:
+        vert = 2.2
+    plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, vert))
     plt.subplots_adjust(top=1)
     fig = plt.gcf()
     fig.savefig(f"{save_dir}/{case}.png")
@@ -106,7 +110,7 @@ def find_centering_hour_idx(df, case):
     else:
         return [int(len(df.index)/2),] # middle
 
-def plot_peak_demand_system(ax, center_idx, out_file_name, techs, save_dir, case, set_max=-1, ldc=False):
+def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir, case, set_max=-1, ldc=False):
 
     # Open out file as df
     full_file_name = glob(out_file_name)
@@ -189,6 +193,12 @@ def plot_peak_demand_system(ax, center_idx, out_file_name, techs, save_dir, case
     else:
         ax.set_xlim(lo, hi-1)
     
+    # Add fuel demand value
+    ax.text(0.03, 0.95, f'Fuel fraction: {round(float(dem),3)}',
+        verticalalignment='top', horizontalalignment='left',
+        transform=ax.transAxes,fontsize=9
+    )
+
 
 
 
@@ -204,7 +214,7 @@ if '__main__' in __name__:
             "Case2_NuclearStorage" : [['nuclear','storage'], 2],
             "Case3_WindStorage" : [['wind', 'storage'], 6],
             "Case4_SolarStorage" : [['solar', 'storage'], 5],
-            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 3.5],
+            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 4],
             "Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3],
     }
 
