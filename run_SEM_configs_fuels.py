@@ -384,6 +384,23 @@ def stacked_plot(**kwargs):
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
 
 
+def get_threshold(df, ref, threshold):
+    prev_price = 0
+    prev_dem = 0
+    for idx in df.index:
+        if df.loc[idx, 'fuel price ($/kWh)'] >= ref * threshold:
+            now_price = df.loc[idx, 'fuel price ($/kWh)']
+            now_dem = df.loc[idx, 'fuel demand (kWh)']
+            break
+        prev_price = df.loc[idx, 'fuel price ($/kWh)']
+        prev_dem = df.loc[idx, 'fuel demand (kWh)']
+
+    # price on x axis
+    prev_to_threshold_frac = (ref * threshold - prev_price) / (now_price - prev_price)
+    dem_threshold = prev_dem + prev_to_threshold_frac * (now_dem - prev_dem)
+
+    return dem_threshold
+
 # Poorly written, the args are all required and are below.
 #save_name, save_dir
 def costs_plot(df, **kwargs):
@@ -433,20 +450,13 @@ def costs_plot(df, **kwargs):
     # 1) cheapest fuel cost --> +5%
     # 2) cheapest + 5% --> most expensive - 5%
     # 3) most expensive - 5% --> most expensive
-    cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
-    most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
-    for idx in df.index:
-        if df.loc[idx, 'fuel price ($/kWh)'] >= cheapest_fuel * 1.05:
-            fuel_dem_split_1 = df.loc[idx, 'fuel demand (kWh)']
-            break
-    for idx in df.index:
-        if df.loc[idx, 'fuel price ($/kWh)'] >= most_expensive_fuel * 0.95:
-            fuel_dem_split_2 = df.loc[idx, 'fuel demand (kWh)']
-            break
-    print(cheapest_fuel, most_expensive_fuel)
-    print(fuel_dem_split_1, fuel_dem_split_2)
-    ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
-    ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
+    if not 'Case0_NuclearFlatDemand' in save_dir:
+        cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
+        most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
+        fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
+        fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
 
 
     plt.xscale('log', nonposx='clip')
