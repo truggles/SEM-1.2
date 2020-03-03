@@ -40,7 +40,7 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
             if item == 'var cost CO2':
                 items[item].append(system['VAR_COST_CO2']['value']) # Does not depend on chem plant eff.
             if item == 'var cost electricity':
-                items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value']))
+                items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value']))
             if syst_name == 'Default':
                 default_total += items[item][-1]
                 print(syst_name, item, round(items[item][-1],4))
