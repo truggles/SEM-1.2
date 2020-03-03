@@ -21,11 +21,11 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
     assert(len(system_labels) == len(electricity_costs))
 
     order = [
-            'fixed cost electrolyzer',
-            'fixed cost chem plant',
-            'variable cost chem plant',
-            'variable cost CO2',
-            'variable cost electricity',
+            'fixed: electrolyzer + compressor',
+            'fixed: chem plant',
+            'variable: chem plant',
+            'variable: CO2',
+            'variable: electricity',
     ]
     items = OrderedDict()
     for o in order:
@@ -33,15 +33,15 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
     default_total = 0.
     for system, electricity_cost, syst_name in zip(systems, electricity_costs, system_labels):
         for item in items.keys():
-            if item == 'fixed cost electrolyzer':
-                items[item].append(system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor']))
-            if item == 'fixed cost chem plant':
+            if item == 'fixed: electrolyzer + compressor':
+                items[item].append((system['FIXED_COST_ELECTROLYZER']['value'] + system['FIXED_COST_COMPRESSOR']['value']) / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor']))
+            if item == 'fixed: chem plant':
                 items[item].append(system['FIXED_COST_CHEM_PLANT']['value'])
-            if item == 'variable cost chem plant':
+            if item == 'variable: chem plant':
                 items[item].append(system['VAR_COST_CHEM_PLANT']['value']) # Values from Konig already incorporate chem plant eff.
-            if item == 'variable cost CO2':
+            if item == 'variable: CO2':
                 items[item].append(system['VAR_COST_CO2']['value']) # Does not depend on chem plant eff.
-            if item == 'variable cost electricity':
+            if item == 'variable: electricity':
                 items[item].append(electricity_cost / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value']))
             if syst_name == 'baseline':
                 default_total += items[item][-1]
@@ -58,12 +58,12 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
         btm = np.zeros(len(systems))
         for item, vals in items.items():
             vect = np.array(vals)
-            plt.bar(np.arange(len(vect)), vect*SF, width, bottom=btm, label=item)
+            plt.bar(np.arange(len(vect)), vect*SF, width, bottom=btm, label=item.replace('CO2',r'CO$_{2}$'))
             btm += vect*SF
         plt.xticks(np.arange(len(system_labels)), system_labels)
-        ax.set_ylabel(f'fuel cost ($/{units})')
+        ax.set_ylabel(f'electrofuel cost ($/{units})')
         if 'kWh' in units:
-            ax.set_ylabel(r'fuel cost (\$/kWh$_{LHV}$)')
+            ax.set_ylabel(r'electrofuel cost (\$/kWh$_{LHV}$)')
         ax.set_ylim(0, max(btm)*1.5)
         plt.legend()
         plt.grid(axis='y')
@@ -202,10 +202,10 @@ for k1, v1 in syst.items():
 verbose = True
 cost = af.get_fuel_system_costs(syst, us_avg, verbose)
 print(f"baseline electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
-print(f"baseline fuel cost: {round(cost,4)} $/kWh")
+print(f"baseline electrofuel cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")
 cost = af.get_fuel_system_costs(syst, 0.0, verbose)
-print(f"free electricity fuel cost: {round(cost,4)} $/kWh")
+print(f"free electricity electrofuel cost: {round(cost,4)} $/kWh")
 print(f"                        or: {round(cost*kWh_to_GGE,4)} $/GGE")
 
 
@@ -232,10 +232,10 @@ system_labels.append('free\nelectricity')
 electricity_costs.append(0.0)
 systems.append( copy.deepcopy(syst) )
 
-system_labels.append('2x electrolyzer')
+system_labels.append('1/2 cost\nelectrolyzer')
 electricity_costs.append(us_avg)
 systems.append( copy.deepcopy(syst) )
-systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = systems[-1]['FIXED_COST_ELECTROLYZER']['value'] * 2.
+systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = systems[-1]['FIXED_COST_ELECTROLYZER']['value'] * 0.5
 
 system_labels.append('DAC CO$_{2}$')
 electricity_costs.append(us_avg)
@@ -243,8 +243,8 @@ systems.append( copy.deepcopy(syst) )
 systems[-1]['VAR_COST_CO2']['co2 cost'] = 600
 systems[-1]['VAR_COST_CO2'] = af.var_cost_of_CO2(**systems[-1]['VAR_COST_CO2'])
 
-system_labels.append('50% CF\nelectrolyzer')
-electricity_costs.append(us_avg)
+system_labels.append('50% CF\nelectrolyzer\n+ 1/2 cost\nelectricity')
+electricity_costs.append(us_avg*0.5)
 systems.append( copy.deepcopy(syst) )
 systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.5
 

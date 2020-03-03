@@ -411,11 +411,11 @@ def costs_plot(df, **kwargs):
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel('fuel cost ($/kWh)')
-    plt.title('Cost Breakdown For Fuels')
+    ax.set_ylabel(r'electrofuel cost (\$/kWh$_{LHV}$)')
+    plt.title('Electrofuel and electricity costs')
 
     # $/GGE fuel line use Dual Value
-    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label='Fuel Cost ($/kWh)')
+    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label=r'electrofuel cost (\$/kWh$_{LHV}$)')
 
 
     # Stacked components
@@ -429,12 +429,12 @@ def costs_plot(df, **kwargs):
 
 
     # Build stack
-    ax.fill_between(df['fuel demand (kWh)'], 0, f_elec, label='fixed cost electrolyzer')
-    ax.fill_between(df['fuel demand (kWh)'], f_elec, f_elec+f_chem, label='fixed cost chem plant')
-    #ax.fill_between(df['fuel demand (kWh)'], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost storage') # fixed cost storage set at 2.72E-7
-    ax.fill_between(df['fuel demand (kWh)'], f_tot, f_tot+v_chem, label='variable cost chem plant')
-    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost CO$_{2}$')
-    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='variable cost electrolyzer')
+    ax.fill_between(df['fuel demand (kWh)'], 0, f_elec, label='fixed: electrolyzer + compressor')
+    ax.fill_between(df['fuel demand (kWh)'], f_elec, f_elec+f_chem, label='fixed: chem plant')
+    #ax.fill_between(df['fuel demand (kWh)'], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage') # fixed cost storage set at 2.72E-7
+    ax.fill_between(df['fuel demand (kWh)'], f_tot, f_tot+v_chem, label='variable: chem plant')
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable: CO$_{2}$')
+    ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='variable: electrolyzer')
 
     print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}:")
     print(f" ----- fixed cost electrolyzer {round(f_elec[1],6)}")
@@ -469,9 +469,9 @@ def costs_plot(df, **kwargs):
 
     # Second y-axis for electricity dual
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel('mean electricity cost ($/kWh)', color='magenta')  # we already handled the x-label with ax1
-    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='magenta', label='mean electricity cost ($/kWh)', marker='X')
-    ax2.tick_params(axis='y', labelcolor='magenta')
+    ax2.set_ylabel('mean electricity cost ($/kWh)', color='black')  # we already handled the x-label with ax1
+    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='black', label='mean electricity\ncost ($/kWh)', marker='v')
+    ax2.tick_params(axis='y', labelcolor='black')
     plt.legend(loc='upper right')
     ax2.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]) # mimic 1st y-axis
 
@@ -1104,7 +1104,7 @@ if '__main__' in __name__:
                 df['capacity fuel h2 storage (kWh)'].values/df['fuel demand (kWh)'].values], # y values
             ['cap electrolyzer/fuel dem.', 'cap chem plant/fuel dem.', 'cap H2 storage/fuel dem.'], # labels
             'fuel demand (kWh/h)', 'Fuel System Capacities in (kW) / Fuel Demand (kWh/h)', 'Storage Capacities in (kWh) / Fuel Demand (kWh/h)',
-            'Ratios of Fuel System Capacities / Fuel Demand', 'ratiosFuelSystemVsFuelCost')
+            'Electrofuel system capacity factors', 'ratiosFuelSystemVsFuelCost')
 
 
     # Fuel system capacity factor ratios
@@ -1114,8 +1114,8 @@ if '__main__' in __name__:
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                 df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,], # y values 
             ['electrolyzer capacity factor', 'chem plant capacity factor'], # labels
-            'fuel demand (kWh)', 'Fuel System Capacity Factors', 
-            'Fuel System Capacity Factors', 'ratiosFuelSystemCFsVsFuelCost', False, ylims)
+            'fuel demand (kWh)', 'Electrofuel system capacity factors', 
+            'Electrofuel system capacity factors', 'ratiosFuelSystemCFsVsFuelCost', False, ylims)
 
 
     # All system capacity factor ratios
@@ -1131,8 +1131,8 @@ if '__main__' in __name__:
                 ], # y values 
             ['electrolyzer', 'chem plant', 'h2 storage',
                 'nuclear', 'wind', 'solar', 'battery storage'], # labels
-            'fuel demand (kWh)', 'System Capacity Factors', 
-            'System Capacity Factors', 'ratiosSystemCFsVsFuelCost', False, ylims)
+            'fuel demand (kWh)', 'System capacity factors', 
+            'System capacity factors', 'ratiosSystemCFsVsFuelCost', False, ylims)
 
 
 
