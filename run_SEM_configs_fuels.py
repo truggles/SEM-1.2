@@ -772,9 +772,9 @@ if '__main__' in __name__:
         if 'version' in arg:
             version = arg.split('_')[1]
 
-    input_file = 'fuel_test_20200209_AllCases_EIAPrices.csv'
+    input_file = 'fuel_test_20200302_AllCases_EIAPrices.csv'
     if 'Case0' in case:
-        input_file = 'fuel_test_20200209_Case0_NuclearFlatDemand.csv'
+        input_file = 'fuel_test_20200302_Case0_NuclearFlatDemand.csv'
     version = f'{version}_{case}'
     global_name = 'fuel_test_{}_{}'.format(date, version)
     path = 'Output_Data/{}/'.format(global_name)
