@@ -21,7 +21,7 @@ def get_fuel_demands(start, end, steps):
 def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, ldc=False):
 
     # Open out file as df
-    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{tgt_fuel_dems[0]}')
+    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD0.0')
     full_file_name = glob(f_name)
     assert(len(full_file_name) == 1)
     df = pd.read_csv(full_file_name[0])
