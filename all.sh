@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 
-Date="20200228"
+Date="20200303"
 version="v1"
 #ARGS="run_sem make_results_file"
 #ARGS="make_results_file"
-ARGS="make_plots"
 ARGS="run_sem make_results_file make_plots"
+ARGS="make_plots"
 
 
 

@@ -206,7 +206,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    date = '20200228_v1'
+    date = '20200303_v1'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],

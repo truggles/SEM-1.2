@@ -196,7 +196,7 @@ cost = af.get_fuel_system_costs(syst, us_avg, verbose)
 print(f"Default electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
 print(f"Default fuel cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")
-cost = af.get_fuel_system_costs(syst, 0.0)
+cost = af.get_fuel_system_costs(syst, 0.0, verbose)
 print(f"Free electricity fuel cost: {round(cost,4)} $/kWh")
 print(f"                        or: {round(cost*kWh_to_GGE,4)} $/GGE")
 

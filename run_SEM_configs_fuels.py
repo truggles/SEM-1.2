@@ -281,6 +281,7 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     plt.grid()
     plt.legend()
     fig.savefig('{}/{}.png'.format(save_dir, save))
+    fig.savefig('{}/{}.pdf'.format(save_dir, save))
 
 
 
@@ -322,6 +323,7 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
     plt.tight_layout()
     plt.legend()
     fig.savefig('{}/{}.png'.format(save_dir, save))
+    fig.savefig('{}/{}.pdf'.format(save_dir, save))
 
 
 # The addition here compared to the simple_plot is coloring/sizing the dots
@@ -455,13 +457,13 @@ def costs_plot(df, **kwargs):
         most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
         fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
         fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.34, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.43, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.43, len(df.index)), 'k--', label='_nolegend_')
 
 
     plt.xscale('log', nonposx='clip')
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
-    ax.set_ylim(0, 0.55)
+    ax.set_ylim(0, 0.70)
     plt.grid()
     plt.legend(loc='upper left')
 
@@ -475,6 +477,7 @@ def costs_plot(df, **kwargs):
 
     plt.tight_layout()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 
