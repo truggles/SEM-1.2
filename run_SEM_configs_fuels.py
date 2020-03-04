@@ -13,6 +13,8 @@ import matplotlib
 from datetime import datetime, timedelta
 import copy
 from helpers import get_fuel_demands
+import matplotlib
+matplotlib.rcParams.update({'font.size': 10})
 
 
 def marker_list():
@@ -253,7 +255,7 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     # 1) cheapest fuel cost --> +5%
     # 2) cheapest + 5% --> most expensive - 5%
     # 3) most expensive - 5% --> most expensive
-    if save == 'ratiosSystemCFsVsFuelCost':
+    if save == 'ratiosSystemCFsVsFuelCost' and not 'Case0_NuclearFlatDemand' in save_dir:
         df = kwargs['df']
         cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
         most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
@@ -332,13 +334,15 @@ def simple_plot_with_2nd_yaxis(df, save_dir, x, ys, labels, x_label, y_label_1, 
     # 1) cheapest fuel cost --> +5%
     # 2) cheapest + 5% --> most expensive - 5%
     # 3) most expensive - 5% --> most expensive
-    if save == 'ratiosFuelSystemVsFuelCost':
+    if save == 'ratiosFuelSystemVsFuelCost' and not 'Case0_NuclearFlatDemand' in save_dir:
         cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
         most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
         fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
         fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, ax.get_ylim()[1]*.8, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, ax.get_ylim()[1]*.8, len(df.index)), 'k--', label='_nolegend_')
+
+    ax.set_ylim(0, ax.get_ylim()[1])
     
     # Second y-axis
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
@@ -492,8 +496,8 @@ def costs_plot(df, **kwargs):
         most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
         fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
         fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.43, len(df.index)), 'k--', label='_nolegend_')
-        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.43, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.5, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.5, len(df.index)), 'k--', label='_nolegend_')
 
 
     plt.xscale('log', nonposx='clip')
@@ -1156,7 +1160,7 @@ if '__main__' in __name__:
                 df['energy storage (kWh)'].values/df['capacity storage (kWh)'].values,
                 ], # y values 
             ['electrolyzer', 'chem plant', 'h2 storage',
-                'nuclear', 'wind', 'solar', 'battery storage'], # labels
+                'nuclear', 'wind', 'solar', 'battery\nstorage'], # labels
             'fuel demand (kWh)', 'System capacity factors', 
             'System capacity factors', 'ratiosSystemCFsVsFuelCost', False, ylims, **{'df' : df})
 
