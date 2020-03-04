@@ -225,7 +225,7 @@ def get_results(files, global_name):
 
 
 
-def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False, ylims=[-1,-1]):
+def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False, ylims=[-1,-1], **kwargs):
 
     print("Plotting x,y = {},{}".format(x_label,y_label))
 
@@ -244,7 +244,23 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     for y, label, mark in zip(ys, labels, markers):
         #print(label)
         #print(y)
-        ax.scatter(x, y, label=label, marker=mark)
+        if label == 'h2 storage':
+            ax.scatter(x, y, label=r'H$_{2}$ storage', marker=markers[-1], color='C7')
+        else:
+            ax.scatter(x, y, label=label, marker=mark)
+    
+    # Add vertical bars deliniating 3 regions if this plot is included in the paper:
+    # 1) cheapest fuel cost --> +5%
+    # 2) cheapest + 5% --> most expensive - 5%
+    # 3) most expensive - 5% --> most expensive
+    if save == 'ratiosSystemCFsVsFuelCost':
+        df = kwargs['df']
+        cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
+        most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
+        fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
+        fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
 
     if logY:
         plt.yscale('log', nonposy='clip')
@@ -275,18 +291,21 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
         ax.set_ylim(ylims[0], ylims[1])
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(x[np.nonzero(x)])*.5, max(x)*2)
+    ax.set_xlim(min(x[np.nonzero(x)]), max(x))
 
     plt.tight_layout()
     plt.grid()
-    plt.legend()
+    if save == 'ratiosSystemCFsVsFuelCost':
+        plt.legend(ncol=2, loc='lower right')
+    else:
+        plt.legend()
     fig.savefig('{}/{}.png'.format(save_dir, save))
     fig.savefig('{}/{}.pdf'.format(save_dir, save))
 
 
 
 # FIXME - just taking the last set of y values for the 2nd axis.  This could be much better...
-def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_label_2, title, save):
+def simple_plot_with_2nd_yaxis(df, save_dir, x, ys, labels, x_label, y_label_1, y_label_2, title, save):
 
     print("Plotting x,y1 = {},{} and x,y2 = {},{}".format(x_label,y_label_1,x_label,y_label_2))
 
@@ -309,16 +328,28 @@ def simple_plot_with_2nd_yaxis(save_dir, x, ys, labels, x_label, y_label_1, y_la
     ax.set_ylim(ax.get_ylim()[0]/1.5, ax.get_ylim()[1]*1.3)
     plt.grid()
     
+    # Add vertical bars deliniating 3 regions if this plot is included in the paper:
+    # 1) cheapest fuel cost --> +5%
+    # 2) cheapest + 5% --> most expensive - 5%
+    # 3) most expensive - 5% --> most expensive
+    if save == 'ratiosFuelSystemVsFuelCost':
+        cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
+        most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
+        fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
+        fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
+        ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 2.5, len(df.index)), 'k--', label='_nolegend_')
+    
     # Second y-axis
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel(y_label_2, color='C3')  # we already handled the x-label with ax1
-    ax2.scatter(x, ys[-1], color='C3', label=labels[-1], marker=markers[-1])
-    ax2.tick_params(axis='y', labelcolor='C3')
+    ax2.set_ylabel(y_label_2, color='C7')  # we already handled the x-label with ax1
+    ax2.scatter(x, ys[-1], color='C7', label=r'cap. H$_{2}$ storage/fuel dem.', marker=markers[-1])
+    ax2.tick_params(axis='y', labelcolor='C7')
     plt.legend(loc='upper right')
     ax2.set_ylim(ax2.get_ylim()[0]/1.5, ax2.get_ylim()[1]*1.3)
 
     plt.xscale('log', nonposx='clip')
-    ax.set_xlim(min(x[np.nonzero(x)])*.5, max(x)*2)
+    ax.set_xlim(min(x[np.nonzero(x)]), max(x))
 
     plt.tight_layout()
     plt.legend()
@@ -411,11 +442,14 @@ def costs_plot(df, **kwargs):
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
     ax.set_xlabel('fuel demand (kWh/h)')
-    ax.set_ylabel(r'electrofuel cost (\$/kWh$_{LHV}$)')
+    ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh)')
     plt.title('Electrofuel and electricity costs')
 
+    # Electricity cost
+    ax.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='black', label='mean electricity cost ($/kWh)', marker='v')
+
     # $/GGE fuel line use Dual Value
-    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label=r'electrofuel cost (\$/kWh$_{LHV}$)')
+    ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label=r'total electrofuel cost (\$/kWh$_{LHV}$)')
 
 
     # Stacked components
@@ -447,6 +481,7 @@ def costs_plot(df, **kwargs):
 
     # To print the estimated MEM electricity cost per point
     ax.scatter(df['fuel demand (kWh)'], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
+    ax.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
@@ -465,15 +500,8 @@ def costs_plot(df, **kwargs):
     ax.set_xlim(df.loc[1, 'fuel demand (kWh)'], df.loc[len(df.index)-1, 'fuel demand (kWh)'])
     ax.set_ylim(0, 0.70)
     plt.grid()
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper left', ncol=2)
 
-    # Second y-axis for electricity dual
-    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel('mean electricity cost ($/kWh)', color='black')  # we already handled the x-label with ax1
-    ax2.scatter(df['fuel demand (kWh)'], df['mean price ($/kWh)'], color='black', label='mean electricity\ncost ($/kWh)', marker='v')
-    ax2.tick_params(axis='y', labelcolor='black')
-    plt.legend(loc='upper right')
-    ax2.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1]) # mimic 1st y-axis
 
     plt.tight_layout()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -793,7 +821,7 @@ if '__main__' in __name__:
     print(f' - MAKE_PLOTS={make_plots}\n')
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
-    EFFICIENCY_FUEL_ELECTROLYZER=0.677
+    EFFICIENCY_FUEL_ELECTROLYZER=0.607 # Updated 4 March 2020 based on new values
     EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
 
     ### DEFAULTS ###
@@ -1098,17 +1126,16 @@ if '__main__' in __name__:
 
     
     # Fuel system capacities ratios
-    simple_plot_with_2nd_yaxis(save_dir, df['fuel demand (kWh)'].values,
+    simple_plot_with_2nd_yaxis(df, save_dir, df['fuel demand (kWh)'].values,
             [df['capacity fuel electrolyzer (kW)'].values/df['fuel demand (kWh)'].values, 
                 df['capacity fuel chem plant (kW)'].values/df['fuel demand (kWh)'].values, 
                 df['capacity fuel h2 storage (kWh)'].values/df['fuel demand (kWh)'].values], # y values
-            ['cap electrolyzer/fuel dem.', 'cap chem plant/fuel dem.', 'cap H2 storage/fuel dem.'], # labels
+            ['cap. electrolyzer/fuel dem.', 'cap. chem plant/fuel dem.', 'cap. H2 storage/fuel dem.'], # labels
             'fuel demand (kWh/h)', 'Fuel System Capacities in (kW) / Fuel Demand (kWh/h)', 'Storage Capacities in (kWh) / Fuel Demand (kWh/h)',
             'Electrofuel system capacity factors', 'ratiosFuelSystemVsFuelCost')
 
 
     # Fuel system capacity factor ratios
-    # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
     ylims = [0.0, 1.1]
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
@@ -1119,7 +1146,6 @@ if '__main__' in __name__:
 
 
     # All system capacity factor ratios
-    # The way the Core_Model.py is set up currently, efficiencies only need to be applied for the chem plant - 6 Sept 2019
     simple_plot(save_dir, df['fuel demand (kWh)'].values,
             [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                 df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
@@ -1132,7 +1158,7 @@ if '__main__' in __name__:
             ['electrolyzer', 'chem plant', 'h2 storage',
                 'nuclear', 'wind', 'solar', 'battery storage'], # labels
             'fuel demand (kWh)', 'System capacity factors', 
-            'System capacity factors', 'ratiosSystemCFsVsFuelCost', False, ylims)
+            'System capacity factors', 'ratiosSystemCFsVsFuelCost', False, ylims, **{'df' : df})
 
 
 
