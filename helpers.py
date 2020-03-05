@@ -75,40 +75,19 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
 
 def find_centering_hour_idx(df, case):
 
-    # Nuclear only: center on peak demand
-    if case in ['Case1_Nuclear', 'Case2_NuclearStorage']:
-        return df[ df['demand (kW)'] == np.max(df['demand (kW)'])].index
-    # Wind heavy: lowest 5 hours
-    if case in ['Case3_WindStorage', 'Case6_NuclearWindSolarStorage']:
-        #return df[ df['dispatch wind (kW)'] == np.min(df['dispatch wind (kW)'])].index
-        fiveHrs = []
-        lowest_val = 999
-        lowest_idx = 999
-        for idx in df.index:
-            fiveHrs.append( df.loc[idx, 'dispatch wind (kW)'] )
-            if len(fiveHrs) > 5:
-                fiveHrs.pop(0) # Get rid of oldes val
-                mean = np.mean(fiveHrs)
-                if mean < lowest_val:
-                    lowest_val = mean
-                    lowest_idx = idx
-        return [lowest_idx - 2,]
-    # Solar heavy: center on lowest 48 hours
-    if case in ['Case4_SolarStorage','Case5_WindSolarStorage']:
-        fourtyEightHrs = []
-        lowest_val = 999
-        lowest_idx = 999
-        for idx in df.index:
-            fourtyEightHrs.append( df.loc[idx, 'dispatch solar (kW)'] )
-            if len(fourtyEightHrs) > 48:
-                fourtyEightHrs.pop(0) # Get rid of oldes val
-                mean = np.mean(fourtyEightHrs)
-                if mean < lowest_val:
-                    lowest_val = mean
-                    lowest_idx = idx
-        return [lowest_idx - 24,]
-    else:
-        return [int(len(df.index)/2),] # middle
+    fourtyEightHrs = []
+    lowest_val = 999
+    lowest_idx = 999
+    for idx in df.index:
+        fourtyEightHrs.append( df.loc[idx, 'cutailment solar (kW)'] + df.loc[idx, 'cutailment wind (kW)'] + df.loc[idx, 'cutailment nuclear (kW)'] )
+        if len(fourtyEightHrs) > 48:
+            fourtyEightHrs.pop(0) # Get rid of oldes val
+            mean = np.mean(fourtyEightHrs)
+            if mean < lowest_val:
+                lowest_val = mean
+                lowest_idx = idx
+    return [lowest_idx - 24,]
+
 
 def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir, case, set_max=-1, ldc=False):
 
@@ -119,13 +98,12 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
     assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
     peak_idx = center_idx[0]
-    max_demand = np.max(df['demand (kW)'])
 
     lo = peak_idx - 24*7
     hi = peak_idx + 24*7
     if hi > len(df.index):
-        hi = hi - (hi - len(df.index))
         lo = lo - (hi - len(df.index))
+        hi = hi - (hi - len(df.index))
     dfs = df.iloc[lo:hi]
     if ldc:
         dfs = dfs.sort_values('demand (kW)', ascending=False)
