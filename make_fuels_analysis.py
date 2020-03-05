@@ -13,6 +13,7 @@ import analytic_fuels as af
 
 
 kWh_to_GGE = 33.4
+kWh_LHV_per_kg_H2 = 33.33
 
 
 # Plot stacked bars representing total fuel costs for multiple scenarios
@@ -76,8 +77,8 @@ def stacked_plots(systems, system_labels, electricity_costs, save_name, base):
 
 
 
-def scan_electricity_costs_and_electrolyzer_CFs(system, electricity_info, electrolyzer_info, base):
-
+# Add ability to scan for H2 costs only
+def scan_electricity_costs_and_electrolyzer_CFs(system, electricity_info, electrolyzer_info, base, do_H2=False):
 
     info1 = electricity_info
     info2 = electrolyzer_info
@@ -85,18 +86,34 @@ def scan_electricity_costs_and_electrolyzer_CFs(system, electricity_info, electr
     for i, electricity in enumerate(np.linspace(info1[0], info1[1], info1[2])):
         for j, electrolyzer in enumerate(np.linspace(info2[0], info2[1], info2[2])):
             system['FIXED_COST_ELECTROLYZER']['capacity factor'] = electrolyzer
-            cost = af.get_fuel_system_costs(syst, electricity)
+            system['FIXED_COST_COMPRESSOR']['capacity factor'] = electrolyzer
+            if do_H2:
+                cost = af.get_h2_system_costs(syst, electricity)
+            else:
+                cost = af.get_fuel_system_costs(syst, electricity)
             z[i][j] = cost
 
-    plot_2D(z, electrolyzer_info, electricity_info, 'Electrolyzer CF', 'Electricity Costs ($/kWh)', 
-            'Fuel Cost ($/kWh)', 'scan_electricity_costs_and_electrolyzer_CFs_kWh', base)
-    plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, 'Electrolyzer CF', 'Electricity Costs ($/kWh)', 
-            'Fuel Cost ($/GGE)', 'scan_electricity_costs_and_electrolyzer_CFs_GGE', base)
+    save_name_base = 'scan_electricity_costs_and_electrolyzer_CFs'
+    app = 'electrofuel'
+    if do_H2:
+        save_name_base += '_H2_only'
+        app = r'H$_{2}$'
+    plot_2D(z, electrolyzer_info, electricity_info, 'electrolyzer CF', 'electricity costs ($/kWh)', 
+            app + r' cost (\$/kWh$_{LHV}$)', save_name_base+'_kWh', base)
+
+    if do_H2:
+        plot_2D(z*kWh_LHV_per_kg_H2, electrolyzer_info, electricity_info, 'electrolyzer CF', 'electricity costs ($/kWh)', 
+                app + r' cost (\$/kg)', save_name_base+'_kg', base)
+    else:
+        plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, 'electrolyzer CF', 'electricity costs ($/kWh)', 
+                app + r' cost (\$/GGE)', save_name_base+'_GGE', base)
 
 
+# Add ability to scan for H2 costs only
+def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyzer_info, base, do_H2=False):
 
-def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyzer_info, base):
-
+    # For baseline marker:
+    base_electro_fixed_cost = system['FIXED_COST_ELECTROLYZER']['value']
 
     info1 = electricity_info
     info2 = electrolyzer_info
@@ -104,17 +121,29 @@ def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyz
     for i, electricity in enumerate(np.linspace(info1[0], info1[1], info1[2])):
         for j, electrolyzer in enumerate(np.linspace(info2[0], info2[1], info2[2])):
             system['FIXED_COST_ELECTROLYZER']['value'] = electrolyzer
-            cost = af.get_fuel_system_costs(syst, electricity)
+            if do_H2:
+                cost = af.get_h2_system_costs(syst, electricity)
+            else:
+                cost = af.get_fuel_system_costs(syst, electricity)
             z[i][j] = cost
 
-    plot_2D(z, electrolyzer_info, electricity_info, 'Electrolyzer CapEx ($/kW/h)', 'Electricity Costs ($/kWh)', 
-            'Fuel Cost ($/kWh)', 'scan_electricity_and_electrolyzer_costs_kWh', base)
-    plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, 'Electrolyzer CapEx ($/kW/h)', 'Electricity Costs ($/kWh)', 
-            'Fuel Cost ($/GGE)', 'scan_electricity_and_electrolyzer_costs_GGE', base)
+    save_name_base = 'scan_electricity_and_electrolyzer_costs'
+    app = 'electrofuel'
+    if do_H2:
+        save_name_base += '_H2_only'
+        app = r'H$_{2}$'
+    plot_2D(z, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+            app + r' cost (\$/kWh$_{LHV}$)', save_name_base+'_kWh', base, base_electro_fixed_cost)
+    if do_H2:
+        plot_2D(z*kWh_LHV_per_kg_H2, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+                app + r' cost (\$/kg)', save_name_base+'_kg', base, base_electro_fixed_cost)
+    else:
+        plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+                app + r' cost (\$/GGE)', save_name_base+'_GGE', base, base_electro_fixed_cost)
 
 
 
-def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, base):
+def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, base, base_electro_fixed_cost=-1):
 
     info1 = y_axis_info
     info2 = x_axis_info
@@ -152,7 +181,7 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     # Hardcoded FIXME
     x, y = -1, -1
     if 'scan_electricity_and_electrolyzer_costs' in save_name:
-        x = 0.014309606239901077
+        x = base_electro_fixed_cost
         y = us_avg
     if 'scan_electricity_costs_and_electrolyzer_CFs' in save_name:
         x = 1.0
@@ -170,6 +199,7 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     if x != -1 and y != -1:
         ax.scatter( x_loc, y_loc, s=320, marker='*', color='gold')
 
+    plt.subplots_adjust(bottom=.17, top=.95)
     plt.savefig(base+save_name+'.png')
     plt.savefig(base+'pdf/'+save_name+'.pdf')
     plt.clf()
@@ -204,9 +234,17 @@ cost = af.get_fuel_system_costs(syst, us_avg, verbose)
 print(f"baseline electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
 print(f"baseline electrofuel cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_to_GGE,4)} $/GGE")
+cost = af.get_h2_system_costs(syst, us_avg, verbose)
+print(f"baseline H2 cost: {round(cost,4)} $/kWh")
+print(f"               or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
+
+
 cost = af.get_fuel_system_costs(syst, 0.0, verbose)
 print(f"free electricity electrofuel cost: {round(cost,4)} $/kWh")
 print(f"                        or: {round(cost*kWh_to_GGE,4)} $/GGE")
+cost = af.get_h2_system_costs(syst, 0.0, verbose)
+print(f"baseline H2 cost: {round(cost,4)} $/kWh")
+print(f"               or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
 
 
 electricity_info = [0.0, 0.2, 51]
@@ -215,11 +253,19 @@ syst = af.return_fuel_system() # Get fresh system
 scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base)
 
+syst = af.return_fuel_system() # Get fresh system
+do_H2=True
+scan_electricity_and_electrolyzer_costs(syst,
+        electricity_info, electrolyzer_info, base, do_H2)
+
 electrolyzer_CF_info = [0.2, 1.00, 41]
 syst = af.return_fuel_system() # Get fresh system
 scan_electricity_costs_and_electrolyzer_CFs(syst,
         electricity_info, electrolyzer_CF_info, base)
 
+syst = af.return_fuel_system() # Get fresh system
+scan_electricity_costs_and_electrolyzer_CFs(syst,
+        electricity_info, electrolyzer_CF_info, base, do_H2)
 
 systems, system_labels, electricity_costs = [], [], []
 
