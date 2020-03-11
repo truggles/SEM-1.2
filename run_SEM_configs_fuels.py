@@ -799,6 +799,9 @@ if '__main__' in __name__:
     date = '20200209' # default
     case = 'Case6_NuclearWindSolarStorage' # default
     version = 'v3'
+    multiplication_factor = 1.2 # default
+    n_jobs = 1
+    job_num = 1
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -806,6 +809,12 @@ if '__main__' in __name__:
             case = arg
         if 'version' in arg:
             version = arg.split('_')[1]
+        if 'factor' in arg:
+            multiplication_factor = float(arg.split('_')[1])
+        if 'nJobs' in arg:
+            n_jobs = int(arg.split('_')[1])
+        if 'jobNum' in arg:
+            job_num = int(arg.split('_')[1])
 
     input_file = 'fuel_test_20200302_AllCases_EIAPrices.csv'
     if 'Case0' in case:
@@ -816,13 +825,17 @@ if '__main__' in __name__:
     results = path+'results/'
 
     # Print settings:
-    print(f'\nGlobal name {global_name}')
-    print(f'Output path {path}')
-    print(f'Results path {results}')
-    print(f'Input File: {input_file}')
-    print(f'\n - RUN_SEM={run_sem}')
-    print(f' - MAKE_RESULTS_FILE={make_results_file}')
-    print(f' - MAKE_PLOTS={make_plots}\n')
+    print(f'\nGlobal name                    {global_name}')
+    print(f'Output path                    {path}')
+    print(f'Results path                   {results}')
+    print(f'Input File:                    {input_file}')
+    print(f'Demand multiplication factor:  {round(multiplication_factor,3)}')
+    print(f'Number of jobs:                {n_jobs}')
+    print(f'Job number:                    {job_num}')
+    print(f'\n - RUN_SEM =          {run_sem}')
+    print(f' - MAKE_RESULTS_FILE ={make_results_file}')
+    print(f' - MAKE_PLOTS =       {make_plots}\n')
+
 
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.607 # Updated 4 March 2020 based on new values
@@ -884,21 +897,39 @@ if '__main__' in __name__:
             vre_scan = get_vre_scan(vre_start, vre_end, vre_num)
             keys = ['fixed_cost_solar', 'fixed_cost_wind']
             ranges = [vre_scan, vre_scan]
+            print("\nSetting output fuels as 10% of electric demand\n")
+            settings['fuel_demand'] = 0.1
         else:
             keys = ['fuel_demand',]
-            ranges = [get_fuel_demands(0.01, 10, 1.2),] # start, end, steps
+            ranges = [get_fuel_demands(0.01, 10, multiplication_factor),] # start, end, steps
 
         scan_map = make_scan_map(keys, ranges)
         print("Variables to scan")
         print(scan_map)
-                
-        print("\nSetting output fuels as 10% of electric demand\n")
-        settings['fuel_demand'] = 0.1
+            
+        # SEM runs per job
+        # Make sure we always have an extra run per job to never lose jobs.
+        # It is fine if the final job has fewer runs.
+        runs_per_job = np.ceil(len(scan_map.index) / n_jobs)
+        print(f'runs_per_job {runs_per_job}')
+        min_job_idx = runs_per_job * job_num - runs_per_job
+        max_job_idx = runs_per_job * job_num - 1
+        print(f'min_job_idx {min_job_idx}')
+        print(f'max_job_idx {max_job_idx}')
+
 
         for idx in scan_map.index:
 
+            # Only run idx through SEM if it is the appropriate job
+            if not (idx >= min_job_idx and idx <= max_job_idx):
+                print(f'Skipping idx {idx}')
+                continue
+            
+            print(f'Processing idx {idx}')
+
             for col in scan_map.columns:
                 settings[col] = scan_map.loc[idx, col]
+
 
             # Set up new case file
             case_file = set_up_new_cfg(input_file, version, idx, **settings)
@@ -917,7 +948,8 @@ if '__main__' in __name__:
         results = get_results(files, global_name)
 
     if not make_plots:
-        assert(False), "Kill before plotting"
+        print("Exit before plotting")
+        exit()
 
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
