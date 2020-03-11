@@ -11,5 +11,5 @@ cd $SLURM_SUBMIT_DIR
 #
 module load anaconda/anaconda3
 module load gurobi
-python run_reliability_analysis.py "date_$DATE" "version_$VERSION" "run_sem" $EXTRA_ARGS
+python run_SEM_configs_fuels.py "date_$DATE" "version_$VERSION" "run_sem" $EXTRA_ARGS
 # end script

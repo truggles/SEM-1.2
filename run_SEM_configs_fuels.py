@@ -720,6 +720,21 @@ def clean_files(path, global_name, results, case_file):
     files = get_output_file_names(path+'{}_2020'.format(global_name))
     print(files)
 
+    # Try to read results, if Gurobi failed ungracefully, try running again
+    # If it fails a second time, give up. (don't want to get stuck in some while loop
+    # waiting for Gurobi to suceed on an impossible model)
+    if len(files) == 0:
+        print(f"ERROR: XXX Initial solve failed, trying again for {global_name} {case_file}")
+        cnt = 0
+        while cnt < 10:
+            print(f"\n --- Entering retry loop: {cnt}\n")
+            subprocess.call(["python", "Simple_Energy_Model.py", case_file])
+            files = get_output_file_names(path+'/'+global_name+'_2020')
+            if len(files) > 0:
+                break
+            # Else retry up to 10 times
+            cnt += 1
+
     # Copy output file
     if not os.path.exists(results):
         os.makedirs(results)
@@ -820,7 +835,7 @@ if '__main__' in __name__:
     if 'Case0' in case:
         input_file = 'fuel_test_20200302_Case0_NuclearFlatDemand.csv'
     version = f'{version}_{case}'
-    global_name = 'fuel_test_{}_{}'.format(date, version)
+    global_name = 'fuel_test_{}_{}_{}_{}'.format(date, version, n_jobs, job_num)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
 
