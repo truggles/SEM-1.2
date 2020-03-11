@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 
 from scipy.stats import rankdata, normaltest
 from collections import OrderedDict
@@ -10,6 +11,7 @@ import pickle
 from glob import glob
 import os
 from shutil import copy2
+import copy
 
 
 def return_file_info_map(region):
@@ -20,7 +22,7 @@ def return_file_info_map(region):
             'demand': ['Input_Data/ReliabilityPaper/CONUS_demand_unnormalized.csv', 8, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/CONUS_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'], 
             'solar': ['Input_Data/ReliabilityPaper/CONUS_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
-            'years' : [2016,2017,2018],
+            'years' : [2015, 2016,2017,2018],
         },
         'ERCOT': { 
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
@@ -34,6 +36,7 @@ def return_file_info_map(region):
             'solar': ['Input_Data/TEXAS/TI_solar_thresh.csv', 5, 'solar capacity', 'year'],
             'years' : [y for y in range(2003, 2019)],
         },
+        # Analysis shows that the difference in Threshold 0.26 vs top 25% for Wind is what leads to large changes in results
         'TXv1': {
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
@@ -96,7 +99,7 @@ def make_dirs(base, tgt):
         f1 = f.strip('.png')
         info = f1.split('_')
         for piece in info:
-            if 'solarSF' in piece or 'windSF' in piece:
+            if 'solarGen' in piece or 'windGen' in piece:
                 if not os.path.exists(base+'/'+piece):
                     os.makedirs(base+'/'+piece)
                 copy2(f, base+'/'+piece)
@@ -132,7 +135,8 @@ def get_renewable_fraction(year, wind_install_cap, solar_install_cap, im, demand
 def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
 
 
-    fig, ax = plt.subplots()#figsize=(4.5, 4))
+    fig, ax = plt.subplots()
+    matplotlib.rcParams.update({'font.size': 14})
     im = ax.imshow(matrix,interpolation='none',origin='lower')
     #im = ax.imshow(matrix,interpolation='spline16',origin='lower')
 
@@ -140,7 +144,7 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
     levels = [25, 50, 75, 100]
     cs = ax.contour(matrix, levels, colors='k', origin='lower')
     # inline labels
-    ax.clabel(cs, inline=1, fontsize=10)
+    ax.clabel(cs, inline=1, fontsize=12)
 
     wind_labs, solar_labs = [], []
     for v in wind_values:
@@ -171,22 +175,24 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
 
 
     plt.close()
+    matplotlib.rcParams.update({'font.size': 14})
     fig, ax = plt.subplots()#figsize=(4.5, 4))
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
     # Contours
-    n_levels = np.arange(0,.1,.01)
-    n_levels = np.append(n_levels, [0.025,])
-    n_levels.sort()
-    #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
-    cs = ax.contour(matrix, n_levels, colors='w')
-    # inline labels
-    ax.clabel(cs, inline=1, fontsize=10)
+    if not 'pval' in save_name:
+        n_levels = np.arange(0,10,0.5)
+        #n_levels = np.append(n_levels, [0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
+        n_levels.sort()
+        #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+        cs = ax.contour(matrix, n_levels, colors='w')
+        # inline labels
+        ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
 
 
     wind_labs, solar_labs = [], []
     for v in wind_values:
-        if int(v*2)==v*2:
+        if int(v*4)==v*4:
             wind_labs.append(f"{int(v*100)}%")
         else:
             wind_labs.append('')
@@ -197,16 +203,36 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("Wind Generation as % of Total Demand")
-    plt.ylabel("Solar Generation as % of Total Demand")
+    plt.xlabel("Wind Generation\n(% Mean Demand)")
+    plt.ylabel("Solar Generation\n(% Mean Demand)")
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"Spread of Thershold Locations ($\sigma$)")
+    cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    cb_range = [np.min(matrix), np.max(matrix)]
     plt.title(f"")
     plt.tight_layout()
 
 
     plt.savefig(f"{plot_base}/{region}_{save_name}.png")
     plt.clf()
+
+    ## Make empty plots
+    #plt.close()
+    #fig, ax = plt.subplots()
+    #m_nan = copy.deepcopy(matrix)
+    #for i in range(len(m_nan)):
+    #    for j in range(len(m_nan[i])):
+    #        m_nan[i][j] = np.nan
+    #im = ax.imshow(m_nan,interpolation='none',origin='lower',vmin=cb_range[0],vmax=cb_range[1])
+    #plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
+    #plt.yticks(range(len(solar_values)), solar_labs)
+    #plt.xlabel("Wind Generation\n(% Mean Demand)")
+    #plt.ylabel("Solar Generation\n(% Mean Demand)")
+    #cbar = ax.figure.colorbar(im)
+    #cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    #plt.title(f"")
+    #plt.tight_layout()
+    #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.png")
+    #plt.clf()
 
 
 def get_avg_CF(dfs, name, im):
@@ -232,9 +258,92 @@ def print_vals(df, year, im):
         print(f"{dfX.loc[idx, 'year']}:{dfX.loc[idx, 'month']}:{dfX.loc[idx, 'day']}:{dfX.loc[idx, 'hour']}:{dfX.loc[idx, 'demand (MW)']}")
         if i > 9: break
 
-def get_annual_df(year, df, tgt, im):
+
+
+def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
+
+    hours = []
+    months = []
+    matplotlib.rcParams.update({'font.size': 12})
+
+    # hours to local time:
+    if 'ERCOT' in base:
+        adj = -6
+        nm = 'CST'
+    if 'NYISO' in base:
+        adj = -5
+        nm = 'EST'
+    if 'CONUS' in base:
+        adj = -6
+        nm = 'CST'
+
+    m = [[0 for _ in range(24)] for _ in range(12)]
+    for year, df in dfs.items():
+        mod_df = df
+        mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
+        mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
+
+        for i, idx in enumerate(mod_df.index):
+            if i == top_X:
+                break
+            hour = (mod_df.loc[idx, 'hour'] + adj)%24
+            month = mod_df.loc[idx, 'month']
+            hours.append(hour)
+            months.append(month)
+            m[month-1][hour-1] += 1
+
+    hours_ary = np.array(hours)
+    months_ary = np.array(months)
+    plt.close()
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(8,4))
+    n1, bins1, patches1 = axs[0].hist(hours_ary, np.arange(0.5,24.51,1),  density=True, histtype=u'step', linewidth=4)
+    n2, bins2, patches2 = axs[1].hist(months_ary, np.arange(0.5,12.51,1), density=True,  histtype=u'step', linewidth=4)
+
+    axs[0].set_xlim(0.5,24.5)
+    axs[0].set_xlabel(f'Hour ({nm})')
+    axs[1].set_xlim(0.5,12.5)
+    plt.xticks([i for i in range(1, 13)], ('Jan','Feb','Mar','Apr','May','Jun',
+        'Jul','Aug','Sep','Oct','Nov','Dec'), rotation=45)
+    axs[0].set_ylabel(f'Top {top_X} Hours - Normalized')
+    axs[1].set_ylabel(f'Top {top_X} Hours - Normalized')
+    plt.subplots_adjust(wspace=0.3)
+
+    
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+
+    plt.close()
+    matplotlib.rcParams.update({'font.size': 10})
+    matrix = np.array(m)
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix/np.sum(matrix.flatten())*100.,interpolation='none',origin='lower',aspect='auto')
+    plt.xticks(range(0, 24), [f'{i:02}' for i in range(0, 24)], rotation=60)
+    plt.yticks([i for i in range(0, 12)], ('Jan','Feb','Mar','Apr','May','Jun',
+        'Jul','Aug','Sep','Oct','Nov','Dec'))
+    plt.xlabel(f'Hour ({nm})')
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel(f'Top {top_X} Hours (%)')
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_2D_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+
+
+
+# CONUS is short enough we want to squeeze 4 years out.
+# The others are simple
+def get_annual_df(region, year, df, tgt, im):
 
     df2 = df[ df[ im[tgt][3]] == year]
+    # FIXME - add this section once we have 2019 wind / solar data for CONUS
+    #if region == 'CONUS':
+    #    df3 = df[ df[ im[tgt][3]] == year+1]
+    #    df2a = df2[ df2['month'] >= 8]
+    #    df3a = df3[ df3['month'] < 8]
+    #    print(f"len df2a {len(df2a.index)}")
+    #    print(f"len df3a {len(df3a.index)}")
+    #    df2a = df2a.append(df3a, ignore_index=True)
+    #    print(f"len df2a {len(df2a.index)}")
+    #    df2 = df2a
+    #    print(f"len df2 {len(df2.index)}")
+    #    print(df2.head())
+    #    print(df2.tail())
 
     # Normalize
     if tgt == 'demand':
@@ -249,20 +358,23 @@ def return_ordered_df(demand, wind, solar, im, demand_threshold):
     #rank_mthd='ordinal'
     rank_mthd='min'
     to_map = OrderedDict()
+    to_map['month'] = demand['month'].values
+    to_map['day'] = demand['day'].values
+    to_map['hour'] = demand['hour'].values
     to_map['demand'] = demand[im['demand'][2]].values
-    to_map['demand_rank'] = rankdata(demand[im['demand'][2]].values, method=rank_mthd)
-    to_map['demand_pct_of_max'] = demand[im['demand'][2]].values/np.max(demand[im['demand'][2]])
+    #to_map['demand_rank'] = rankdata(demand[im['demand'][2]].values, method=rank_mthd)
+    #to_map['demand_pct_of_max'] = demand[im['demand'][2]].values/np.max(demand[im['demand'][2]])
     to_map['wind'] = wind[im['wind'][2]].values
-    to_map['wind_rank'] = rankdata(wind[im['wind'][2]].values, method=rank_mthd)
-    to_map['wind_pct_of_max'] = wind[im['wind'][2]].values/np.max(wind[im['wind'][2]])
+    #to_map['wind_rank'] = rankdata(wind[im['wind'][2]].values, method=rank_mthd)
+    #to_map['wind_pct_of_max'] = wind[im['wind'][2]].values/np.max(wind[im['wind'][2]])
     to_map['solar'] = solar[im['solar'][2]].values
-    to_map['solar_rank'] = rankdata(solar[im['solar'][2]].values, method=rank_mthd)
-    to_map['solar_pct_of_max'] = solar[im['solar'][2]].values/np.max(solar[im['solar'][2]])
+    #to_map['solar_rank'] = rankdata(solar[im['solar'][2]].values, method=rank_mthd)
+    #to_map['solar_pct_of_max'] = solar[im['solar'][2]].values/np.max(solar[im['solar'][2]])
 
     df = pd.DataFrame(to_map)
-    df = df.sort_values(by='demand_rank', ascending=0)
+    #df = df.sort_values(by='demand_rank', ascending=0)
 
-    df = df.drop(df[df['demand_rank'] < (len(df.index) * (100. - demand_threshold)/100.)].index, axis=0)
+    #df = df.drop(df[df['demand_rank'] < (len(df.index) * (100. - demand_threshold)/100.)].index, axis=0)
     return df
 
 
@@ -320,11 +432,12 @@ def check_pct(vals, threshold_pct, threshold):
 
 def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0], threshold_pcts=[]):
 
+    matplotlib.rcParams.update({'font.size': 14})
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10,5))
-    fig.suptitle(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
+    #fig.suptitle(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
     axs[0].set_title(f'Load Duration Curve')
-    axs[1].set_title(f'PDF')
+    axs[1].set_title(f'PDF of Hourly Values')
 
     good_max = 0
     threshold_vals = []
@@ -332,9 +445,9 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
         mod_df = df
         mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
-        axs[0].plot(np.linspace(0,1,len(mod_df.index)), mod_df['mod_dem'], linestyle='-', linewidth=0.5)
-        to_bins = np.linspace(-10,2,601)
-        n, bins, patches = axs[1].hist(mod_df['mod_dem'], to_bins, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
+        axs[0].plot(np.linspace(0,100,len(mod_df.index)), mod_df['mod_dem']*100, linestyle='-', linewidth=0.5)
+        to_bins = np.linspace(-10*100,2*100,601)
+        n, bins, patches = axs[1].hist(mod_df['mod_dem']*100, to_bins, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
         if np.max(n) > good_max:
             good_max = np.max(n)
 
@@ -347,29 +460,30 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
             if i == 0:
                 #print(f"Adding threshold lines for {t}")
                 threshold_vals.append(pct)
-                axs[0].plot(np.linspace(-0.1,1,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
-                axs[1].plot(np.linspace(0,1000,10), [pct for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+                axs[0].plot(np.linspace(-0.1,100,10), [pct*100 for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
+                axs[1].plot(np.linspace(0,1000,10), [pct*100 for _ in range(10)], color=axs[0].lines[-1].get_color(), linestyle='-', linewidth=0.5) 
     if len(threshold_vals) > 0:
-        plt.text(0.70, 0.85, f'range: {round(np.max(threshold_vals) - np.min(threshold_vals),3)}\n$\sigma$: {round(np.std(threshold_vals),3)}',
-                horizontalalignment='center', verticalalignment='center', transform=axs[0].transAxes, fontsize=14)
+        plt.text(0.55, 0.53, f'range: {(round(np.max(threshold_vals) - np.min(threshold_vals),3))*100}%\n$\sigma$: {round(np.std(threshold_vals)*100,2)}%',
+                horizontalalignment='left', verticalalignment='center', transform=axs[0].transAxes, fontsize=14)
 
 
+    plt.subplots_adjust(wspace=0.4)
     #axs[0].yaxis.grid(True)
-    axs[0].set_xlim(-0.005, 1)
+    axs[0].set_xlim(-0.5, 100)
     #axs[0].set_ylim(0, axs[0].get_ylim()[1])
-    axs[0].set_ylim(0, 2)
-    axs[0].set_ylabel('Demand - Wind - Solar (kWh)')
+    axs[0].set_ylim(0, 200)
+    axs[0].set_ylabel('Demand - VRE\n(% Mean Demand)')
     axs[0].set_xlabel('Operating duration (% of year)')
     #axs[1].yaxis.grid(True)
-    axs[1].set_ylabel('Demand - Wind - Solar (kWh)')
+    axs[1].set_ylabel('Demand - VRE\n(% Mean Demand)')
     axs[1].set_xlabel('Hours / Bin')
     axs[1].set_xlim(0, good_max * 1.2)
     #axs[1].set_ylim(0, axs[1].get_ylim()[1])
-    axs[1].set_ylim(0, 2)
+    axs[1].set_ylim(0, 200)
     axs[1].yaxis.set_tick_params(labelleft=True)
     #axs[1].set_xlabel('Demand - Wind - Solar (kWh)')
     #plt.tight_layout()
-    plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
 
 
 # Make box plots showing the wind and solar CFs for the top X thresholds
@@ -387,22 +501,52 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
                 if j == threshold: break
 
     plt.close()
-    fig, ax = plt.subplots(figsize=(7,5))
+    matplotlib.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots(figsize=(5,5))
     ax.yaxis.grid(True)
-    ax.set_title(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}: whiskers at 5%/95%')
+    #ax.set_title(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}: whiskers at 5%/95%')
     medianprops = dict(linestyle='-', linewidth=2.5)
     bplot = ax.boxplot(to_plot, whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
     x_labels = []
     for val in box_thresholds:
-        x_labels.append(f'Wind CFs\nTop {val} Hours')
+        x_labels.append(f'Wind:\nTop {val} Hours')
     for val in box_thresholds:
-        x_labels.append(f'Solar CFs\nTop {val} Hours')
+        x_labels.append(f'Solar:\nTop {val} Hours')
     plt.xticks([i for i in range(1, len(box_thresholds)*2+1)], x_labels, rotation=30)
-    ax.set_ylabel('Wind or Solar CF')
+    ax.set_ylabel('Wind/Solar Capacity Factors')
+    ax.set_ylim(0, 1)
     plt.tight_layout()
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
-    plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+
+
+def make_threshold_hist(vect, save_name, cnt, base, gens):
+
+    ary = np.array(vect)*100
+    mean = np.mean(ary)
+    std = np.std(ary)
+    #for bin_w in [.1, .25, .5, 1, 2, 2.5, 5]:
+    for bin_w in [1,]:
+        plt.close()
+        matplotlib.rcParams.update({'font.size': 14})
+        fig, ax = plt.subplots()
+        n1, bins1, patches1 = ax.hist(ary, np.arange(150, 185, bin_w), facecolor='k', alpha=0.5, label='threshold\npositions') # histtype=u'step', linewidth=4)
+        y_lim = ax.get_ylim()[1]
+        ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}%') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}%') # histtype=u'step', linewidth=4)
+        # Below values are w.r.t. to ERCOT's 2019 mean demand of 44 GW
+        #ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}% (73 GW)') # histtype=u'step', linewidth=4)
+        #ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}% (1.5 GW)') # histtype=u'step', linewidth=4)
+        ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.2, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
+
+        plt.legend()
+        ax.set_xlim(150,180)
+        ax.set_ylim(0,6)
+        ax.set_xlabel(f'Demand - VRE\n(% Mean Demand)')
+        ax.set_ylabel(f'Entries / Bin')
+        plt.tight_layout()
+        plt.savefig(f"{base}/{save_name}_threshold_hist_{bin_w}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
 
 
 
@@ -418,16 +562,17 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
         axs[0].plot(vals, df['solar'], '.', alpha=0.2, label=year)
         vals.sort()
-        axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
+        #axs[0].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='-') 
         for i, t in enumerate(thresholds):
             vects[i].append(vals[-1 * t])
 
         for i, t in enumerate(threshold_pcts):
             pct = get_integrated_threshold(vals, t)
-            if i == 0:
-                axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
+            #if i == 0:
+            #    axs[0].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[0].lines[-1].get_color(), linestyle='--') 
             vects[len(thresholds)+i].append(pct)
-    axs[0].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    #axs[0].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    axs[0].set_xlabel(f'Demand - VRE\n(% Mean Demand)')
     axs[0].set_ylabel('solar CF')
     axs[0].set_ylim(0, 1)
     axs[0].set_xlim(0, 2)
@@ -436,17 +581,22 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         axs[1].plot(vals, df['wind'], '.', alpha=0.2, label=year)
         vals.sort()
         pct = get_integrated_threshold(vals, threshold_pcts[0]) # Just plot the first one
-        axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
-        axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
-    axs[1].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+        #axs[1].plot([vals[-1]  for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='-') 
+        #axs[1].plot([pct for _ in range(10)], np.arange(0,1,.1), color=axs[1].lines[-1].get_color(), linestyle='--') 
+    #axs[1].set_xlabel(f'demand - (wind x {round(wind_install_cap,3)}) - (solar x {round(solar_install_cap,3)})')
+    axs[1].set_xlabel(f'Demand - VRE\n(% Mean Demand)')
     axs[1].set_ylabel('wind CF')
     axs[1].set_ylim(0, 1)
     axs[1].set_xlim(0, 2)
-    plt.legend()
+    #plt.legend()
     plt.tight_layout()
-    if wind_install_cap == 0:
-        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:03}_solarSF{str(round(gens[1],3)).replace('.','p')}_windSF{str(round(gens[0],3)).replace('.','p')}.png")
+    if wind_install_cap == 0 and solar_install_cap == 0:
+        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
     plt.clf()
+
+    # Make hist of threshold locations
+    if cnt == 1:
+        make_threshold_hist(vects[len(thresholds)], save_name, cnt, base, gens)
 
     out_range = []
     out_std = []
@@ -458,7 +608,7 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
         out_std.append(np.std(vect))
         out_mean.append(np.mean(vect))
         out_mean_to_2nd_highest.append(get_2nd_highest(vect))
-        out_norm_test_pval.append(normaltest(vect))
+        out_norm_test_pval.append(normaltest(vect)[1]) # save p values only
 
 
     return out_range, out_std, out_mean, out_mean_to_2nd_highest, out_norm_test_pval
@@ -468,12 +618,12 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 
+#region = 'TEXAS' # Don't use
+#region = 'TXv1' # Don't use
+#region = 'TXv2' # Don't use
 region = 'CONUS'
 #region = 'NYISO'
-#region = 'ERCOT'
-#region = 'TEXAS'
-#region = 'TXv1'
-#region = 'TXv2'
+region = 'ERCOT'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -491,21 +641,25 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
-wind_max = 2.
-steps = 41
-steps = 3
+wind_max = 1.
+steps = 81
+#solar_max = .25
+#wind_max = .5
+#steps = 21
+#steps = 3
 solar_gen_steps = np.linspace(0, solar_max, steps)
 wind_gen_steps = np.linspace(0, wind_max, steps)
 print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
-plot_base = f'plots_new_Jan23_{region}x'
+#plot_base = f'plots_new_Jan28x_{region}' # Used 81 steps solar=1 wind=2
+plot_base = f'plots_new_Jan30_{region}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
-pkl_file = 'tmp6' # At home 41x41
-pkl_file = 'Jan23_41x41'
-pkl_file += f'_{region}x'
+pkl_file = 'Jan30_81x81'
+#pkl_file += f'_{region}x' # Used 81 steps solar=1 wind=2
+pkl_file += f'_{region}'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -513,9 +667,9 @@ if test_ordering:
     print(len(years))
     #years = [y for y in range(2005, 2009)]
     for year in years:
-        d_yr = get_annual_df(year, demand, 'demand', im)
-        w_yr = get_annual_df(year, wind, 'wind', im)
-        s_yr = get_annual_df(year, solar, 'solar', im)
+        d_yr = get_annual_df(region, year, demand, 'demand', im)
+        w_yr = get_annual_df(region, year, wind, 'wind', im)
+        s_yr = get_annual_df(region, year, solar, 'solar', im)
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
 
     avg_wind_CF = get_avg_CF(dfs, 'wind', im)
@@ -528,26 +682,31 @@ if test_ordering:
     print("Solar cap increments:", solar_cap_steps)
 
     mapper = OrderedDict()
-    cnt = 0
     for i, solar_install_cap in enumerate(solar_cap_steps):
         solar_gen = solar_gen_steps[i]
         mapper[str(round(solar_gen,2))] = OrderedDict()
-        print(f"Solar cap {solar_install_cap}, solar gen {solar_gen}")
-        for j, wind_install_cap in enumerate(wind_cap_steps):
+    cnt = 0
+    for j, wind_install_cap in enumerate(wind_cap_steps):
+        wind_gen = wind_gen_steps[j]
+        print(f"Wind cap {wind_install_cap}, wind gen {wind_gen}")
+        for i, solar_install_cap in enumerate(solar_cap_steps):
+            cnt += 1
+            solar_gen = solar_gen_steps[i]
+            if cnt%100 == 0:
+                print(f" --- {cnt}, wind gen {wind_gen} solar gen {solar_gen}")
             #if j > 0:
             #    cnt += 1
             #    continue
-            wind_gen = wind_gen_steps[j]
             vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
 
-            if wind_gen == 0:
-                box_thresholds = [20, 500]
-                make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
+            #plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+            #if wind_gen == 0:
+            #    box_thresholds = [20,]
+            #    make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
-                load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
+            #    load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
 
-            cnt += 1
 
     #print("Solar Wind max_range 100th_range")
     #for solar, info in mapper.items():
@@ -578,7 +737,7 @@ if make_plots:
             matrix.append([])
             for j, wind_install_cap in enumerate(wind_gen_steps):
                 val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
-                matrix[i].append(val)
+                matrix[i].append(val*100)
         ary = np.array(matrix)
         plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_std_{threshold:03}')
 

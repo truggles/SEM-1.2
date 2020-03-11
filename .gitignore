@@ -5,3 +5,5 @@ test_reli_20*.e*
 test_reli_20*.o*
 *.pkl
 *.png
+*.DS_Store
+*.pdf
