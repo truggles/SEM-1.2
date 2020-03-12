@@ -726,14 +726,17 @@ def clean_files(path, global_name, results, case_file):
     if len(files) == 0:
         print(f"ERROR: XXX Initial solve failed, trying again for {global_name} {case_file}")
         cnt = 0
-        while cnt < 10:
+        while cnt < 5:
             print(f"\n --- Entering retry loop: {cnt}\n")
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
-            files = get_output_file_names(path+'/'+global_name+'_2020')
+            files = get_output_file_names(path+'{}_2020'.format(global_name))
             if len(files) > 0:
                 break
-            # Else retry up to 10 times
+            # Else retry up to 5 times
             cnt += 1
+        if len(files) == 0:
+            print(f"ERROR: XXXXXX All solves failed. Skipping {global_name} {case_file}")
+            return
 
     # Copy output file
     if not os.path.exists(results):
@@ -817,6 +820,7 @@ if '__main__' in __name__:
     multiplication_factor = 1.2 # default
     n_jobs = 1
     job_num = 1
+    full_year = False # default to run over April only
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -830,6 +834,8 @@ if '__main__' in __name__:
             n_jobs = int(arg.split('_')[1])
         if 'jobNum' in arg:
             job_num = int(arg.split('_')[1])
+        if 'FULL_YEAR' in arg:
+            full_year = True
 
     input_file = 'fuel_test_20200302_AllCases_EIAPrices.csv'
     if 'Case0' in case:
@@ -873,6 +879,10 @@ if '__main__' in __name__:
         'fuel_demand' : 1, # equal fuel output as electric demand
         'fuel_value' : 0,
     }
+    if full_year:
+        settings['start_month'] = 1
+        settings['end_month'] = 12
+
     # Adjust included techs based on desired case:
     if case == 'Case0_NuclearFlatDemand':
         settings['fixed_cost_solar'] = -1

@@ -6,6 +6,7 @@
 #SBATCH --partition=clab
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=truggles@carnegiescience.edu
+#SBATCH --mem=10000
 #
 cd $SLURM_SUBMIT_DIR
 #
