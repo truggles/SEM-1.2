@@ -844,6 +844,7 @@ if '__main__' in __name__:
     global_name = 'fuel_test_{}_{}_{}_{}'.format(date, version, n_jobs, job_num)
     path = 'Output_Data/{}/'.format(global_name)
     results = path+'results/'
+    results_search = 'Output_Data/fuel_test_{}_{}*/results/'.format(date, version)
 
     # Print settings:
     print(f'\nGlobal name                    {global_name}')
@@ -968,8 +969,8 @@ if '__main__' in __name__:
 
     if make_results_file:
         base = os.getcwd()
-        results = base+'/'+results
-        files = get_output_file_names(results+'{}_2020'.format(global_name))
+        print(f'Checking path {base}/{results_search}')
+        files = get_output_file_names(base+'/'+results_search+'fuel_test_*')
         results = get_results(files, global_name)
 
     if not make_plots:
