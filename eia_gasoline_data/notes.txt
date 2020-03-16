@@ -1,0 +1,7 @@
+Data from https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm
+
+U.S. total and by state
+
+I am using the "Gasoline - All Grades" category which appears to average over regular, mid, and premium fuel types.
+
+
