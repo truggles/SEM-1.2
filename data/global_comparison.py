@@ -10,7 +10,7 @@ kWh_to_GGE = 33.4
 kWh_LHV_per_kg_H2 = 33.33
 liters_to_gallons = 3.78541
 
-df = pd.read_csv('data/Global_elec_and_gas_prices.csv', header=3)
+df = pd.read_csv('Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
 
 
