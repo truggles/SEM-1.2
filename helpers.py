@@ -184,7 +184,8 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    date = '20200303_v1'
+    save_dir = 'out_plots2'
+    date = '20200311_v8'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
@@ -217,7 +218,7 @@ if '__main__' in __name__:
         #    if str(dem) not in tgt_fuel_dems:
         #        continue
         out_file_dir = f'{base}fuel_test_{date}_{case}/'
-        out_file_name = f'fuel_test_{date}_{case}_Run_*_fuelDXXXkWh_*.csv'
+        out_file_name = f'fuel_test_{date}_{case}_*Run_*_fuelDXXXkWh_*.csv'
         plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, info[0], save_dir, info[1], True)
 
 
