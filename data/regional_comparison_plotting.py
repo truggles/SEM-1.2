@@ -199,3 +199,7 @@ plt.legend(loc='upper left', ncol=2)
 plt.savefig('analysis_fuels_states.pdf')
 
 plot_prices()
+
+check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
+
+
