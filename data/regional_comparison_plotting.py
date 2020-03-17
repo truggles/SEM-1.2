@@ -2,6 +2,8 @@
 
 import pandas as pd
 import numpy as np
+from scipy import stats
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cartopy.crs as ccrs
@@ -96,9 +98,19 @@ def plot_prices():
     plt.savefig('geo_map_states_gas_over_elec.pdf')
 
 
+def check_stats(df, cor_col1, cor_col2):
+
+    coeff = np.corrcoef(df[cor_col1], df[cor_col2])
+    print(f'Pearson product-moment correlation coefficient between "{cor_col1}" and "{cor_col2}" = {coeff}\n')
+
+    print(stats.linregress(df[cor_col1], df[cor_col2]), '\n')
+
+
 
 df = pd.read_csv('Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
+
+check_stats(df, 'Elec Price (USD/kWh)', 'Gasoline Price (USD/l)')
 
 
 h2 = []
@@ -149,7 +161,6 @@ ax.set_ylim(0, ax.get_ylim()[1])
 plt.legend()
 plt.savefig('analysis_fuels.pdf')
 
-df.to_csv('analysis_fuels.csv')
 
 
 # Load U.S. State's info
