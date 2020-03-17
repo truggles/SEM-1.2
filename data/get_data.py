@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+kWh_to_GGE = 33.4
 
 def marker_list():
     return ['o', 'v', '^', 's', 'P', '*', 'H', 'X', 'd', '<', '>']
@@ -60,7 +63,7 @@ def get_elec_vals(gas_vals):
     return gas_vals
 
 
-def plot_prices(prices):
+def plot_prices(df_prices):
 
     import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
@@ -78,34 +81,63 @@ def plot_prices(prices):
     ax.background_patch.set_visible(False)
     ax.outline_patch.set_visible(False)
     
-    ax.set_title('Gas / Elec Price')
+    # https://matplotlib.org/3.1.0/tutorials/colors/colorbar_only.html
+    cmap = mpl.colors.ListedColormap(['royalblue', 'cyan',
+                                      'yellow', 'orange'])
+    cmap.set_over('red')
+    cmap.set_under('blue')
+    
+    bounds = [0.5, 0.75, 1.0, 1.25, 1.5]
+    c_bounds = ['blue', 'royalblue', 'cyan', 'yellow', 'orange', 'red']
     
     for astate in shpreader.Reader(states_shp).records():
-    
+
         edgecolor = 'black'
-    
-        try:
-            # use the name of this state to get pop_density
-            state_dens = prices[ astate.attributes['name'] ][2] / prices[ astate.attributes['name'] ][3]
-            print(astate.attributes['name'], state_dens)
-        except:
-            state_dens = 0
-    
-        # simple scheme to assign color to each state
-        if state_dens < 1e-6:
-            facecolor = "white"
-        elif state_dens < 0.3:
-            facecolor = "lightyellow"
-        elif state_dens < 0.5:
-            facecolor = "pink"
-        else:
-            facecolor = "red"
-    
+        geo_state = astate.attributes['name']
+        facecolor = "white"
+        
+        # Find matching entry in df_prices
+        for idx in df_prices.index:
+
+            prices_state = df_prices.loc[idx, 'State']
+        
+            if geo_state != prices_state:
+                continue
+        
+            frac = df_prices.loc[idx, 'gas mean (USD/gallon)'] / kWh_to_GGE
+            frac /= df_prices.loc[idx, 'elec mean (USD/kWh)']
+            print(astate.attributes['name'], frac)
+        
+            # simple scheme to assign color to each state
+            while True:
+                for i in range(len(bounds)):
+                    if frac < bounds[i]:
+                        facecolor = c_bounds[i]
+                        break
+                if frac >= bounds[-1]:
+                    facecolor = c_bounds[-1]
+                break
+
+        
         # `astate.geometry` is the polygon to plot
         ax.add_geometries([astate.geometry], ccrs.PlateCarree(),
                           facecolor=facecolor, edgecolor=edgecolor)
+
+    cax = fig.add_axes([.2, .12, .6, 0.04]) # Start X, start Y, X width, Y width
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap,
+                                    norm=norm,
+                                    boundaries=[1e-8] + bounds + [100],
+                                    extend='both',
+                                    extendfrac='auto',
+                                    ticks=bounds,
+                                    spacing='uniform',
+                                    #spacing='proportional',
+                                    orientation='horizontal')
+    cb.set_label(r'Gas Price (USD/kWh$_{LHV}$) / Electric Price (USD/kWh)')
+    fig.subplots_adjust(top=1, left=.05, right=.95)
     
-    plt.show()
+    plt.savefig('geo_map_states_gas_over_elec.png')
 
 
 def simple_plot(prices):
@@ -130,15 +162,17 @@ def to_df(prices):
 
     df.to_csv('us_gas_and_elec.csv')
 
+    return df
+
 
 
 gas_vals = get_gas_vals()
 prices = get_elec_vals(gas_vals)
 
-to_df(prices)
+df_prices = to_df(prices)
 
-simple_plot(prices)
+#simple_plot(prices)
 
-plot_prices(prices)
+plot_prices(df_prices)
 
 
