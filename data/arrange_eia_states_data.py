@@ -14,22 +14,24 @@ def load_df(f_name):
     return df
 
 
-states = {
-    'U.S.' : 'PET_PRI_GND_DCUS_NUS_W.xls',
-    'California' :  'PET_PRI_GND_DCUS_SCA_W.xls',
-    'Colorado' : 'PET_PRI_GND_DCUS_SCO_W.xls',
-    'Florida' : 'PET_PRI_GND_DCUS_SFL_W.xls',
-    'Massachusetts' : 'PET_PRI_GND_DCUS_SMA_W.xls',
-    'Minnesota' : 'PET_PRI_GND_DCUS_SMN_W.xls',
-    'New York' : 'PET_PRI_GND_DCUS_SNY_W.xls',
-    'Ohio' : 'PET_PRI_GND_DCUS_SOH_W.xls',
-    'Texas' : 'PET_PRI_GND_DCUS_STX_W.xls',
-    'Washington' : 'PET_PRI_GND_DCUS_SWA_W.xls',
-
-}
 
 
-def get_gas_vals():
+def get_gas_vals_2018():
+
+    states = {
+        'U.S.' : 'PET_PRI_GND_DCUS_NUS_W.xls',
+        'California' :  'PET_PRI_GND_DCUS_SCA_W.xls',
+        'Colorado' : 'PET_PRI_GND_DCUS_SCO_W.xls',
+        'Florida' : 'PET_PRI_GND_DCUS_SFL_W.xls',
+        'Massachusetts' : 'PET_PRI_GND_DCUS_SMA_W.xls',
+        'Minnesota' : 'PET_PRI_GND_DCUS_SMN_W.xls',
+        'New York' : 'PET_PRI_GND_DCUS_SNY_W.xls',
+        'Ohio' : 'PET_PRI_GND_DCUS_SOH_W.xls',
+        'Texas' : 'PET_PRI_GND_DCUS_STX_W.xls',
+        'Washington' : 'PET_PRI_GND_DCUS_SWA_W.xls',
+    
+    }
+    
     gas_str = 'Weekly XXX All Grades All Formulations Retail Gasoline Prices  (Dollars per Gallon)'
     out = {}
     
@@ -46,9 +48,9 @@ def get_gas_vals():
     return out
 
 
-def get_elec_vals(gas_vals):
+def get_elec_vals(gas_vals, year):
 
-    df = pd.read_excel('eia_elec_industry_by_state_table5_c.xlsx', sheet_name='Table 5C', header=2)
+    df = pd.read_excel(f'eia_elec_industry_by_state_table5_c_{year}.xlsx', sheet_name='Table 5C', header=2)
     print(df.head())
 
     for idx in df.index:
@@ -62,20 +64,20 @@ def get_elec_vals(gas_vals):
 
 
 
-def to_df(prices):
+def to_df(prices, year):
     df = pd.DataFrame({'State': [], 'gas min (USD/gallon)': [], 'gas max (USD/gallon)': [], 'gas mean (USD/gallon)': [], 'elec mean (USD/kWh)': []})
     for state, vals in prices.items():
         df = df.append( pd.DataFrame({'State': [state,], 'gas min (USD/gallon)': [vals[0],], 'gas max (USD/gallon)': [vals[1],], 'gas mean (USD/gallon)': [vals[2], ], 'elec mean (USD/kWh)': [vals[3], ]}), ignore_index=True )
 
-    df.to_csv('us_gas_and_elec.csv')
+    df.to_csv(f'us_gas_and_elec_{year}.csv')
 
     return df
 
 
 
-gas_vals = get_gas_vals()
-prices = get_elec_vals(gas_vals)
-df_prices = to_df(prices)
+gas_vals = get_gas_vals_2018()
+prices = get_elec_vals(gas_vals, 2018)
+df_prices = to_df(prices, 2018)
 
 
 

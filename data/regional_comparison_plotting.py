@@ -22,10 +22,10 @@ def marker_list():
 
 
 
-def plot_prices():
+def plot_prices(year):
 
 
-    df_prices = pd.read_csv('us_gas_and_elec.csv')
+    df_prices = pd.read_csv(f'us_gas_and_elec_{year}.csv')
 
     fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertConformal())
@@ -164,42 +164,43 @@ plt.savefig('analysis_fuels.pdf')
 
 
 # Load U.S. State's info
-df2 = pd.read_csv('us_gas_and_elec.csv')
+for year in [2018,]:
+    df2 = pd.read_csv(f'us_gas_and_elec_{year}.csv')
+        
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)'], label='country averages')
+    ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)'], 'C1-', label='LH electrofuel')
+    markers = marker_list()
+    for i, idx in enumerate(df2.index):
+        if df2.loc[idx, 'State'] == 'U.S.':
+            continue
+        ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)'], label=df2.loc[idx, 'State'], marker=markers[i])
+    ax.set_xlabel('electric price ($/kWh)')
+    ax.set_ylabel('gasoline price ($/gallon)')
+    ax.set_xlim(0, ax.get_xlim()[1])
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend(loc='upper left', ncol=2)
+    plt.savefig('analysis_gas_states.pdf')
     
-plt.close()
-fig, ax = plt.subplots()
-ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)'], label='country averages')
-ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)'], 'C1-', label='LH electrofuel')
-markers = marker_list()
-for i, idx in enumerate(df2.index):
-    if df2.loc[idx, 'State'] == 'U.S.':
-        continue
-    ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)'], label=df2.loc[idx, 'State'], marker=markers[i])
-ax.set_xlabel('electric price ($/kWh)')
-ax.set_ylabel('gasoline price ($/gallon)')
-ax.set_xlim(0, ax.get_xlim()[1])
-ax.set_ylim(0, ax.get_ylim()[1])
-plt.legend(loc='upper left', ncol=2)
-plt.savefig('analysis_gas_states.pdf')
-
-plt.close()
-fig, ax = plt.subplots()
-ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/kWh_to_GGE, label='country averages')
-ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)']/kWh_to_GGE, 'C1-', label='LH electrofuel')
-ax.plot(df['Elec Price (USD/kWh)'],  df['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2, 'C2-', label=r'electrolysis to H$_{2}$')
-for i, idx in enumerate(df2.index):
-    if df2.loc[idx, 'State'] == 'U.S.':
-        continue
-    ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)']/kWh_to_GGE, label=df2.loc[idx, 'State'], marker=markers[i])
-ax.set_xlabel('electric price ($/kWh)')
-ax.set_ylabel(r'fuel price (\$/kWh$_{LHV}$)')
-ax.set_xlim(0, ax.get_xlim()[1])
-ax.set_ylim(0, ax.get_ylim()[1])
-plt.legend(loc='upper left', ncol=2)
-plt.savefig('analysis_fuels_states.pdf')
-
-plot_prices()
-
-check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/kWh_to_GGE, label='country averages')
+    ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)']/kWh_to_GGE, 'C1-', label='LH electrofuel')
+    ax.plot(df['Elec Price (USD/kWh)'],  df['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2, 'C2-', label=r'electrolysis to H$_{2}$')
+    for i, idx in enumerate(df2.index):
+        if df2.loc[idx, 'State'] == 'U.S.':
+            continue
+        ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)']/kWh_to_GGE, label=df2.loc[idx, 'State'], marker=markers[i])
+    ax.set_xlabel('electric price ($/kWh)')
+    ax.set_ylabel(r'fuel price (\$/kWh$_{LHV}$)')
+    ax.set_xlim(0, ax.get_xlim()[1])
+    ax.set_ylim(0, ax.get_ylim()[1])
+    plt.legend(loc='upper left', ncol=2)
+    plt.savefig('analysis_fuels_states.pdf')
+    
+    plot_prices(year)
+    
+    check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
 
 
