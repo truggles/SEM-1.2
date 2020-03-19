@@ -198,9 +198,11 @@ for year in [2017, 2018,]:
     fig, ax = plt.subplots()
     ICE_mpg = 27.
     FCEV_mpgge = ICE_mpg*2.
+    dispensing_dollar_per_kg = 1.9
     ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/ICE_mpg, label='countries', alpha=0.3)
-    ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel')
+    #ax.plot(df['Elec Price (USD/kWh)'],  df['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel')
     ax.plot(df['Elec Price (USD/kWh)'],  df['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$')
+    ax.plot(df['Elec Price (USD/kWh)'],  (df['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2-.', label='electrolysis to H'+r'$_{2}$'+'\nincluding dispensing')
     markers = marker_list()
     ncol_=2
     if year == 2017:
