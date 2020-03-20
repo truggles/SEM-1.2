@@ -239,12 +239,23 @@ print(f"baseline H2 cost: {round(cost,4)} $/kWh")
 print(f"               or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
 
 
+CA_avg = 0.135 # $/kWh 0.127 * 1.06 for inflation
+print(f"\n\nFor CALIFORNIA: elec = {CA_avg} $/kWh")
+cost = af.get_fuel_system_costs(syst, CA_avg, verbose)
+print(f"California electrolyzer cost: {round(syst['FIXED_COST_ELECTROLYZER']['value'],4)} $/h/kW")
+print(f"California electrofuel cost: {round(cost,4)} $/kWh")
+print(f"                         or: {round(cost*kWh_to_GGE,4)} $/GGE")
+cost = af.get_h2_system_costs(syst, CA_avg, verbose)
+print(f"California H2 cost: {round(cost,4)} $/kWh")
+print(f"                or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
+
+
 cost = af.get_fuel_system_costs(syst, 0.0, verbose)
 print(f"free electricity electrofuel cost: {round(cost,4)} $/kWh")
-print(f"                        or: {round(cost*kWh_to_GGE,4)} $/GGE")
+print(f"                               or: {round(cost*kWh_to_GGE,4)} $/GGE")
 cost = af.get_h2_system_costs(syst, 0.0, verbose)
-print(f"baseline H2 cost: {round(cost,4)} $/kWh")
-print(f"               or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
+print(f"free electricity  H2 cost: {round(cost,4)} $/kWh")
+print(f"                       or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
 
 
 electricity_info = [0.0, 0.2, 51]
