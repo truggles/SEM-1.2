@@ -10,6 +10,7 @@ from state_abbreviations import get_state_abbrev_map
 
 MMBtu_per_barrel_2017 = 5.053 # MMBtu/barrel in 2017 per EIA, see README
 Gallons_per_barrel = 42 # U.S. gallons / barrel per EIA, see README
+kWh_to_GGE = 33.4
 
 def load_df(f_name):
 
@@ -97,13 +98,57 @@ def get_elec_vals_2017(df_gas):
     df_gas['State'] = full_states
     df_gas['elec mean (USD/kWh)'] = elec_prices
     df_gas = df_gas[['State', 'gas mean (USD/gallon)', 'elec mean (USD/kWh)']]
+    df_gas['gas/elec (post kWh conv)'] = df_gas['gas mean (USD/gallon)'] / kWh_to_GGE / df_gas['elec mean (USD/kWh)']
     
     df_gas = df_gas.reset_index(drop=True)
-    df_gas.to_csv('us_gas_and_elec_2017.csv')
 
     return df_gas
 
 
+# Use EIA data to calculate CO2 emissions/kWh for each state
+# Only available through 2017
+def add_CO2_intensity(df, year):
+
+    assert(year <= 2017)
+    df_co2 = pd.read_excel('eia_electricity_CO2_by_state_1980-2017.xlsx', sheet_name='Sheet1', header=2)
+    df_co2['MMT CO2'] = df_co2[year]
+    df_co2 = df_co2[['State', 'MMT CO2']]
+
+    df_elec_tot = pd.read_excel(f'eia_elec_industry_by_state_table2_2017.xlsx', sheet_name='Table 2', header=2)
+    df_elec_tot['Total MWh'] = df_elec_tot['Total']
+    df_elec_tot = df_elec_tot[['State', 'Total MWh']]
+    print(df_elec_tot.head())
+
+    co2 = []
+    tot_MWh = []
+
+    for idx in df.index:
+        state = df.loc[idx, 'State']
+
+        found_co2 = False
+        for idx1 in df_co2.index:
+            if df_co2.loc[idx1, 'State'] == state or (state == 'U.S. Total' and df_co2.loc[idx1, 'State'] == 'State total (unadjusted)'):
+                found_co2 = True
+                co2.append(df_co2.loc[idx1, 'MMT CO2'])
+                break
+        assert(found_co2)
+
+        found_tot_MWh = False
+        for idx2 in df_elec_tot.index:
+            if df_elec_tot.loc[idx2, 'State'] == state:
+                found_tot_MWh = True
+                tot_MWh.append(df_elec_tot.loc[idx2, 'Total MWh'])
+                print(state, tot_MWh[-1])
+                break
+        assert(found_tot_MWh)
+
+    df['CO2 Intensity (metric tons/kWh)'] = np.array( co2 ) * 1.0e6 / (np.array( tot_MWh ) * 1.0e3) # CO2 to tons, MWh to kWh = tons/kWh
+    df['MMT CO2'] = co2
+    df['Total MWh'] = tot_MWh
+
+    df.to_csv(f'us_gas_and_elec_{year}.csv')
+
+    return df
 
 def get_elec_vals_2018(gas_vals):
 
@@ -131,7 +176,8 @@ def to_df(prices, year):
     return df
 
 df_gas = get_gas_vals_2017()
-get_elec_vals_2017(df_gas)
+df = get_elec_vals_2017(df_gas)
+df = add_CO2_intensity(df, 2017)
 
 gas_vals = get_gas_vals_2018()
 prices = get_elec_vals_2018(gas_vals)
