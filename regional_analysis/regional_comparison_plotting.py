@@ -25,7 +25,7 @@ def marker_list():
 def plot_prices(year):
 
 
-    df_prices = pd.read_csv(f'us_gas_and_elec_{year}.csv')
+    df_prices = pd.read_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertConformal())
@@ -147,7 +147,7 @@ def add_carbon_prices(df, carbon_price_list):
 
 
 
-df = pd.read_csv('Global_elec_and_gas_prices.csv', header=3)
+df = pd.read_csv('../data/'+'Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
 
 check_stats(df, 'Elec Price (USD/kWh)', 'Gasoline Price (USD/l)')
@@ -177,7 +177,7 @@ df_synth = pd.DataFrame({
 
 # Load U.S. State's info
 for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
-    df2 = pd.read_csv(f'us_gas_and_elec_{year}.csv')
+    df2 = pd.read_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     # Add elec and gas adjustments for carbon prices
     carbon_price_list = [0, 50, 100, 200] # $/ton

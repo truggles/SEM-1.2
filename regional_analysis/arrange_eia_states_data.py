@@ -12,9 +12,9 @@ MMBtu_per_barrel_2017 = 5.053 # MMBtu/barrel in 2017 per EIA, see README
 Gallons_per_barrel = 42 # U.S. gallons / barrel per EIA, see README
 kWh_to_GGE = 33.4
 
-def load_df(f_name):
+def load_df(f_name, base='../data/'):
 
-    df = pd.read_excel(f_name, sheet_name='Data 1', header=2)
+    df = pd.read_excel(base+f_name, sheet_name='Data 1', header=2)
     return df
 
 
@@ -23,7 +23,7 @@ def load_df(f_name):
 # Original values in $/MMBtu and we want $/gallon
 def get_gas_vals_2017():
 
-    df = pd.read_csv('eia_SEDS_1970-2017.csv')
+    df = pd.read_csv('../data/'+'eia_SEDS_1970-2017.csv')
 
     # Select cells of interest
     df = df[ df['MSN'] == 'MGACD']
@@ -70,7 +70,7 @@ def get_gas_vals_2018():
 
 def get_elec_vals_2017(df_gas):
 
-    df = pd.read_excel('eia_elec_industry_by_state_table5_c_2017.xlsx', sheet_name='Table 5C', header=2)
+    df = pd.read_excel('../data/'+'eia_elec_industry_by_state_table5_c_2017.xlsx', sheet_name='Table 5C', header=2)
     print(df.head())
 
     # State to abbrev map
@@ -110,11 +110,11 @@ def get_elec_vals_2017(df_gas):
 def add_CO2_intensity(df, year):
 
     assert(year <= 2017)
-    df_co2 = pd.read_excel('eia_electricity_CO2_by_state_1980-2017.xlsx', sheet_name='Sheet1', header=2)
+    df_co2 = pd.read_excel('../data/'+'eia_electricity_CO2_by_state_1980-2017.xlsx', sheet_name='Sheet1', header=2)
     df_co2['MMT CO2'] = df_co2[year]
     df_co2 = df_co2[['State', 'MMT CO2']]
 
-    df_elec_tot = pd.read_excel(f'eia_elec_industry_by_state_table2_2017.xlsx', sheet_name='Table 2', header=2)
+    df_elec_tot = pd.read_excel('../data/'+f'eia_elec_industry_by_state_table2_2017.xlsx', sheet_name='Table 2', header=2)
     df_elec_tot['Total MWh'] = df_elec_tot['Total']
     df_elec_tot = df_elec_tot[['State', 'Total MWh']]
     print(df_elec_tot.head())
@@ -146,13 +146,13 @@ def add_CO2_intensity(df, year):
     df['MMT CO2'] = co2
     df['Total MWh'] = tot_MWh
 
-    df.to_csv(f'us_gas_and_elec_{year}.csv')
+    df.to_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     return df
 
 def get_elec_vals_2018(gas_vals):
 
-    df = pd.read_excel('eia_elec_industry_by_state_table5_c_2018.xlsx', sheet_name='Table 5C', header=2)
+    df = pd.read_excel('../data/'+'eia_elec_industry_by_state_table5_c_2018.xlsx', sheet_name='Table 5C', header=2)
     print(df.head())
 
     for idx in df.index:
@@ -171,7 +171,7 @@ def to_df(prices, year):
     for state, vals in prices.items():
         df = df.append( pd.DataFrame({'State': [state,], 'gas min (USD/gallon)': [vals[0],], 'gas max (USD/gallon)': [vals[1],], 'gas mean (USD/gallon)': [vals[2], ], 'elec mean (USD/kWh)': [vals[3], ]}), ignore_index=True )
 
-    df.to_csv(f'us_gas_and_elec_{year}.csv')
+    df.to_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     return df
 
