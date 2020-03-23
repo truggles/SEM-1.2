@@ -11,9 +11,6 @@ import cartopy.io.shapereader as shpreader
 
 import analytic_fuels as af
 
-kWh_to_GGE = 33.4
-kWh_LHV_per_kg_H2 = 33.33
-liters_to_gallons = 3.78541
 
 # Parameters for fuel economy plots
 eff_ration=1.5
@@ -68,7 +65,7 @@ def plot_prices(year):
             if geo_state != prices_state:
                 continue
         
-            frac = df_prices.loc[idx, 'gas mean (USD/gallon)'] / kWh_to_GGE
+            frac = df_prices.loc[idx, 'gas mean (USD/gallon)'] / af.kWh_to_GGE
             frac /= df_prices.loc[idx, 'elec mean (USD/kWh)']
             print(f"{astate.attributes['name']:>30} {round(frac,4)}")
         
@@ -137,13 +134,11 @@ def add_carbon_prices(df, carbon_price_list):
             elec_adj = af.add_carbon_price(elec_price, df.loc[idx, 'CO2 Intensity (metric tons/kWh)'], carbon_price)
             h2.append( af.get_h2_system_costs(syst, elec_adj) )
             synth_gas.append( af.get_fuel_system_costs(syst, elec_adj) )
-            # Wikipedia: https://en.wikipedia.org/wiki/Gasoline
-            # About 19.64 pounds (8.91 kg) of carbon dioxide (CO2) are produced from burning 1 U.S. gallon (3.8 liters) of gasoline that does not contain ethanol (2.36 kg/L).
-            normal_gas.append( df.loc[idx, 'gas mean (USD/gallon)'] + (8.91/1000.) * carbon_price )
+            normal_gas.append( df.loc[idx, 'gas mean (USD/gallon)'] + af.co2_per_gallon_gas * carbon_price )
 
         df[f'co2 {carbon_price}: gas price'] = np.array(normal_gas)
-        df[f'co2 {carbon_price}: synth gas price'] = np.array(synth_gas) * kWh_to_GGE
-        df[f'co2 {carbon_price}: h2 price'] = np.array(h2) * kWh_LHV_per_kg_H2
+        df[f'co2 {carbon_price}: synth gas price'] = np.array(synth_gas) * af.kWh_to_GGE
+        df[f'co2 {carbon_price}: h2 price'] = np.array(h2) * af.kWh_LHV_per_kg_H2
 
     df.to_csv('tmp.csv')
     return df
@@ -156,14 +151,14 @@ def carbon_price_plots(df_states, df_synth, year, carbon_prices, FCEV_mpgge, ICE
     plt.close()
     fig, ax = plt.subplots(figsize=(15,15))
     #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel cost')
-    #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
-    ax.plot(df_synth['Elec Price (USD/kWh)'],  (df_synth['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'k-.', label=r'H$_{2}$ prod. + disp. cost')
+    #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  (df_synth['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge, 'k-.', label=r'H$_{2}$ prod. + disp. cost')
     ncol_=2
     #ax.scatter(df_states['elec mean (USD/kWh)'], df_states['gas mean (USD/gallon)']/ICE_mpg, label='U.S. states price', marker='D', color='k', alpha=0.3)
 
     for carbon_price in carbon_prices:
         rslt = ax.scatter(df_states['elec mean (USD/kWh)'], df_states[f'co2 {carbon_price}: gas price']/ICE_mpg, label=r'CO$_{2}$ '+str(carbon_price)+': gas', marker='o', alpha=0.8)
-        ax.scatter(df_states['elec mean (USD/kWh)'], (df_states[f'co2 {carbon_price}: h2 price'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 
+        ax.scatter(df_states['elec mean (USD/kWh)'], (df_states[f'co2 {carbon_price}: h2 price'] + dispensing_dollar_per_kg)/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge, 
                 label=r'CO$_{2}$ '+str(carbon_price)+': H$_{2}$', marker='x', alpha=0.8,
                 color=rslt.get_facecolor()[0])
 
@@ -186,7 +181,7 @@ df = pd.read_csv('../data/'+'Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
 
 check_stats(df, 'Elec Price (USD/kWh)', 'Gasoline Price (USD/l)')
-df['gasoline normal (USD/gallon)'] = df['Gasoline Price (USD/l)'] * liters_to_gallons
+df['gasoline normal (USD/gallon)'] = df['Gasoline Price (USD/l)'] * af.liters_to_gallons
 print(df.head())
 
 
@@ -204,8 +199,8 @@ for val in elec:
 
 df_synth = pd.DataFrame({
     'Elec Price (USD/kWh)': elec,
-    'h2 synth (USD/kg)' : np.array(h2) * kWh_LHV_per_kg_H2,
-    'gasoline synth (USD/GGE)' : np.array(gas) * kWh_to_GGE,
+    'h2 synth (USD/kg)' : np.array(h2) * af.kWh_LHV_per_kg_H2,
+    'gasoline synth (USD/GGE)' : np.array(gas) * af.kWh_to_GGE,
 })
 
 
@@ -246,8 +241,8 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     fig, ax = plt.subplots()
     ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/ICE_mpg, label='countries price', alpha=0.3)
     #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel cost')
-    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
-    ax.plot(df_synth['Elec Price (USD/kWh)'],  (df_synth['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2-.', label='electrolysis to H'+r'$_{2}$ cost'+'\nincluding dispensing')
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  (df_synth['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge, 'C2-.', label='electrolysis to H'+r'$_{2}$ cost'+'\nincluding dispensing')
     markers = marker_list()
     ncol_=2
     if year == 2017:
@@ -263,16 +258,16 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     
     plt.close()
     fig, ax = plt.subplots()
-    ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/kWh_to_GGE, label='countries price', alpha=0.3)
-    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/kWh_to_GGE, 'C1-', label='LH electrofuel cost')
-    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2, 'C2-', label=r'electrolysis to H$_{2}$ cost')
+    ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/af.kWh_to_GGE, label='countries price', alpha=0.3)
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/af.kWh_to_GGE, 'C1-', label='LH electrofuel cost')
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/af.kWh_LHV_per_kg_H2, 'C2-', label=r'electrolysis to H$_{2}$ cost')
     if year == 2017:
-        ax.scatter(df2['elec mean (USD/kWh)'], df2['gas mean (USD/gallon)']/kWh_to_GGE, label='U.S. states price', marker='D', color='C3', alpha=0.3)
+        ax.scatter(df2['elec mean (USD/kWh)'], df2['gas mean (USD/gallon)']/af.kWh_to_GGE, label='U.S. states price', marker='D', color='C3', alpha=0.3)
     if year == 2018:
         for i, idx in enumerate(df2.index):
             if df2.loc[idx, 'State'] == 'U.S.':
                 continue
-            ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)']/kWh_to_GGE, label=df2.loc[idx, 'State']+' price', marker=markers[i])
+            ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)']/af.kWh_to_GGE, label=df2.loc[idx, 'State']+' price', marker=markers[i])
     set_ax(ax, max_, r'fuel price (\$/kWh$_{LHV}$)')
     plt.legend(loc='upper left', ncol=ncol_)
     plt.savefig(f'analysis_fuels_states_{year}.pdf')
@@ -283,4 +278,10 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
 
     for ICE_mpg in [27, 30, 40]:
         carbon_price_plots(df2, df_synth, year, carbon_price_list, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg)
+
+    
+    # Dummy calc for Washington state
+    syst = af.return_fuel_system()
+    af.calc_carbon_price_break_even(syst, dispensing_dollar_per_kg, 0.046, 0.000113107196954388, 
+        2.844, FCEV_mpgge, ICE_mpg, True)
 

@@ -11,10 +11,21 @@ DISCOUNT_RATE = 0.07
 HOURS_PER_YEAR = 8760 # Reference: # days per year
 BtuPerkWh = 3412.14 # https://www.eia.gov/totalenergy/data/monthly/pdf/sec13_18.pdf
 MWh_per_MMBtu = 0.293 # https://www.eia.gov/totalenergy/data/monthly/pdf/sec13_18.pdf
-MMBtu_per_Gallon_Gasoline = 0.114 # Btu/GGE "Fuel Economy Impact Analysis of RFG". United States Environmental Protection Agency. August 14, 2007. Retrieved Aug 27, 2019.
+MMBtu_per_Gallon_Gasoline = 0.114 # Btu/GGE "Fuel Economy Impact Analysis of RFG". 
+            #United States Environmental Protection Agency. August 14, 2007. Retrieved Aug 27, 2019.
 lhvH2Conv = 33.33 # kWh LHV / kg H2
 hhvH2Conv = 39.4 # kWh HHV / kg H2
 
+MMBtu_per_barrel_2017 = 5.053 # MMBtu/barrel in 2017 per EIA, see README
+Gallons_per_barrel = 42 # U.S. gallons / barrel per EIA, see README
+
+kWh_to_GGE = 33.4
+kWh_LHV_per_kg_H2 = 33.33
+liters_to_gallons = 3.78541
+
+# Wikipedia: https://en.wikipedia.org/wiki/Gasoline
+# About 19.64 pounds (8.91 kg) of carbon dioxide (CO2) are produced from burning 1 U.S. gallon (3.8 liters) of gasoline that does not contain ethanol (2.36 kg/L).
+co2_per_gallon_gas = 8.91/1000.
 
 
 def capital_recovery_factor(discount_rate, **dic):
@@ -231,3 +242,50 @@ def get_fuel_system_costs(system, electricity_price, verbose=False):
     if verbose:
         print(f" VAR_COST_CO2            to add: {system['VAR_COST_CO2']['value']}, new total {tot}")
     return tot
+
+
+# Calulate the break even point for refueling for a vehicle owner 
+# where price of gasoline = cost of H2 as a function of the price of CO2.
+# This includes the cost of dispensing H2
+def calc_carbon_price_break_even(system, dispensing_h2_cost, electricity_price, elec_carbon_content, 
+        gasoline_price, FCEV_mpgge, ICE_mpg, verbose=False):
+
+    # We are solving this equation for p_co2
+    # 0 = fixed_h2 + disp_h2 + (elec_0 + elec_co2*p_co2)/eta - gas_0 - gas_co2*p_co2
+    # where, h2_0 = fixed_h2 + disp_h2 + elec_0/eta
+
+    per_kg_h2_to_mpgge = 1./kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge
+
+    h2_0 = 0
+    h2_0 += system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor']
+    h2_0 += system['FIXED_COST_COMPRESSOR']['value'] / system['FIXED_COST_COMPRESSOR']['capacity factor']
+    h2_0 += electricity_price / system['EFFICIENCY_ELECTROLYZER_COMP']['value']
+    h2_0 += system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 # 30 days x 24 hours for 1 month of storage capacity
+    if verbose:
+        print(f"Prod {round(h2_0,4)} $/kWh")
+    h2_0 *= kWh_LHV_per_kg_H2
+    if verbose:
+        print(f"Prod {round(h2_0,4)} $/kg")
+    h2_0 += dispensing_h2_cost
+    if verbose:
+        print(f"Prod + disp {round(h2_0,4)} $/kg")
+    h2_0 *= per_kg_h2_to_mpgge
+    if verbose:
+        print(f"Prod + disp {round(h2_0,4)} $/mile\n")
+
+    gas_0 = gasoline_price/ICE_mpg
+
+    to_div = (elec_carbon_content * kWh_LHV_per_kg_H2 * per_kg_h2_to_mpgge / system['EFFICIENCY_ELECTROLYZER_COMP']['value'] -
+            co2_per_gallon_gas/ICE_mpg)
+
+    p_co2 = (gas_0 - h2_0) / to_div
+
+    if verbose:
+        print(f"electricity_price: {electricity_price}\nelec_carbon_content: {elec_carbon_content}\ngasoline_price: {gasoline_price}\nFCEV_mpgge: {FCEV_mpgge}\nICE_mpg: {ICE_mpg}\n")
+        print(f"h2_0: {round(h2_0,4)}\ngas_0: {round(gas_0,4)}\nto_div: {round(to_div,6)}\np_co2: {round(p_co2,4)}\n")
+
+    return p_co2
+
+
+
+

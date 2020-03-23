@@ -7,10 +7,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from state_abbreviations import get_state_abbrev_map
 
+import analytic_fuels as af
 
-MMBtu_per_barrel_2017 = 5.053 # MMBtu/barrel in 2017 per EIA, see README
-Gallons_per_barrel = 42 # U.S. gallons / barrel per EIA, see README
-kWh_to_GGE = 33.4
+
 
 def load_df(f_name, base='../data/'):
 
@@ -29,7 +28,7 @@ def get_gas_vals_2017():
     df = df[ df['MSN'] == 'MGACD']
     df = df[['State', '2017']]
 
-    df['gas mean (USD/gallon)'] = df['2017'] * MMBtu_per_barrel_2017 / Gallons_per_barrel
+    df['gas mean (USD/gallon)'] = df['2017'] * af.MMBtu_per_barrel_2017 / af.Gallons_per_barrel
     print(len(df.index))
     print(df.head())
 
@@ -98,7 +97,7 @@ def get_elec_vals_2017(df_gas):
     df_gas['State'] = full_states
     df_gas['elec mean (USD/kWh)'] = elec_prices
     df_gas = df_gas[['State', 'gas mean (USD/gallon)', 'elec mean (USD/kWh)']]
-    df_gas['gas/elec (post kWh conv)'] = df_gas['gas mean (USD/gallon)'] / kWh_to_GGE / df_gas['elec mean (USD/kWh)']
+    df_gas['gas/elec (post kWh conv)'] = df_gas['gas mean (USD/gallon)'] / af.kWh_to_GGE / df_gas['elec mean (USD/kWh)']
     
     df_gas = df_gas.reset_index(drop=True)
 
