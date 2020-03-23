@@ -4,3 +4,4 @@ plots*
 .DS_Store
 .ipynb_checkpoints*
 slurm*
+data/*.pdf
