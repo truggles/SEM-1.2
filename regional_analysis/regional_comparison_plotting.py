@@ -15,6 +15,12 @@ kWh_to_GGE = 33.4
 kWh_LHV_per_kg_H2 = 33.33
 liters_to_gallons = 3.78541
 
+# Parameters for fuel economy plots
+eff_ration=1.5
+eff_ration=2
+FCEV_mpgge = 60
+ICE_mpg = FCEV_mpgge/eff_ration
+dispensing_dollar_per_kg = 1.9
 
 
 def marker_list():
@@ -144,6 +150,35 @@ def add_carbon_prices(df, carbon_price_list):
 
 
 
+def carbon_price_plots(df_states, df_synth, year, carbon_prices, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg):
+    assert(year == 2017), "CO2 intensity is only available for years <= 2017 for EIA data."
+
+    plt.close()
+    fig, ax = plt.subplots(figsize=(15,15))
+    #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel cost')
+    #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
+    ax.plot(df_synth['Elec Price (USD/kWh)'],  (df_synth['h2 synth (USD/kg)'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'k-.', label=r'H$_{2}$ prod. + disp. cost')
+    ncol_=2
+    #ax.scatter(df_states['elec mean (USD/kWh)'], df_states['gas mean (USD/gallon)']/ICE_mpg, label='U.S. states price', marker='D', color='k', alpha=0.3)
+
+    for carbon_price in carbon_prices:
+        rslt = ax.scatter(df_states['elec mean (USD/kWh)'], df_states[f'co2 {carbon_price}: gas price']/ICE_mpg, label=r'CO$_{2}$ '+str(carbon_price)+': gas', marker='o', alpha=0.8)
+        ax.scatter(df_states['elec mean (USD/kWh)'], (df_states[f'co2 {carbon_price}: h2 price'] + dispensing_dollar_per_kg)/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 
+                label=r'CO$_{2}$ '+str(carbon_price)+': H$_{2}$', marker='x', alpha=0.8,
+                color=rslt.get_facecolor()[0])
+
+    ax.set_xlabel('electricity price ($/kWh)')
+    ax.set_ylabel('fuel economy ($/mile)')
+    ax.set_xlim(0, 0.3)
+    #ax.set_ylim(0, ax.get_ylim()[1])
+    ax.set_ylim(0, 0.2)
+    plt.legend(loc='upper left', ncol=ncol_)
+
+    # Text for MPG and MPGGE values
+    plt.text(0.05, 0.05, f'Hybrid ICEV: {ICE_mpg} MPG\nFCEV: {FCEV_mpgge} MPGGE\nEff. Ratio:{round(FCEV_mpgge/ICE_mpg,2)}', fontsize=20)
+
+    plt.tight_layout()
+    plt.savefig(f'analysis_gas_states_fuel_econ_{year}_co2_price_eff_ratio_{round(FCEV_mpgge/ICE_mpg,2)}.pdf')
 
 
 
@@ -209,9 +244,6 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
         
     plt.close()
     fig, ax = plt.subplots()
-    FCEV_mpgge = 60
-    ICE_mpg = FCEV_mpgge/1.5
-    dispensing_dollar_per_kg = 1.9
     ax.scatter(df['Elec Price (USD/kWh)'],  df['gasoline normal (USD/gallon)']/ICE_mpg, label='countries price', alpha=0.3)
     #ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['gasoline synth (USD/GGE)']/ICE_mpg, 'C1-', label='LH electrofuel cost')
     ax.plot(df_synth['Elec Price (USD/kWh)'],  df_synth['h2 synth (USD/kg)']/kWh_LHV_per_kg_H2*kWh_to_GGE/FCEV_mpgge, 'C2--', label=r'electrolysis to H$_{2}$ cost')
@@ -249,4 +281,6 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     
     check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
 
+    for ICE_mpg in [27, 30, 40]:
+        carbon_price_plots(df2, df_synth, year, carbon_price_list, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg)
 
