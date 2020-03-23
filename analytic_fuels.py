@@ -175,9 +175,21 @@ def return_fuel_system():
     system['VAR_COST_CO2'] = var_cost_of_CO2(**system['VAR_COST_CO2'])
     return system
 
-def get_h2_system_costs(system, electricity_cost, verbose=False):
+
+
+def add_carbon_price(electricity_price, carbon_content, carbon_price):
+
+    elec_plus_carbon_price = electricity_price # electricity_price ($/kWh)
+    elec_plus_carbon_price += carbon_content * carbon_price # carbon_content (tons/kWh), carbon_price ($/ton)
+    #print(round(electricity_price,4), round(carbon_content,8), round(carbon_price,4), round(elec_plus_carbon_price,4))
+
+    return elec_plus_carbon_price
+
+
+
+def get_h2_system_costs(system, electricity_price, verbose=False):
     if verbose:
-        print(f"Electricity price: {electricity_cost}")
+        print(f"Electricity price: {electricity_price}")
     tot = 0.
     tot += system['FIXED_COST_ELECTROLYZER']['value'] / system['FIXED_COST_ELECTROLYZER']['capacity factor']
     if verbose:
@@ -185,17 +197,17 @@ def get_h2_system_costs(system, electricity_cost, verbose=False):
     tot += system['FIXED_COST_COMPRESSOR']['value'] / system['FIXED_COST_COMPRESSOR']['capacity factor']
     if verbose:
         print(f" FIXED_COST_COMPRESSOR   to add: {system['FIXED_COST_COMPRESSOR']['value'] / system['FIXED_COST_COMPRESSOR']['capacity factor']}, new total {tot}")
-    tot += electricity_cost / system['EFFICIENCY_ELECTROLYZER_COMP']['value']
+    tot += electricity_price / system['EFFICIENCY_ELECTROLYZER_COMP']['value']
     if verbose:
-        print(f" ELECTRICITY COSTS       to add: {electricity_cost / system['EFFICIENCY_ELECTROLYZER_COMP']['value']}, new total {tot}")
+        print(f" ELECTRICITY COSTS       to add: {electricity_price / system['EFFICIENCY_ELECTROLYZER_COMP']['value']}, new total {tot}")
     tot += system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 # 30 days x 24 hours for 1 month of storage capacity
     if verbose:
         print(f" FIXED_COST_H2_STORAGE   to add: {system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24}, new total {tot}")
     return tot
 
-def get_fuel_system_costs(system, electricity_cost, verbose=False):
+def get_fuel_system_costs(system, electricity_price, verbose=False):
     if verbose:
-        print(f"Electricity price: {electricity_cost}")
+        print(f"Electricity price: {electricity_price}")
     tot = 0.
     tot += system['FIXED_COST_ELECTROLYZER']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_ELECTROLYZER']['capacity factor'])
     if verbose:
@@ -203,9 +215,9 @@ def get_fuel_system_costs(system, electricity_cost, verbose=False):
     tot += system['FIXED_COST_COMPRESSOR']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_COMPRESSOR']['capacity factor'])
     if verbose:
         print(f" FIXED_COST_COMPRESSOR   to add: {system['FIXED_COST_COMPRESSOR']['value'] / (system['EFFICIENCY_CHEM_CONVERSION']['value'] * system['FIXED_COST_COMPRESSOR']['capacity factor'])}, new total {tot}")
-    tot += electricity_cost / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])
+    tot += electricity_price / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])
     if verbose:
-        print(f" ELECTRICITY COSTS       to add: {electricity_cost / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])}, new total {tot}")
+        print(f" ELECTRICITY COSTS       to add: {electricity_price / (system['EFFICIENCY_ELECTROLYZER_COMP']['value'] * system['EFFICIENCY_CHEM_CONVERSION']['value'])}, new total {tot}")
     tot += system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 / system['EFFICIENCY_CHEM_CONVERSION']['value'] # 30 days x 24 hours for 1 month of storage capacity
     if verbose:
         print(f" FIXED_COST_H2_STORAGE   to add: {system['FIXED_COST_H2_STORAGE']['value'] * 30 * 24 / system['EFFICIENCY_CHEM_CONVERSION']['value']}, new total {tot}")

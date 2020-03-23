@@ -117,6 +117,36 @@ def set_ax(ax, max_, y_label, x_label='electricity price ($/kWh)'):
 
 
 
+
+def add_carbon_prices(df, carbon_price_list):
+
+    for carbon_price in carbon_price_list:
+        print(f"Adding carbon price of {carbon_price} $/ton")
+        h2 = []
+        synth_gas = []
+        normal_gas = []
+        for idx in df.index:
+            syst = af.return_fuel_system()
+            elec_price = df.loc[idx, 'elec mean (USD/kWh)']
+            elec_adj = af.add_carbon_price(elec_price, df.loc[idx, 'CO2 Intensity (metric tons/kWh)'], carbon_price)
+            h2.append( af.get_h2_system_costs(syst, elec_adj) )
+            synth_gas.append( af.get_fuel_system_costs(syst, elec_adj) )
+            # Wikipedia: https://en.wikipedia.org/wiki/Gasoline
+            # About 19.64 pounds (8.91 kg) of carbon dioxide (CO2) are produced from burning 1 U.S. gallon (3.8 liters) of gasoline that does not contain ethanol (2.36 kg/L).
+            normal_gas.append( df.loc[idx, 'gas mean (USD/gallon)'] + (8.91/1000.) * carbon_price )
+
+        df[f'co2 {carbon_price}: gas price'] = np.array(normal_gas)
+        df[f'co2 {carbon_price}: synth gas price'] = np.array(synth_gas) * kWh_to_GGE
+        df[f'co2 {carbon_price}: h2 price'] = np.array(h2) * kWh_LHV_per_kg_H2
+
+    df.to_csv('tmp.csv')
+    return df
+
+
+
+
+
+
 df = pd.read_csv('Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
 
@@ -148,6 +178,10 @@ df_synth = pd.DataFrame({
 # Load U.S. State's info
 for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     df2 = pd.read_csv(f'us_gas_and_elec_{year}.csv')
+
+    # Add elec and gas adjustments for carbon prices
+    carbon_price_list = [0, 50, 100, 200] # $/ton
+    df2 = add_carbon_prices(df2, carbon_price_list)
 
     # Drop US avg
     if year == 2017:
