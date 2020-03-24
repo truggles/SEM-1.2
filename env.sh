@@ -3,6 +3,6 @@
 
 export PYTHONPATH=$PYTHONPATH:$PWD
 
-cd data
+cd regional_analysis
 
 source env_geo_plotting.sh
