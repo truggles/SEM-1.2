@@ -19,10 +19,70 @@ FCEV_mpgge = 60
 ICE_mpg = FCEV_mpgge/eff_ration
 dispensing_dollar_per_kg = 1.9
 
+# Comparison configurations
+carbon_price_list = [0, 50, 100, 200] # $/ton
+fcev_mpges = [60, 60, 60] # MPGe for FVEC vs. ICE fuel economy comparison
+ice_mpgs = [27, 30, 40] # ICE / HICE MPG
 
 def marker_list():
     return ['o', 'v', '^', 's', 'P', '*', 'H', 'X', 'd', '<', '>']
 
+
+
+def plot_fuel_econ(df, fcev_mpge, ice_mpg):
+
+
+    fig = plt.figure()
+    ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertConformal())
+    
+    ax.set_extent([-125, -66.5, 20, 50], ccrs.Geodetic())
+    
+    shapename = 'admin_1_states_provinces_lakes_shp'
+    states_shp = shpreader.natural_earth(resolution='110m',
+                                         category='cultural', name=shapename)
+    
+    ax.background_patch.set_visible(False)
+    ax.outline_patch.set_visible(False)
+    
+    # https://stackoverflow.com/questions/25408393/getting-individual-colors-from-a-color-map-in-matplotlib
+    cmap = mpl.cm.get_cmap('Spectral')
+    norm = mpl.colors.Normalize(vmin=0, vmax=np.max(df[f'break-even {ice_mpg} {fcev_mpge}']) )
+    cmap.set_under('white')
+    cmap.set_bad('white')
+    
+    for astate in shpreader.Reader(states_shp).records():
+
+        edgecolor = 'black'
+        geo_state = astate.attributes['name']
+        facecolor = "white"
+        
+        # Find matching entry in df
+        for idx in df.index:
+
+            prices_state = df.loc[idx, 'State']
+        
+            if geo_state != prices_state:
+                continue
+        
+            val = df.loc[idx, f'break-even {ice_mpg} {fcev_mpge}']
+            facecolor = cmap(norm(val))
+            if prices_state == 'Washington':
+                print(f"{astate.attributes['name']:>30} {round(val,4)} $/ton CO2, color: {facecolor}")
+        
+
+        
+        # `astate.geometry` is the polygon to plot
+        ax.add_geometries([astate.geometry], ccrs.PlateCarree(),
+                          facecolor=facecolor, edgecolor=edgecolor)
+
+    cax = fig.add_axes([.2, .12, .6, 0.04]) # Start X, start Y, X width, Y width
+    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap,
+                                    norm=norm,
+                                    orientation='horizontal')
+    cb.set_label(r'break-even carbon price (\$/ton CO$_{2}$)')
+    fig.subplots_adjust(top=1, left=.05, right=.95)
+    
+    plt.savefig(f'geo_map_states_break_even_ice{ice_mpg}_fcev{fcev_mpge}.pdf')
 
 
 def plot_prices(year):
@@ -144,6 +204,23 @@ def add_carbon_prices(df, carbon_price_list):
     return df
 
 
+def add_break_even_prices(df, fcev_mpges, ice_mpgs):
+
+    for fcev, ice in zip(fcev_mpges, ice_mpgs):
+        print(f"Adding FEVC vs. H/ICE comparison for FCEV {fcev} MPGe vs. H/ICE {ice} MPG")
+        break_even = []
+        for idx in df.index:
+            syst = af.return_fuel_system()
+            break_even.append( af.calc_carbon_price_break_even(syst, dispensing_dollar_per_kg,
+                df.loc[idx, 'elec mean (USD/kWh)'], df.loc[idx, 'CO2 Intensity (metric tons/kWh)'], 
+                df.loc[idx, 'gas mean (USD/gallon)'], fcev, ice) )
+
+        df[f'break-even {ice} {fcev}'] = break_even
+
+    df.to_csv('tmp.csv')
+    return df
+
+
 
 def carbon_price_plots(df_states, df_synth, year, carbon_prices, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg):
     assert(year == 2017), "CO2 intensity is only available for years <= 2017 for EIA data."
@@ -210,8 +287,8 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     df2 = pd.read_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     # Add elec and gas adjustments for carbon prices
-    carbon_price_list = [0, 50, 100, 200] # $/ton
     df2 = add_carbon_prices(df2, carbon_price_list)
+    df2 = add_break_even_prices(df2, fcev_mpges, ice_mpgs)
 
     # Drop US avg
     if year == 2017:
@@ -276,12 +353,10 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     
     check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
 
-    for ICE_mpg in [27, 30, 40]:
+    for ICE_mpg in ice_mpgs:
         carbon_price_plots(df2, df_synth, year, carbon_price_list, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg)
 
+    for fcev, ice in zip(fcev_mpges, ice_mpgs):
+        plot_fuel_econ(df2, fcev, ice)
     
-    # Dummy calc for Washington state
-    syst = af.return_fuel_system()
-    af.calc_carbon_price_break_even(syst, dispensing_dollar_per_kg, 0.046, 0.000113107196954388, 
-        2.844, FCEV_mpgge, ICE_mpg, True)
 
