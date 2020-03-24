@@ -13,16 +13,18 @@ import analytic_fuels as af
 
 
 # Parameters for fuel economy plots
-eff_ration=1.5
-eff_ration=2
+eff_ratio=1.5
+eff_ratio=2
 FCEV_mpgge = 60
-ICE_mpg = FCEV_mpgge/eff_ration
+ICE_mpg = FCEV_mpgge/eff_ratio
 dispensing_dollar_per_kg = 1.9
 
 # Comparison configurations
-carbon_price_list = [0, 50, 100, 200] # $/ton
+carbon_price_list = [0,200]# 50, 100, 200] # $/ton
 fcev_mpges = [60, 60, 60] # MPGe for FVEC vs. ICE fuel economy comparison
 ice_mpgs = [27, 30, 40] # ICE / HICE MPG
+#fcev_mpges = [60,] # MPGe for FVEC vs. ICE fuel economy comparison
+#ice_mpgs = [30,] # ICE / HICE MPG
 
 def marker_list():
     return ['o', 'v', '^', 's', 'P', '*', 'H', 'X', 'd', '<', '>']
@@ -43,10 +45,33 @@ def plot_fuel_econ(df, fcev_mpge, ice_mpg):
     
     ax.background_patch.set_visible(False)
     ax.outline_patch.set_visible(False)
+
+    # Get limits of "good" values by looping through once
+    # this is used to define the "Normalization" used for color mapping
+    good_vals = []
+    for astate in shpreader.Reader(states_shp).records():
+
+        geo_state = astate.attributes['name']
+        
+        # Find matching entry in df
+        for idx in df.index:
+
+            prices_state = df.loc[idx, 'State']
+        
+            if geo_state != prices_state:
+                continue
+            # Skip cases where CO2 intensity of elec is high enough that the
+            # costs diverge.
+            denom = df.loc[idx, f'break-even denom {ice_mpg} {fcev_mpge}']
+            if denom >= 0:
+                continue
+            good_vals.append( df.loc[idx, f'break-even {ice_mpg} {fcev_mpge}'] )
     
     # https://stackoverflow.com/questions/25408393/getting-individual-colors-from-a-color-map-in-matplotlib
     cmap = mpl.cm.get_cmap('Spectral')
-    norm = mpl.colors.Normalize(vmin=0, vmax=np.max(df[f'break-even {ice_mpg} {fcev_mpge}']) )
+    #norm = mpl.colors.Normalize(vmin=0, vmax=np.max(df[f'break-even {ice_mpg} {fcev_mpge}']) )
+    #norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=np.max(good_vals) )
+    norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=1000 )
     cmap.set_under('white')
     cmap.set_bad('white')
     
@@ -64,10 +89,16 @@ def plot_fuel_econ(df, fcev_mpge, ice_mpg):
             if geo_state != prices_state:
                 continue
         
+            # Skip cases where CO2 intensity of elec is high enough that the
+            # costs diverge.
+            denom = df.loc[idx, f'break-even denom {ice_mpg} {fcev_mpge}']
+            if denom >= 0:
+                continue
+
             val = df.loc[idx, f'break-even {ice_mpg} {fcev_mpge}']
             facecolor = cmap(norm(val))
-            if prices_state == 'Washington':
-                print(f"{astate.attributes['name']:>30} {round(val,4)} $/ton CO2, color: {facecolor}")
+            #if prices_state == 'Washington':
+            print(f"{astate.attributes['name']:>30} {round(val,4)} $/ton CO2, color: {facecolor}")
         
 
         
@@ -181,7 +212,7 @@ def set_ax(ax, max_, y_label, x_label='electricity price ($/kWh)'):
 
 
 
-def add_carbon_prices(df, carbon_price_list):
+def add_carbon_prices(df, carbon_price_list, ICE_mpg=40, FCEV_mpgge=60):
 
     for carbon_price in carbon_price_list:
         print(f"Adding carbon price of {carbon_price} $/ton")
@@ -199,6 +230,8 @@ def add_carbon_prices(df, carbon_price_list):
         df[f'co2 {carbon_price}: gas price'] = np.array(normal_gas)
         df[f'co2 {carbon_price}: synth gas price'] = np.array(synth_gas) * af.kWh_to_GGE
         df[f'co2 {carbon_price}: h2 price'] = np.array(h2) * af.kWh_LHV_per_kg_H2
+        df[f'co2 {carbon_price}: gas USD/mi {ICE_mpg}'] = df[f'co2 {carbon_price}: gas price']/ICE_mpg
+        df[f'co2 {carbon_price}: h2 USD/mi {FCEV_mpgge}'] = (df[f'co2 {carbon_price}: h2 price'] + dispensing_dollar_per_kg)/af.kWh_LHV_per_kg_H2*af.kWh_to_GGE/FCEV_mpgge
 
     df.to_csv('tmp.csv')
     return df
@@ -209,13 +242,17 @@ def add_break_even_prices(df, fcev_mpges, ice_mpgs):
     for fcev, ice in zip(fcev_mpges, ice_mpgs):
         print(f"Adding FEVC vs. H/ICE comparison for FCEV {fcev} MPGe vs. H/ICE {ice} MPG")
         break_even = []
+        denom = []
         for idx in df.index:
             syst = af.return_fuel_system()
-            break_even.append( af.calc_carbon_price_break_even(syst, dispensing_dollar_per_kg,
+            info = af.calc_carbon_price_break_even(syst, dispensing_dollar_per_kg,
                 df.loc[idx, 'elec mean (USD/kWh)'], df.loc[idx, 'CO2 Intensity (metric tons/kWh)'], 
-                df.loc[idx, 'gas mean (USD/gallon)'], fcev, ice) )
+                df.loc[idx, 'gas mean (USD/gallon)'], fcev, ice)
+            break_even.append( info[0] )
+            denom.append( info[1] )
 
         df[f'break-even {ice} {fcev}'] = break_even
+        df[f'break-even denom {ice} {fcev}'] = denom
 
     df.to_csv('tmp.csv')
     return df
@@ -247,7 +284,7 @@ def carbon_price_plots(df_states, df_synth, year, carbon_prices, FCEV_mpgge, ICE
     plt.legend(loc='upper left', ncol=ncol_)
 
     # Text for MPG and MPGGE values
-    plt.text(0.05, 0.05, f'Hybrid ICEV: {ICE_mpg} MPG\nFCEV: {FCEV_mpgge} MPGGE\nEff. Ratio:{round(FCEV_mpgge/ICE_mpg,2)}', fontsize=20)
+    plt.text(0.2, 0.05, f'Hybrid ICEV: {ICE_mpg} MPG\nFCEV: {FCEV_mpgge} MPGGE\nEff. Ratio:{round(FCEV_mpgge/ICE_mpg,2)}', fontsize=20)
 
     plt.tight_layout()
     plt.savefig(f'analysis_gas_states_fuel_econ_{year}_co2_price_eff_ratio_{round(FCEV_mpgge/ICE_mpg,2)}.pdf')
@@ -257,9 +294,9 @@ def carbon_price_plots(df_states, df_synth, year, carbon_prices, FCEV_mpgge, ICE
 df = pd.read_csv('../data/'+'Global_elec_and_gas_prices.csv', header=3)
 df = df.sort_values('Elec Price (USD/kWh)')
 
-check_stats(df, 'Elec Price (USD/kWh)', 'Gasoline Price (USD/l)')
+#check_stats(df, 'Elec Price (USD/kWh)', 'Gasoline Price (USD/l)')
 df['gasoline normal (USD/gallon)'] = df['Gasoline Price (USD/l)'] * af.liters_to_gallons
-print(df.head())
+#print(df.head())
 
 
 
@@ -287,7 +324,7 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     df2 = pd.read_csv('../data/'+f'us_gas_and_elec_{year}.csv')
 
     # Add elec and gas adjustments for carbon prices
-    df2 = add_carbon_prices(df2, carbon_price_list)
+    df2 = add_carbon_prices(df2, carbon_price_list, ICE_mpg, FCEV_mpgge)
     df2 = add_break_even_prices(df2, fcev_mpges, ice_mpgs)
 
     # Drop US avg
@@ -351,7 +388,7 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     
     plot_prices(year)
     
-    check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
+    #check_stats(df2, 'elec mean (USD/kWh)', 'gas mean (USD/gallon)')
 
     for ICE_mpg in ice_mpgs:
         carbon_price_plots(df2, df_synth, year, carbon_price_list, FCEV_mpgge, ICE_mpg, dispensing_dollar_per_kg)

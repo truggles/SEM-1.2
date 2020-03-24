@@ -284,7 +284,7 @@ def calc_carbon_price_break_even(system, dispensing_h2_cost, electricity_price, 
         print(f"electricity_price: {electricity_price}\nelec_carbon_content: {elec_carbon_content}\ngasoline_price: {gasoline_price}\nFCEV_mpgge: {FCEV_mpgge}\nICE_mpg: {ICE_mpg}\n")
         print(f"h2_0: {round(h2_0,4)}\ngas_0: {round(gas_0,4)}\nto_div: {round(to_div,6)}\np_co2: {round(p_co2,4)}\n")
 
-    return p_co2
+    return p_co2, to_div
 
 
 
