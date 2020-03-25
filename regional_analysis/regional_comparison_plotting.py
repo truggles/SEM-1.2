@@ -14,7 +14,7 @@ import analytic_fuels as af
 
 # Parameters for fuel economy plots
 eff_ratio=1.5
-eff_ratio=2
+#eff_ratio=2
 FCEV_mpge = 60
 ICE_mpg = FCEV_mpge/eff_ratio
 dispensing_dollar_per_kg = 1.9
@@ -398,6 +398,7 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
                 continue
             ax.scatter(df2.loc[idx, 'elec mean (USD/kWh)'], df2.loc[idx, 'gas mean (USD/gallon)']/ICE_mpg, label=df2.loc[idx, 'State']+' price', marker=markers[i])
     set_ax(ax, max_, 'fuel economy ($/mile)')
+    plt.text(0.05, 0.2, f'Hybrid ICEV: {ICE_mpg} MPG\nFCEV: {FCEV_mpge} MPGe\nEff. Ratio:{round(FCEV_mpge/ICE_mpg,2)}')
     plt.legend(loc='upper left', ncol=ncol_)
     plt.savefig(f'analysis_gas_states_fuel_econ_{year}.pdf')
     
@@ -435,6 +436,22 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
         axis_label = r'break-even carbon price (\$/ton CO$_{2}$)'
         plot_fuel_econ(df2, var, axis_label, **kwargs) 
     
+    # Gas price
+    kwargs = {
+        'save' : f'gas_price_{year}',
+    }
+    var = 'gas mean (USD/gallon)'
+    axis_label = 'gasoline price ($/gallon)'
+    plot_fuel_econ(df2, var, axis_label, **kwargs)
+
+    # Elec price
+    kwargs = {
+        'save' : f'elec_price_{year}',
+    }
+    var = 'elec mean (USD/kWh)'
+    axis_label = 'electricity price ($/kWh)'
+    plot_fuel_econ(df2, var, axis_label, **kwargs)
+
     # Gas / Elec ratio
     kwargs = {
         'save' : f'gas_over_elec_{year}',
@@ -450,3 +467,10 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     var = 'CO2 Intensity (metric tons/kWh)'
     axis_label = r'electricity CO$_{2}$ intensity (tons/kWh)'
     plot_fuel_econ(df2, var, axis_label, **kwargs)
+
+
+
+
+
+
+
