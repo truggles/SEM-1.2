@@ -31,7 +31,10 @@ def marker_list():
 
 
 
-def plot_fuel_econ(df, fcev_mpge, ice_mpg):
+def plot_fuel_econ(df, var, axis_label, **kwargs):
+
+    print(var, axis_label)
+    print(kwargs)
 
 
     fig = plt.figure()
@@ -51,32 +54,41 @@ def plot_fuel_econ(df, fcev_mpge, ice_mpg):
     ax.outline_patch.set_visible(False)
 
 
-    # Get limits of "good" values by looping through once
-    # this is used to define the "Normalization" used for color mapping
-    good_vals = []
-    for astate in shpreader.Reader(states_shp).records():
-
-        geo_state = astate.attributes['name']
-        
-        # Find matching entry in df
-        for idx in df.index:
-
-            prices_state = df.loc[idx, 'State']
-        
-            if geo_state != prices_state:
-                continue
-            # Skip cases where CO2 intensity of elec is high enough that the
-            # costs diverge.
-            denom = df.loc[idx, f'break-even denom {ice_mpg} {fcev_mpge}']
-            if denom >= 0:
-                continue
-            good_vals.append( df.loc[idx, f'break-even {ice_mpg} {fcev_mpge}'] )
-    
     # https://stackoverflow.com/questions/25408393/getting-individual-colors-from-a-color-map-in-matplotlib
     cmap = mpl.cm.get_cmap('viridis', 10)
-    #norm = mpl.colors.Normalize(vmin=0, vmax=np.max(df[f'break-even {ice_mpg} {fcev_mpge}']) )
-    #norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=np.max(good_vals) )
-    norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=1000 )
+
+    if 'break-even' in kwargs and kwargs['break-even']:
+        # Get limits of "good" values by looping through once
+        # this is used to define the "Normalization" used for color mapping
+        good_vals = []
+        for astate in shpreader.Reader(states_shp).records():
+
+            geo_state = astate.attributes['name']
+            
+            # Find matching entry in df
+            for idx in df.index:
+
+                prices_state = df.loc[idx, 'State']
+            
+                if geo_state != prices_state:
+                    continue
+                # Skip cases where CO2 intensity of elec is high enough that the
+                # costs diverge.
+                denom = df.loc[idx, var.replace('break-even', 'break-even denom')]
+                if denom >= 0:
+                    continue
+                good_vals.append( df.loc[idx, var] )
+    else:
+        good_vals = df[var]
+
+
+    if 'break-even' in kwargs and kwargs['break-even']:
+        norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=1000 )
+    elif 'set_range' in kwargs:
+        norm = mpl.colors.Normalize(vmin=kwargs['set_range'][0], vmax=kwargs['set_range'][1] )
+    else:
+        norm = mpl.colors.Normalize(vmin=np.min(good_vals), vmax=np.max(good_vals) )
+    
     cmap.set_under('white')
     cmap.set_bad('white')
     
@@ -94,16 +106,17 @@ def plot_fuel_econ(df, fcev_mpge, ice_mpg):
             if geo_state != prices_state:
                 continue
         
-            # Skip cases where CO2 intensity of elec is high enough that the
-            # costs diverge.
-            denom = df.loc[idx, f'break-even denom {ice_mpg} {fcev_mpge}']
-            if denom >= 0:
-                continue
+            if 'break-even' in kwargs and kwargs['break-even']:
+                # Skip cases where CO2 intensity of elec is high enough that the
+                # costs diverge.
+                denom = df.loc[idx, var.replace('break-even', 'break-even denom')]
+                if denom >= 0:
+                    continue
 
-            val = df.loc[idx, f'break-even {ice_mpg} {fcev_mpge}']
+            val = df.loc[idx, var]
             facecolor = cmap(norm(val))
             #if prices_state == 'Washington':
-            print(f"{astate.attributes['name']:>30} {round(val,4)} $/ton CO2, color: {facecolor}")
+            print(f"{astate.attributes['name']:>30} {round(val,4)} {var}")
         
 
         
@@ -111,19 +124,27 @@ def plot_fuel_econ(df, fcev_mpge, ice_mpg):
         ax.add_geometries([astate.geometry], ccrs.PlateCarree(),
                           facecolor=facecolor, edgecolor=edgecolor)
 
-    plt.text( np.mean([lat_1, lat_2]), lon_2*1.025, f'Hybrid ICEV: {ice_mpg} MPG\nFCEV: {fcev_mpge} MPGe\nEff. Ratio:{round(fcev_mpge/ice_mpg,2)}',
-         horizontalalignment='center',
-         transform=ccrs.Geodetic())
+    if 'text' in kwargs:
+        plt.text( np.mean([lat_1, lat_2]), lon_2*1.025, kwargs['text'],
+            horizontalalignment='center',
+            transform=ccrs.Geodetic())
 
     cax = fig.add_axes([.2, .12, .6, 0.04]) # Start X, start Y, X width, Y width
+    if 'break-even' in kwargs and kwargs['break-even']:
+        extend = 'max'
+    else:
+        extend = 'neither'
     cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap,
                                     norm=norm,
-                                    extend='max',
+                                    extend=extend,
                                     orientation='horizontal')
-    cb.set_label(r'break-even carbon price (\$/ton CO$_{2}$)')
+    cb.set_label(axis_label)
     fig.subplots_adjust(top=1, left=.05, right=.95)
     
-    plt.savefig(f'geo_map_states_break_even_ice{ice_mpg}_fcev{fcev_mpge}.pdf')
+    save_str = f'geo_map_states_'
+    if 'save' in kwargs:
+        save_str += kwargs['save']
+    plt.savefig(f'{save_str}.pdf')
 
 
 def plot_prices(year):
@@ -168,7 +189,7 @@ def plot_prices(year):
         
             frac = df_prices.loc[idx, 'gas mean (USD/gallon)'] / af.kWh_to_GGE
             frac /= df_prices.loc[idx, 'elec mean (USD/kWh)']
-            print(f"{astate.attributes['name']:>30} {round(frac,4)}")
+            #print(f"{astate.attributes['name']:>30} {round(frac,4)}")
         
             # simple scheme to assign color to each state
             while True:
@@ -199,7 +220,7 @@ def plot_prices(year):
     cb.set_label(r'gasoline price (\$/kWh$_{LHV}$) / electricity price (\$/kWh)')
     fig.subplots_adjust(top=1, left=.05, right=.95)
     
-    plt.savefig(f'geo_map_states_gas_over_elec_{year}.pdf')
+    plt.savefig(f'geo_map_states_gas_over_elec_{year}_old.pdf')
 
 
 def check_stats(df, cor_col1, cor_col2):
@@ -403,7 +424,29 @@ for year in [2017,]:# 2018,]: # 2018 does not have carbon intensity info
     for ICE_mpg in ice_mpgs:
         carbon_price_plots(df2, df_synth, year, carbon_price_list, FCEV_mpge, ICE_mpg, dispensing_dollar_per_kg)
 
-    for fcev, ice in zip(fcev_mpges, ice_mpgs):
-        plot_fuel_econ(df2, fcev, ice)
+    # Break-even price=cost plots
+    kwargs = {
+        'break-even' : True,
+    }
+    for fcev_mpge, ice_mpg in zip(fcev_mpges, ice_mpgs):
+        kwargs['save'] = f'break_even_ice{ice_mpg}_fcev{fcev_mpge}'
+        kwargs['text'] = f'Hybrid ICEV: {ice_mpg} MPG\nFCEV: {fcev_mpge} MPGe\nEff. Ratio:{round(fcev_mpge/ice_mpg,2)}'
+        var = f'break-even {ice_mpg} {fcev_mpge}'
+        axis_label = r'break-even carbon price (\$/ton CO$_{2}$)'
+        plot_fuel_econ(df2, var, axis_label, **kwargs) 
     
+    # Gas / Elec ratio
+    kwargs = {
+        'save' : f'gas_over_elec_{year}',
+    }
+    var = 'gas/elec (post kWh conv)'
+    axis_label = r'gasoline price (\$/kWh$_{LHV}$) / electricity price (\$/kWh)'
+    plot_fuel_econ(df2, var, axis_label, **kwargs)
 
+    # Elec CO2 intensity
+    kwargs = {
+        'save' : f'elec_CO2_intensity_{year}',
+    }
+    var = 'CO2 Intensity (metric tons/kWh)'
+    axis_label = r'electricity CO$_{2}$ intensity (tons/kWh)'
+    plot_fuel_econ(df2, var, axis_label, **kwargs)
