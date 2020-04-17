@@ -113,7 +113,8 @@ def scan_electricity_costs_and_electrolyzer_CFs(system, electricity_info, electr
 def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyzer_info, base, do_H2=False):
 
     # For baseline marker:
-    base_electro_fixed_cost = system['FIXED_COST_ELECTROLYZER']['value']
+    base_electro_fixed_hourly_cost = system['FIXED_COST_ELECTROLYZER']['value']
+    base_electro_fixed_cost = system['FIXED_COST_ELECTROLYZER']['capital cost']
 
     info1 = electricity_info
     info2 = electrolyzer_info
@@ -127,18 +128,24 @@ def scan_electricity_and_electrolyzer_costs(system, electricity_info, electrolyz
                 cost = af.get_fuel_system_costs(syst, electricity)
             z[i][j] = cost
 
+    print(electrolyzer_info)
+    electro_info = list(electrolyzer_info)
+    electro_info[0] = electro_info[0] * base_electro_fixed_cost / base_electro_fixed_hourly_cost
+    electro_info[1] = electro_info[1] * base_electro_fixed_cost / base_electro_fixed_hourly_cost
+    print(electro_info)
+
     save_name_base = 'scan_electricity_and_electrolyzer_costs'
     app = 'electrofuel'
     if do_H2:
         save_name_base += '_H2_only'
         app = r'H$_{2}$'
-    plot_2D(z, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+    plot_2D(z, electro_info, electricity_info, r'electrolyzer overnight capital cost (\$/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
             app + r' cost (\$/kWh$_{LHV}$)', save_name_base+'_kWh', base, base_electro_fixed_cost)
     if do_H2:
-        plot_2D(z*kWh_LHV_per_kg_H2, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+        plot_2D(z*kWh_LHV_per_kg_H2, electro_info, electricity_info, r'electrolyzer overnight capital cost (\$/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
                 app + r' cost (\$/kg)', save_name_base+'_kg', base, base_electro_fixed_cost)
     else:
-        plot_2D(z*kWh_to_GGE, electrolyzer_info, electricity_info, r'electrolyzer fixed hourly cost ((\$/h)/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
+        plot_2D(z*kWh_to_GGE, electro_info, electricity_info, r'electrolyzer overnight capital cost (\$/kW$_{LHV}$)', 'electricity costs ($/kWh)', 
                 app + r' cost (\$/GGE)', save_name_base+'_GGE', base, base_electro_fixed_cost)
 
 
@@ -158,7 +165,12 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
             y_ticks_loc.append(i)
             y_ticks_val.append(str(round(y_val,rounder_y)))
     for j, x_val in enumerate(np.linspace(info2[0], info2[1], info2[2])):
-        if round(x_val,rounder_x) == round(x_val,10):
+        if ('scan_electricity_and_electrolyzer_costs' in save_name and \
+                j%10 == 0):
+            x_ticks_loc.append(j)
+            x_ticks_val.append(str(int(x_val)))
+        elif ((round(x_val,rounder_x) == round(x_val,10)) and \
+                'scan_electricity_and_electrolyzer_costs' not in save_name):
             x_ticks_loc.append(j)
             x_ticks_val.append(str(round(x_val,rounder_x)))
 
@@ -214,7 +226,7 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
 # https://www.eia.gov/electricity/annual/pdf/epa.pdf
 us_avg = 0.0692
 
-date = 20200303
+date = '20200416a'
 base = f'plots_analytic_fuels_{date}/'
 if not os.path.exists(base):
     os.makedirs(base)
@@ -260,9 +272,10 @@ print(f"                       or: {round(cost*kWh_LHV_per_kg_H2,4)} $/kg")
 
 electricity_info = [0.0, 0.2, 51]
 electrolyzer_info = [0, 0.05, 51]
-syst = af.return_fuel_system() # Get fresh system
-scan_electricity_and_electrolyzer_costs(syst,
-        electricity_info, electrolyzer_info, base)
+electrolyzer_info = [0, 0.05*3000./3076.328714928482, 51]
+#syst = af.return_fuel_system() # Get fresh system
+#scan_electricity_and_electrolyzer_costs(syst,
+#        electricity_info, electrolyzer_info, base)
 
 syst = af.return_fuel_system() # Get fresh system
 do_H2=True
@@ -270,47 +283,47 @@ scan_electricity_and_electrolyzer_costs(syst,
         electricity_info, electrolyzer_info, base, do_H2)
 
 electrolyzer_CF_info = [0.2, 1.00, 41]
-syst = af.return_fuel_system() # Get fresh system
-scan_electricity_costs_and_electrolyzer_CFs(syst,
-        electricity_info, electrolyzer_CF_info, base)
+#syst = af.return_fuel_system() # Get fresh system
+#scan_electricity_costs_and_electrolyzer_CFs(syst,
+#        electricity_info, electrolyzer_CF_info, base)
 
 syst = af.return_fuel_system() # Get fresh system
 scan_electricity_costs_and_electrolyzer_CFs(syst,
         electricity_info, electrolyzer_CF_info, base, do_H2)
 
-systems, system_labels, electricity_costs = [], [], []
-
-syst = af.return_fuel_system() # Get fresh system
-system_labels.append('baseline')
-electricity_costs.append(us_avg)
-systems.append( copy.deepcopy(syst) )
-
-system_labels.append('free\nelectricity')
-electricity_costs.append(0.0)
-systems.append( copy.deepcopy(syst) )
-
-system_labels.append('1/2 cost\nelectrolyzer')
-electricity_costs.append(us_avg)
-systems.append( copy.deepcopy(syst) )
-systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = systems[-1]['FIXED_COST_ELECTROLYZER']['value'] * 0.5
-
-system_labels.append('DAC CO$_{2}$')
-electricity_costs.append(us_avg)
-systems.append( copy.deepcopy(syst) )
-systems[-1]['VAR_COST_CO2']['co2 cost'] = 600
-systems[-1]['VAR_COST_CO2'] = af.var_cost_of_CO2(**systems[-1]['VAR_COST_CO2'])
-
-system_labels.append('50% CF\nelectrolyzer\n+ 1/2 cost\nelectricity')
-electricity_costs.append(us_avg*0.5)
-systems.append( copy.deepcopy(syst) )
-systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.5
-
-system_labels.append('20% CF\nelectrolyzer\n+ free\nelectricity')
-electricity_costs.append(0.0)
-systems.append( copy.deepcopy(syst) )
-systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.2
-
-stacked_plots(systems, system_labels, electricity_costs, 'bar_chart', base)
+#systems, system_labels, electricity_costs = [], [], []
+#
+#syst = af.return_fuel_system() # Get fresh system
+#system_labels.append('baseline')
+#electricity_costs.append(us_avg)
+#systems.append( copy.deepcopy(syst) )
+#
+#system_labels.append('free\nelectricity')
+#electricity_costs.append(0.0)
+#systems.append( copy.deepcopy(syst) )
+#
+#system_labels.append('1/2 cost\nelectrolyzer')
+#electricity_costs.append(us_avg)
+#systems.append( copy.deepcopy(syst) )
+#systems[-1]['FIXED_COST_ELECTROLYZER']['value'] = systems[-1]['FIXED_COST_ELECTROLYZER']['value'] * 0.5
+#
+#system_labels.append('DAC CO$_{2}$')
+#electricity_costs.append(us_avg)
+#systems.append( copy.deepcopy(syst) )
+#systems[-1]['VAR_COST_CO2']['co2 cost'] = 600
+#systems[-1]['VAR_COST_CO2'] = af.var_cost_of_CO2(**systems[-1]['VAR_COST_CO2'])
+#
+#system_labels.append('50% CF\nelectrolyzer\n+ 1/2 cost\nelectricity')
+#electricity_costs.append(us_avg*0.5)
+#systems.append( copy.deepcopy(syst) )
+#systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.5
+#
+#system_labels.append('20% CF\nelectrolyzer\n+ free\nelectricity')
+#electricity_costs.append(0.0)
+#systems.append( copy.deepcopy(syst) )
+#systems[-1]['FIXED_COST_ELECTROLYZER']['capacity factor'] = 0.2
+#
+#stacked_plots(systems, system_labels, electricity_costs, 'bar_chart', base)
 
 
 
