@@ -173,14 +173,13 @@ def scan_efficiency_and_electrolyzer_costs(system, electrolyzer_eff, electrolyze
     electro_info[0] = electro_info[0] * base_electro_fixed_cost / base_electro_fixed_hourly_cost
     electro_info[1] = electro_info[1] * base_electro_fixed_cost / base_electro_fixed_hourly_cost
 
-    
     save_name_base = f'scan_efficiency_and_electrolyzer_costs_{str(electricity).replace(".","p")}'
     app = 'electrofuel'
     if do_H2:
         save_name_base += '_H2_only'
         app = r'H$_{2}$'
     plot_2D(z, electro_info, electrolyzer_eff, r'electrolyzer overnight capital cost (\$/kW$_{LHV}$)', 'electrolyzer efficiency', 
-            app + r' cost (\$/kWh$_{LHV}$)', save_name_base+'_kWh', base, base_electro_fixed_cost)
+            app + r' cost (\$/kWh$_{LHV}$)', save_name_base+'_kWh', base, base_electro_fixed_cost, f'electricity cost: {electricity} $/kWh')
     #if do_H2:
     #    plot_2D(z*kWh_LHV_per_kg_H2, electro_info, electrolyzer_eff, r'electrolyzer overnight capital cost (\$/kW$_{LHV}$)', 'electrolyzer efficiency', 
     #            app + r' cost (\$/kg)', save_name_base+'_kg', base, base_electro_fixed_cost)
@@ -190,7 +189,7 @@ def scan_efficiency_and_electrolyzer_costs(system, electrolyzer_eff, electrolyze
 
 
 
-def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, base, base_electro_fixed_cost=-1):
+def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, base, base_electro_fixed_cost=-1, text=''):
 
     info1 = y_axis_info
     info2 = x_axis_info
@@ -201,25 +200,35 @@ def plot_2D(z, x_axis_info, y_axis_info, x_label, y_label, z_label, save_name, b
     rounder_x = 2 if '_and_electrolyzer_costs' in save_name else 1
     rounder_y = 2
     for i, y_val in enumerate(np.linspace(info1[0], info1[1], info1[2])):
-        if round(y_val,rounder_y) == round(y_val,10):
+        #if round(y_val,rounder_y) == round(y_val,10):
+        if i%10==0:
             y_ticks_loc.append(i)
             y_ticks_val.append(str(round(y_val,rounder_y)))
     for j, x_val in enumerate(np.linspace(info2[0], info2[1], info2[2])):
-        if ('_and_electrolyzer_costs' in save_name and \
-                j%10 == 0):
-            x_ticks_loc.append(j)
-            x_ticks_val.append(str(int(x_val)))
-        elif ((round(x_val,rounder_x) == round(x_val,10)) and \
-                '_and_electrolyzer_costs' not in save_name):
+        #if ('_and_electrolyzer_costs' in save_name and \
+        #        j%10 == 0):
+        #    x_ticks_loc.append(j)
+        #    x_ticks_val.append(str(int(x_val)))
+        #elif ((round(x_val,rounder_x) == round(x_val,10)) and \
+        #        '_and_electrolyzer_costs' not in save_name):
+        if j%10==0:
             x_ticks_loc.append(j)
             x_ticks_val.append(str(round(x_val,rounder_x)))
 
     fig, ax = plt.subplots()
-    im = ax.imshow(z, origin='lower', interpolation='spline16', vmin=0, aspect='auto')
+    if 'scan_efficiency_and_electrolyzer_costs' in save_name:
+        im = ax.imshow(z, origin='lower', interpolation='spline16', vmin=0, vmax=0.5, aspect='auto')
+        n_levels = [0., 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5]
+        plt.text(info2[2]/2., info1[2]*.95, text, size=12, ha='center', bbox=dict(facecolor='white', alpha=1.0))
+        
+        cs = ax.contour(z, n_levels, colors='w')
+        ax.clabel(cs, inline=1, fontsize=12, fmt='%1.3f')
+    else:
+        im = ax.imshow(z, origin='lower', interpolation='spline16', vmin=0, aspect='auto')
+        n_levels = 5
 
-    n_levels = 5
-    cs = ax.contour(z, n_levels, colors='w')
-    ax.clabel(cs, inline=1, fontsize=12, fmt='%1.2f')
+        cs = ax.contour(z, n_levels, colors='w')
+        ax.clabel(cs, inline=1, fontsize=12, fmt='%1.2f')
 
     plt.xticks(x_ticks_loc, x_ticks_val)
     plt.yticks(y_ticks_loc, y_ticks_val)
@@ -332,8 +341,8 @@ syst = af.return_fuel_system() # Get fresh system
 scan_electricity_costs_and_electrolyzer_CFs(syst,
         electricity_info, electrolyzer_CF_info, base, do_H2)
 
-electrolyzer_eff = [30, 100, 71]
-for elec_cost in [0.01, 0.02, 0.03]:
+electrolyzer_eff = [.30, 1.00, 71]
+for elec_cost in [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.1, 0.125, 0.15]:
     syst = af.return_fuel_system() # Get fresh system
     scan_efficiency_and_electrolyzer_costs(syst,
             electrolyzer_eff, electrolyzer_info, elec_cost, base, do_H2)
