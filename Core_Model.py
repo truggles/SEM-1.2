@@ -208,7 +208,8 @@ def core_model (global_dic, case_dic):
         dispatch_natgas = cvx.Variable(num_time_periods)
         constraints += [
                 dispatch_natgas >= 0,
-                dispatch_natgas <= capacity_natgas
+                dispatch_natgas <= capacity_natgas,
+                sum(dispatch_natgas) <= sum(demand_series) * 0.00 # CHANGE ME FOR 1%, 5%, 10% tests
                 ]
         fcn2min += capacity_natgas * fixed_cost_natgas + cvx.sum(dispatch_natgas * var_cost_natgas)/num_time_periods
     else:

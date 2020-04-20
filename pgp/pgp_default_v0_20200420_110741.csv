@@ -1,0 +1,44 @@
+case name,SolarWind_PGPbatt
+system reliability,-1.0
+CO2 price ($/kgCO2),0.0
+norm. demand to 1,True
+demand file,US_demand_unnormalized_FOURTY_YEARS_FROM_FOUR_YEAR_LOOP.csv
+mean demand (kW),1.0
+fixed cost solar ($/kW/h),0.0219
+var cost solar ($/kW/h),1e-08
+solar file,US_capacity_solar_threshold26_unnormalized.csv
+cap factor solar (-),0.2749382517596233
+fixed cost wind ($/kW/h),0.0206
+var cost wind ($/kW/h),1.05e-08
+wind file,US_capacity_wind_threshold26_unnormalized.csv
+cap factor wind (-),0.363571204277968
+fixed cost storage ($/kWh/h),0.00424
+var cost storage ($/kWh/h),-1.0
+storage charging efficiency,0.9
+storage charging time (h),6.008
+storage decay rate (1/h)),1.14e-06
+fixed cost pgp storage ($/kWh/h),1.47e-06
+fixed cost to pgp storage ($/kW/h),0.0148
+fixed cost from pgp storage ($/kW/h),0.063
+var cost to pgp storage ($/kW/h),0.0
+var cost from pgp storage ($/kW/h),0.0
+pgp storage charging efficiency,0.49
+pgp storage decay rate (1/h)),1.14e-08
+problem status,optimal
+system cost ($ or $/kWh),0.11899627050904106
+capacity solar (kW),1.0295843909563487
+dispatch solar (kW),0.283072132488535
+curtailment solar (kW),-1.973913111043593e-17
+capacity wind (kW),2.481374305818111
+dispatch wind (kW),0.7903172485667123
+curtailment wind (kW),0.1118389960639854
+capacity storage (kW),1.6841348863388335
+energy storage (kW),0.47095844886633
+dispatch to storage (kW),0.029027746973909807
+dispatch from storage (kW),0.026124435383887184
+capacity pgp storage (kW),393.46295201200377
+capacity to pgp storage (kW),0.270556640250006
+capacity from pgp storage (kW),0.5334712664278907
+energy pgp storage (kW),167.6231643138372
+dispatch to pgp storage (kW),0.138204232472827
+dispatch from pgp storage (kW),0.0677181630076024
