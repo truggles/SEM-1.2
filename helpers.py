@@ -61,7 +61,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
         plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, ndays, info[1], True)
 
     plt.tight_layout()
-    horiz = -1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
+    horiz = -1.1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
     vert = 2
     handles, labels = plt.gca().get_legend_handles_labels()
     if len(handles) > 9:
@@ -108,11 +108,11 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         
 
     plt.tight_layout()
-    horiz = -2.2 if case != 'Case6_NuclearWindSolarStorage' else -2.2
-    vert = 1.3
+    horiz = -2.6 if case != 'Case6_NuclearWindSolarStorage' else -2.2
+    vert = 1.3 if 'Case1' in case else 1.35
     handles, labels = plt.gca().get_legend_handles_labels()
-    if len(handles) > 9:
-        vert = 1.2
+    #if len(handles) > 9:
+    #    vert = 1.2
     plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, vert))
     plt.subplots_adjust(top=.8)
     fig = plt.gcf()
@@ -183,51 +183,51 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='Power from solar', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='power from solar', lw=fblw)
         bottom += dfs['dispatch solar (kW)'].values
     if 'wind' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='Power from wind', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='power from wind', lw=fblw)
         bottom += dfs['dispatch wind (kW)'].values
     if 'nuclear' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch nuclear (kW)'], color='tan', alpha=0.5, label='Power from nuclear', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch nuclear (kW)'], color='tan', alpha=0.5, label='power from dispatchable', lw=fblw)
         bottom += dfs['dispatch nuclear (kW)'].values
     if 'storage' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='Power from storage', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='power from storage', lw=fblw)
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='Power to demand', lw=fblw)
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to demand', lw=fblw)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
-    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='Power to electrolyzer', lw=fblw)
+    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to electrolyzer', lw=fblw)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
-        ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='Power to storage', lw=fblw)
+        ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='Unmet demand', lw=fblw)
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet demand', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='Demand')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='demand')
 
     bottom3 = np.zeros(len(xs))
-    lab = 'Gen.'
+    lab = 'gen.'
     if 'solar' in techs:
-        lab += ' Solar'
+        lab += ' solar'
         ax.plot(xs, bottom3 + dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)'], 'y-', linewidth=fblw, label=lab)
         bottom3 += dfs['dispatch solar (kW)'] + dfs['cutailment solar (kW)']
-        lab = lab.replace('Solar', 'Sol.')
+        lab = lab.replace('solar', 'sol.')
     if 'wind' in techs:
         if 'solar' in techs:
-            lab += ' + Wind'
+            lab += ' + wind'
         else:
-            lab += ' Wind'
+            lab += ' wind'
         ax.plot(xs, bottom3 + dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)'], 'b-', linewidth=fblw, label=lab)
         bottom3 += dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)']
     if 'nuclear' in techs:
         if 'solar' in techs or 'wind' in techs:
-            lab += ' + Nuclear Cap.'
+            lab += ' + dispatchable cap.'
         else:
-            lab = 'Capacity Nuclear'
+            lab = 'capacity dispatchable'
         ax.plot(xs, bottom3 + np.ones(len(xs))*cap_nuke, 'r-', linewidth=fblw, label=lab)
 
     if set_max == -1:
@@ -270,11 +270,11 @@ if '__main__' in __name__:
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
             "Case1_Nuclear" : [['nuclear',], 2],
-            #"Case2_NuclearStorage" : [['nuclear','storage'], 2],
-            #"Case3_WindStorage" : [['wind', 'storage'], 6],
-            #"Case4_SolarStorage" : [['solar', 'storage'], 5],
-            #"Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 4],
-            #"Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3],
+            "Case2_NuclearStorage" : [['nuclear','storage'], 2],
+            "Case3_WindStorage" : [['wind', 'storage'], 6],
+            "Case4_SolarStorage" : [['solar', 'storage'], 5],
+            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 4],
+            "Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3],
     }
 
     #possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
