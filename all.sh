@@ -7,7 +7,8 @@ version="v8"
 #ARGS="make_results_file"
 ARGS="run_sem make_results_file make_plots"
 ARGS="make_plots"
-ARGS="make_results_file make_plots"
+ARGS="make_results_file"
+ARGS="make_plots"
 
 
         #"Case0_NuclearFlatDemand" \

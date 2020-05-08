@@ -6,8 +6,7 @@ from glob import glob
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from datetime import datetime
-
+from datetime import datetime, timedelta
 
 def get_fuel_demands(start, end, steps):
     fuel_demands = [0., start,]
@@ -48,7 +47,8 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             plt.setp(axs[-1].get_xticklabels(), visible=False)
         axs[-1].set_ylabel('Power (kW)')
 
-        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, info[1])
+        ndays = 7 # days on each side of peak
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, ndays, info[1])
         
         if j == 0:
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1]) )
@@ -58,7 +58,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
             axs.append( plt.subplot(7, 2, 2 * i, sharey=axs[-1], sharex=axs[1]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
             plt.setp(axs[-1].get_xticklabels(), visible=False)
-        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, info[1], True)
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, ndays, info[1], True)
 
     plt.tight_layout()
     horiz = -1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
@@ -71,6 +71,53 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
     fig = plt.gcf()
     fig.savefig(f"{save_dir}/{case}.png")
     fig.savefig(f"{save_dir}/pdf/{case}.pdf")
+
+
+def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, ldc=False):
+
+    # Open out file as df
+    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD0.0')
+    print(f_name)
+    full_file_name = glob(f_name)
+    assert(len(full_file_name) == 1)
+    df = pd.read_csv(full_file_name[0])
+
+    # Find the idx to center to time series upon
+    center_idx = find_centering_hour_idx(df, case)
+
+    plt.close()
+    matplotlib.rcParams["figure.figsize"] = (7, 3.5)
+    matplotlib.rcParams["font.size"] = 9
+    matplotlib.rcParams['lines.linewidth'] = 1
+    matplotlib.rcParams['hatch.linewidth'] = 0.5
+    axs = []
+    for j, dem in enumerate(tgt_fuel_dems):
+
+
+        i = len(tgt_fuel_dems) - j + 1
+        this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
+        if j == 0:
+            axs.append( plt.subplot(1, 3, j+1) )
+            axs[-1].set_ylabel('Power (kW)')
+        else:
+            axs.append( plt.subplot(1, 3, j+1, sharey=axs[0]) )
+            plt.setp(axs[-1].get_yticklabels(), visible=False)
+        axs[-1].set_xlabel('Hours')
+
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, 2, info[1])
+        
+
+    plt.tight_layout()
+    horiz = -2.2 if case != 'Case6_NuclearWindSolarStorage' else -2.2
+    vert = 1.3
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if len(handles) > 9:
+        vert = 1.2
+    plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, vert))
+    plt.subplots_adjust(top=.8)
+    fig = plt.gcf()
+    fig.savefig(f"{save_dir}/{case}_select.png")
+    fig.savefig(f"{save_dir}/pdf/{case}_select.pdf")
 
 
 def find_centering_hour_idx(df, case):
@@ -89,7 +136,23 @@ def find_centering_hour_idx(df, case):
     return [lowest_idx - 24,]
 
 
-def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir, case, set_max=-1, ldc=False):
+# From list of hours as n hours from year start, find datetimes
+def get_start_datetime(xs):
+
+    dts = []
+    xsx = []
+
+    dt = datetime(2016, 1, 1, 1)
+    first_hr = dt + timedelta(hours=xs.values[0])
+    for i in range(len(xs)):
+        if first_hr.hour == 0:
+            dts.append(first_hr.strftime("%Y-%m-%d"))
+            xsx.append(xs.values[0] + i)
+        first_hr += timedelta(hours=1)
+    return dts, xsx
+
+
+def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir, case, days, set_max=-1, ldc=False):
 
     # Open out file as df
     full_file_name = glob(out_file_name)
@@ -99,8 +162,8 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
     peak_idx = center_idx[0]
 
-    lo = peak_idx - 24*7
-    hi = peak_idx + 24*7
+    lo = peak_idx - 24*days
+    hi = peak_idx + 24*days
     if hi > len(df.index):
         lo = lo - (hi - len(df.index))
         hi = hi - (hi - len(df.index))
@@ -111,9 +174,13 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         xs = np.linspace(0, 1, len(dfs.index))
     else:
         xs = dfs['time (hr)']
+
     cap_nuke = np.max(df['dispatch nuclear (kW)'])
 
     fblw = 0.25
+    if days < 7:
+        fblw = .75
+
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='Power from solar', lw=fblw)
@@ -170,6 +237,15 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         ax.set_xlim(0, 1)
     else:
         ax.set_xlim(lo, hi-1)
+
+    # Make x-axis datetime
+    if not ldc:
+        dts, xsx = get_start_datetime(xs)
+        if days < 7: # we have more room, rotate less
+            plt.xticks(xsx, dts, rotation=30)
+        else:
+            plt.xticks(xsx, dts, rotation=90)
+        ax.set_xlabel(None)
     
     # Add fuel demand value
     ax.text(0.03, 0.95, f'Fuel fraction: {round(float(dem),3)}',
@@ -184,17 +260,21 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots2'
+    save_dir = 'out_plots3'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+        os.makedirs(save_dir+'/pdf')
+
     date = '20200311_v8'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
             "Case1_Nuclear" : [['nuclear',], 2],
-            "Case2_NuclearStorage" : [['nuclear','storage'], 2],
-            "Case3_WindStorage" : [['wind', 'storage'], 6],
-            "Case4_SolarStorage" : [['solar', 'storage'], 5],
-            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 4],
-            "Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3],
+            #"Case2_NuclearStorage" : [['nuclear','storage'], 2],
+            #"Case3_WindStorage" : [['wind', 'storage'], 6],
+            #"Case4_SolarStorage" : [['solar', 'storage'], 5],
+            #"Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 4],
+            #"Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3],
     }
 
     #possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
@@ -210,6 +290,17 @@ if '__main__' in __name__:
             #'1.14497',
             #'10.20862',
     ]
+    tgt_fuel_dems_select = [
+            #'0.012',
+            '0.02489',
+            #'0.05161',
+            '0.07432',
+            #'0.10702',
+            '0.2219',
+            #'0.31954',
+            #'1.14497',
+            #'10.20862',
+    ]
 
     for case, info in cases.items():
 
@@ -217,9 +308,10 @@ if '__main__' in __name__:
         #for idx, dem in enumerate(reversed(possible_dem_vals)):
         #    if str(dem) not in tgt_fuel_dems:
         #        continue
-        out_file_dir = f'{base}fuel_test_{date}_{case}/'
+        out_file_dir = f'{base}fuel_test_{date}_{case}*/'
         out_file_name = f'fuel_test_{date}_{case}_*Run_*_fuelDXXXkWh_*.csv'
         plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, info[0], save_dir, info[1], True)
+        plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems_select, case, info[0], save_dir, info[1], True)
 
 
 
