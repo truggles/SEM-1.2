@@ -360,7 +360,7 @@ def simple_plot_with_2nd_yaxis(df, save_dir, x, ys, labels, x_label, y_label_1, 
     ax2.scatter(x, ys[-1], color='C7', label=labels[-1], marker=markers[-1])
     ax2.tick_params(axis='y', labelcolor='C7')
     plt.legend(loc='upper right')
-    ax2.set_ylim(ax2.get_ylim()[0]/1.5, ax2.get_ylim()[1]*1.3)
+    ax2.set_ylim(0, ax2.get_ylim()[1]*1.3)
 
     plt.xscale('log', nonposx='clip')
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(myLogFormat))
