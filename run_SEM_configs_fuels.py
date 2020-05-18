@@ -236,7 +236,7 @@ def get_results(files, global_name):
 
 def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=False, ylims=[-1,-1], **kwargs):
 
-    print("Plotting x,y = {},{}".format(x_label,y_label))
+    print("Plot {} using x,y = {},{}".format(save, x_label,y_label))
 
     fuel_x = 'fuel demand (kWh)'.replace('kWh','kWh/h')
     if x_label == 'fuel demand (kWh)':
@@ -252,6 +252,8 @@ def simple_plot(save_dir, x, ys, labels, x_label, y_label, title, save, logY=Fal
     markers = marker_list()
     for y, label, mark in zip(ys, labels, markers):
         #print(label)
+        #for i, j in zip(x, y):
+        #    print(i, j)
         #print(y)
         if label == 'h2 storage':
             ax.scatter(x, y, label=r'H$_{2}$ storage', marker=markers[-1], color='C7')
@@ -483,7 +485,6 @@ def costs_plot(df, **kwargs):
     f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
     #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
     f_tot = f_elec+f_chem#+f_store
-    v_elec = df['var cost fuel electrolyzer ($/kW/h)'] * df['dispatch to fuel h2 storage (kW)'] * EFFICIENCY_FUEL_ELECTROLYZER / df['fuel demand (kWh)']
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
     v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
 
@@ -496,13 +497,15 @@ def costs_plot(df, **kwargs):
     ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$')
     ax.fill_between(df['fuel demand (kWh)'], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='var: electrolyzer')
 
-    print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}:")
-    print(f" ----- fixed cost electrolyzer {round(f_elec[1],6)}")
-    print(f" ----- fixed cost chem         {round(f_chem[1],6)}")
-    print(f" ----- variable chem           {round(v_chem[1],6)}")
-    print(f" ----- variable CO2            {round(v_co2[1],6)}")
-    print(f" ----- variable electrolyzer   {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}")
-    print(f" ----- TOTAL:                  {round(df.loc[1, 'fuel price ($/kWh)'],6)}")
+    n = len(df.index)-1
+    print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
+    print(f" ----- fixed cost electrolyzer          {round(f_elec[1],6)}         {round(f_elec[n],6)}")
+    print(f" ----- fixed cost chem                  {round(f_chem[1],6)}         {round(f_chem[n],6)}")
+    print(f" ----- variable chem                    {round(v_chem[1],6)}         {round(v_chem[n],6)}")
+    print(f" ----- variable CO2                     {round(v_co2[1],6)}          {round(v_co2[n],6)}")
+    print(f" ----- variable electrolyzer            {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}             {round(df.loc[n, 'fuel price ($/kWh)']-(f_tot[n]+v_chem[n]+v_co2[n]),6)}")
+    print(f" ----- TOTAL:                           {round(df.loc[1, 'fuel price ($/kWh)'],6)}           {round(df.loc[n, 'fuel price ($/kWh)'],6)}")
+    print(f" ----- mean cost electricity            {round(df.loc[1, 'mean price ($/kWh)'],6)}           {round(df.loc[n, 'mean price ($/kWh)'],6)}")
 
 
     # To print the estimated MEM electricity cost per point
@@ -1262,6 +1265,7 @@ if '__main__' in __name__:
     #        'Relative Curtailment of Generation Capacities', 'ratiosCurtailmentDivAvailablePower')
 
     
+    #print(df[['fuel demand (kWh)', 'fuel price ($/kWh)', 'mean price ($/kWh)', 'capacity nuclear (kW)']])
 
 
 

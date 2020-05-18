@@ -12,14 +12,14 @@ ARGS="make_plots"
 
 
         #"Case0_NuclearFlatDemand" \
+        #"Case3_WindStorage" \
+        #"Case4_SolarStorage" \
+        #"Case5_WindSolarStorage" \
+        #"Case6_NuclearWindSolarStorage" \
 
 for CASE in \
         "Case1_Nuclear" \
         "Case2_NuclearStorage" \
-        "Case3_WindStorage" \
-        "Case4_SolarStorage" \
-        "Case5_WindSolarStorage" \
-        "Case6_NuclearWindSolarStorage" \
         ; do
      
     ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS
