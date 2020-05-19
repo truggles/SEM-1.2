@@ -430,9 +430,15 @@ def stacked_plot(**kwargs):
             ax.set_ylim(min(0.1, ax.get_ylim()[0]), max(100, ax.get_ylim()[1]))
 
     #plt.tight_layout()
-    plt.legend()
+
+    if 'ylim' in kwargs.keys():
+        ax.set_ylim(kwargs['ylim'][0], kwargs['ylim'][1])
+        plt.legend(ncol=3)
+    else:
+        plt.legend()
     plt.grid()
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
+    fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.pdf')
 
 
 def get_threshold(df, ref, threshold):
@@ -521,6 +527,7 @@ def costs_plot(df, **kwargs):
         most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
         fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05)
         fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95)
+        print(f"\nSave dir {save_dir}, lower threshold {fuel_dem_split_1}, upper threshold {fuel_dem_split_2}")
         ax.plot(np.ones(len(df.index)) * fuel_dem_split_1, np.linspace(0, 0.5, len(df.index)), 'k--', label='_nolegend_')
         ax.plot(np.ones(len(df.index)) * fuel_dem_split_2, np.linspace(0, 0.5, len(df.index)), 'k--', label='_nolegend_')
 
@@ -1150,6 +1157,22 @@ if '__main__' in __name__:
     #del kwargs['logy']
     
 
+    ### Stacked dispatch fraction plot
+    tot_disp = df.loc[0:idx_max, 'dispatch nuclear (kW)'] + \
+            df.loc[0:idx_max, 'dispatch wind (kW)'] + \
+            df.loc[0:idx_max, 'dispatch solar (kW)']
+    kwargs['nuclear'] = df.loc[0:idx_max, 'dispatch nuclear (kW)'] / tot_disp
+    kwargs['wind'] = df.loc[0:idx_max, 'dispatch wind (kW)'] / tot_disp
+    kwargs['solar'] = df.loc[0:idx_max, 'dispatch solar (kW)'] / tot_disp
+    kwargs['y_label'] = 'fraction of dispatch'
+    kwargs['title'] = 'Normalized Dispatch'
+    kwargs['legend_app'] = ''
+    kwargs['ylim'] = [0, 1.2]
+    kwargs['save_name'] = 'stackedDispatchFraction'
+    stacked_plot(**kwargs)
+    del kwargs['ylim']
+    
+
     #### Stacked generation capacity plot
     #kwargs['nuclear'] = df.loc[0:idx_max, 'capacity nuclear (kW)']
     #kwargs['wind'] = df.loc[0:idx_max, 'capacity wind (kW)']
@@ -1265,7 +1288,7 @@ if '__main__' in __name__:
     #        'Relative Curtailment of Generation Capacities', 'ratiosCurtailmentDivAvailablePower')
 
     
-    #print(df[['fuel demand (kWh)', 'fuel price ($/kWh)', 'mean price ($/kWh)', 'capacity nuclear (kW)']])
+    #print(df[['fuel demand (kWh)', 'fuel price ($/kWh)', 'mean price ($/kWh)', 'capacity nuclear (kW)', 'capacity wind (kW)', 'capacity solar (kW)', 'dispatch wind (kW)', 'dispatch solar (kW)']])
 
 
 
