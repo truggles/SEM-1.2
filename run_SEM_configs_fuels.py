@@ -870,7 +870,7 @@ if '__main__' in __name__:
         if 'FULL_YEAR' in arg:
             full_year = True
 
-    input_file = 'fuel_test_20200302_AllCases_EIAPrices.csv'
+    input_file = 'fuel_test_20200602_AllCases_EIAPrices.csv'
     if 'Case0' in case:
         input_file = 'fuel_test_20200302_Case0_NuclearFlatDemand.csv'
     version = f'{version}_{case}'
