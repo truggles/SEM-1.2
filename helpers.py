@@ -190,7 +190,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='yellow', alpha=0.4, label='power from solar', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs['dispatch solar (kW)'], color='orange', alpha=0.4, label='power from solar', lw=fblw)
         bottom += dfs['dispatch solar (kW)'].values
     if 'wind' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='power from wind', lw=fblw)

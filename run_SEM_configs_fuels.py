@@ -418,7 +418,7 @@ def stacked_plot(**kwargs):
         ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['renewables'], color='green', label=f'renewables {kwargs["legend_app"]}')
     else:
         ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['wind'], color='blue', label=f'wind {kwargs["legend_app"]}')
-        ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color='yellow', label=f'solar {kwargs["legend_app"]}')
+        ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color='orange', label=f'solar {kwargs["legend_app"]}')
 
     plt.xscale('log', nonposx='clip')
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(myLogFormat))
@@ -606,7 +606,7 @@ def plot_months_vs_curtailment_and_h2_storage(global_name, path, fuel_demands, s
         adj = 0.15
         alph=0.04
         max_ = 0.
-        for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['yellow',adj]}.items():
+        for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['orange',adj]}.items():
             axs[j].scatter(month_info+vals[1], df[f'cutailment {tech} (kW)'], color=vals[0], label=tech, alpha=alph)
             if max(df[f'cutailment {tech} (kW)']) > max_:
                 max_ = max(df[f'cutailment {tech} (kW)'])
@@ -710,7 +710,7 @@ def plot_months_vs_curtailment_and_h2_storage_violin(global_name, path, fuel_dem
         adj = 0.15
         alph=0.04
         max_ = 0.
-        #for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['yellow',adj]}.items():
+        #for tech, vals in {'nuclear':['red',0.], 'wind':['blue',-adj], 'solar':['orange',adj]}.items():
         #    axs[j].scatter(month_info+vals[1], df[f'cutailment {tech} (kW)'], color=vals[0], label=tech, alpha=alph)
         #    if max(df[f'cutailment {tech} (kW)']) > max_:
         #        max_ = max(df[f'cutailment {tech} (kW)'])
