@@ -67,16 +67,16 @@ def fixed_cost_per_hr(**dic):
 # scale factor, D.H. König et al. / Fuel 159 (2015) 289–297
 CHEM_PLANT_CAP_SF = 4.6
 
-# https://www.usinflationcalculator.com/ 11 Feb 2020
-USD2005_to_USD2020 = 1.31
-USD2008_to_USD2020 = 1.19
-USD2010_to_USD2020 = 1.17
-USD2015_to_USD2020 = 1.08
-USD2016_to_USD2020 = 1.07
+# https://www.usinflationcalculator.com/ 3 June 2020 (2019 values didn't change compared to 3 Feb 2020 values for 2020)
+USD2005_to_USD2019 = 1.31
+USD2008_to_USD2019 = 1.19
+USD2010_to_USD2019 = 1.17
+USD2015_to_USD2019 = 1.08
+USD2016_to_USD2019 = 1.07
 
 FIXED_COST_ELECTROLYZER = {
-    'capital cost (kg)' : (118.0e6)*USD2010_to_USD2020/(50000/24), # 118 M$(2010) NREL H2A / 50,000 kg H2 per day; ($/kg H2 generation)
-    'capital cost' : (118.0e6)*USD2010_to_USD2020/(50000/24)/lhvH2Conv, # ($/kWh LHV H2 generation)
+    'capital cost (kg)' : (118.0e6)*USD2010_to_USD2019/(50000/24), # 118 M$(2010) NREL H2A / 50,000 kg H2 per day; ($/kg H2 generation)
+    'capital cost' : (118.0e6)*USD2010_to_USD2019/(50000/24)/lhvH2Conv, # ($/kWh LHV H2 generation)
     'assumed lifetime' : 10, # (yr)
     'capacity factor' : 1.00, # 100%
     #'value' : 1.4300E-02 # ($/h)/kW
@@ -85,8 +85,8 @@ FIXED_COST_ELECTROLYZER = {
 
 
 FIXED_COST_COMPRESSOR = {
-    'capital cost (kg)' : (2.07e6)*USD2016_to_USD2020/(58000/24), # 2.07 M$(2016) NREL H2A / 50,000 kg H2 per day; ($/kg H2 generation)
-    'capital cost' : (2.07e6)*USD2016_to_USD2020/(58000/24)/lhvH2Conv, # ($/kWh LHV H2 generation)
+    'capital cost (kg)' : (2.07e6)*USD2016_to_USD2019/(58000/24), # 2.07 M$(2016) NREL H2A / 50,000 kg H2 per day; ($/kg H2 generation)
+    'capital cost' : (2.07e6)*USD2016_to_USD2019/(58000/24)/lhvH2Conv, # ($/kWh LHV H2 generation)
     'assumed lifetime' : 15, # (yr)
     'capacity factor' : 1.00, # 100%
     #'value' : 1.4300E-02 # ($/h)/kW
@@ -95,10 +95,10 @@ FIXED_COST_COMPRESSOR = {
 
 
 FIXED_COST_H2_STORAGE = {
-    'capital cost (kg)' : 7.43e6*USD2016_to_USD2020/1160000, # 7.43 M$(2016) / 1,160,000 kg usable volume H2, source NREL H2A; ($/kg H2 storage)
-    'capital cost' : 7.43e6*USD2016_to_USD2020/1160000/lhvH2Conv, # ($/kWh LHV storage)
-    'fixed annual OandM cost (kg)' : 582000*USD2005_to_USD2020/1160000, # 582,000 $(2005) fixed O&M for facility
-    'fixed annual OandM cost' : 582000*USD2005_to_USD2020/1160000/lhvH2Conv, # 582,000 $(2005) fixed O&M for facility
+    'capital cost (kg)' : 7.43e6*USD2016_to_USD2019/1160000, # 7.43 M$(2016) / 1,160,000 kg usable volume H2, source NREL H2A; ($/kg H2 storage)
+    'capital cost' : 7.43e6*USD2016_to_USD2019/1160000/lhvH2Conv, # ($/kWh LHV storage)
+    'fixed annual OandM cost (kg)' : 582000*USD2005_to_USD2019/1160000, # 582,000 $(2005) fixed O&M for facility
+    'fixed annual OandM cost' : 582000*USD2005_to_USD2019/1160000/lhvH2Conv, # 582,000 $(2005 fixed O&M for facility
     'assumed lifetime' : 30, # (yr)
     #'value' : 2.7205E-07, # $/kWh
 }
@@ -106,8 +106,8 @@ FIXED_COST_H2_STORAGE = {
 
 
 FIXED_COST_CHEM_PLANT = {
-    'capital cost' : ((202+32+32)*1e6*CHEM_PLANT_CAP_SF)/(690*1000)*USD2015_to_USD2020, # ($/kW generation or conversion)
-    'capital cost (kg)' : ((202+32+32)*1e6*CHEM_PLANT_CAP_SF)/56300*USD2015_to_USD2020, # ($/kW generation or conversion)
+    'capital cost' : ((202+32+32)*1e6*CHEM_PLANT_CAP_SF)/(690*1000)*USD2015_to_USD2019, # ($/kW generation or conversion)
+    'capital cost (kg)' : ((202+32+32)*1e6*CHEM_PLANT_CAP_SF)/56300*USD2015_to_USD2019, # ($/kW generation or conversion)
             # ($202+32+32)*4.6/690MW of liquid fuel produced for FT, Hydrocracker, RWGS) = fixex costs = cap ex*multiplier, Table 3 chem plant, D.H. König et al. / Fuel 159 (2015) 289–297
     'assumed lifetime' : 30, # (yr)
             # D.H. König et al. / Fuel 159 (2015) 289–297, pg 293
@@ -122,8 +122,8 @@ FIXED_COST_CHEM_PLANT = {
 VAR_COST_CHEM_PLANT = {
     #'value' : 6.91E-02, # $/kWh = 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu)  # Variable O&M cost ($/MWh)
                                     # order is: maintenance, taxes & incentives, utilities, clean water
-    'value' : 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu) * (1./1000)*USD2015_to_USD2020, # Variable O&M cost ($/kWh)
-    'value( kg)' : 6.83*(0.069+0.038+0.016+0.001)*USD2015_to_USD2020, # Variable O&M cost ($/kg)
+    'value' : 18.62*(0.069+0.038+0.016+0.001)/(MMBtu_per_Gallon_Gasoline*MWh_per_MMBtu) * (1./1000)*USD2015_to_USD2019, # Variable O&M cost ($/kWh)
+    'value( kg)' : 6.83*(0.069+0.038+0.016+0.001)*USD2015_to_USD2019, # Variable O&M cost ($/kg)
     'ref' : 'Fig 4b, cost break down of $/GGE, excluding electrolyzer and cap annual, D.H. König et al. / Fuel 159 (2015) 289–297'
 
 }
