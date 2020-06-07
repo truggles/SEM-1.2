@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 
-export DATE=20200311
-export VERSION=v8
-nJobs=8
+export DATE=20200604
+export VERSION=v10
+nJobs=10
 
         #"Case0_NuclearFlatDemand" \
         #"Case1_Nuclear" \

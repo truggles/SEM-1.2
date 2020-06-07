@@ -1,12 +1,11 @@
 #!/bin/bash
 #
 #SBATCH --export=ALL
-#SBATCH --time=5:00:00
-#SBATCH --ntasks=1
+#SBATCH --time=10:00:00
+#SBATCH --ntasks=4
 #SBATCH --partition=clab
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=truggles@carnegiescience.edu
-#SBATCH --mem=10000
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=16G
 #
 cd $SLURM_SUBMIT_DIR
 #
