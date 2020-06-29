@@ -24,10 +24,16 @@ def return_file_info_map(region):
             'solar': ['Input_Data/ReliabilityPaper/CONUS_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
             'years' : [2015, 2016,2017,2018],
         },
-        'ERCOT': { 
-            'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
-            'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
-            'solar': ['Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+        #'ERCOT': { # Original files
+        #    'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
+        #    'wind': ['Input_Data/ReliabilityPaper/ERCOT_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
+        #    'solar': ['Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+        #    'years' : [y for y in range(2003, 2019)],
+        #},
+        'ERCOT': { # New files June 2020
+            'demand': ['Input_Data/ReliabilityPaper/ERCOT_mem_1998-2019.csv', 0, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/20200624v4_ERCO_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/20200624v4_ERCO_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
             'years' : [y for y in range(2003, 2019)],
         },
         'TEXAS': {
@@ -49,11 +55,23 @@ def return_file_info_map(region):
             'solar': ['Input_Data/ReliabilityPaper/ERCOT_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
             'years' : [y for y in range(2003, 2019)],
         },
-        'NYISO': { 
+        #'NYISO': { # Original files
+        #    'demand': ['Input_Data/ReliabilityPaper/NYISO_demand_unnormalized.csv', 5, 'demand (MW)', 'year'],
+        #    'wind': ['Input_Data/ReliabilityPaper/NYISO_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
+        #    'solar': ['Input_Data/ReliabilityPaper/NYISO_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+        #    'years' : [y for y in range(2004, 2019)],
+        #},
+        'NYISO': { # New files June 2020
             'demand': ['Input_Data/ReliabilityPaper/NYISO_demand_unnormalized.csv', 5, 'demand (MW)', 'year'],
-            'wind': ['Input_Data/ReliabilityPaper/NYISO_wind_top25pct_unnormalized.csv', 6, 'wind capacity', 'year'],
-            'solar': ['Input_Data/ReliabilityPaper/NYISO_solar_top25pct_unnormalized.csv', 6, 'solar capacity', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/20200624v4_NYIS_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/20200624v4_NYIS_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
             'years' : [y for y in range(2004, 2019)],
+        },
+        'PJM': { # New files June 2020
+            'demand': ['Input_Data/ReliabilityPaper/PJM_mem_1993-2019.csv', 0, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
+            'years' : [y for y in range(2006, 2019)],
         }
     }
     return info_map[region]
@@ -550,6 +568,21 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
 
 
 
+
+def get_top_20_per_year(dfs, wind_install_cap, solar_install_cap):
+    first = True
+    for year, df in dfs.items():
+        vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
+        vals = np.sort(vals)[::-1]
+        if first:
+            first = False
+            rtn_vals = vals[:20:]
+        else:
+            rtn_vals = np.append(rtn_vals, vals[:20:])
+    return rtn_vals
+
+
+
 def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pcts, cnt, base, gens=[0, 0]):
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
@@ -622,8 +655,9 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 #region = 'TXv1' # Don't use
 #region = 'TXv2' # Don't use
 region = 'CONUS'
-#region = 'NYISO'
+region = 'NYISO'
 region = 'ERCOT'
+region = 'PJM'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -635,6 +669,8 @@ make_plots = True
 #make_plots = False
 make_scan = True
 make_scan = False
+
+DATE = '20200629v2'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -653,18 +689,16 @@ print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
 #plot_base = f'plots_new_Jan28x_{region}' # Used 81 steps solar=1 wind=2
-plot_base = f'plots_new_Jan30_{region}'
+plot_base = f'plots_{DATE}_{steps}x{steps}_{region}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
-pkl_file = 'Jan30_81x81'
-#pkl_file += f'_{region}x' # Used 81 steps solar=1 wind=2
-pkl_file += f'_{region}'
+pkl_file = f'pkl_{DATE}_{steps}x{steps}_{region}'
 
 if test_ordering:
     dfs = OrderedDict()
     years = im['years']
-    print(len(years))
+    print(f"Number of years scanned: {len(years)}")
     #years = [y for y in range(2005, 2009)]
     for year in years:
         d_yr = get_annual_df(region, year, demand, 'demand', im)
@@ -697,8 +731,13 @@ if test_ordering:
             #if j > 0:
             #    cnt += 1
             #    continue
-            vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
-            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
+
+            # Get top 20 residual load peak hours for each combo
+            top_20 = get_top_20_per_year(dfs, wind_install_cap, solar_install_cap)
+            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = top_20
+
+            #vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
+            #mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
 
             #plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
             #if wind_gen == 0:
@@ -722,66 +761,81 @@ if test_ordering:
     make_dirs(plot_base, tgt)
 
 if make_plots:
+    print("\nMAKE PLOTS\n")
     pickle_in = open(f'{pkl_file}.pkl','rb')
     study_regions = pickle.load(pickle_in)
 
 
-    for int_threshold in int_thresholds:
-        thresholds.append(int_threshold)
-    for t, threshold in enumerate(thresholds):
-        print(threshold)
 
-        # Std dev of dem - wind - solar
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
-                matrix[i].append(val*100)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_std_{threshold:03}')
+    m_mean, m_std = [], []
+    for i, solar_install_cap in enumerate(solar_gen_steps):
+        m_mean.append([])
+        m_std.append([])
+        for j, wind_install_cap in enumerate(wind_gen_steps):
+            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))]
+            m_mean[i].append(np.mean(val))
+            m_std[i].append(np.std(val)*100)
+    a_mean = np.array(m_mean)
+    plot_matrix_thresholds(region, plot_base, m_mean, solar_gen_steps, wind_gen_steps, f'top_20_mean')
+    a_std = np.array(m_std)
+    plot_matrix_thresholds(region, plot_base, m_std, solar_gen_steps, wind_gen_steps, f'top_20_std')
 
-        # Needed dispatchable+storage
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'needed_dispatchablePlusStorage_{threshold:03}')
+    #for int_threshold in int_thresholds:
+    #    thresholds.append(int_threshold)
+    #for t, threshold in enumerate(thresholds):
+    #    print(threshold)
 
-        # Needed overbuild in dispatchable+storage
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
-                val /= study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'overbuild_dispatchablePlusStorage_{threshold:03}')
+    #    # Std dev of dem - wind - solar
+    #    matrix = []
+    #    for i, solar_install_cap in enumerate(solar_gen_steps):
+    #        matrix.append([])
+    #        for j, wind_install_cap in enumerate(wind_gen_steps):
+    #            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
+    #            matrix[i].append(val*100)
+    #    ary = np.array(matrix)
+    #    plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'threshold_std_{threshold:03}')
 
-        # Needed overbuild in dispatchable+storage 94% conf (based on ERCOT)
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3][t]
-                val /= study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'overbuild_95pct_dispatchablePlusStorage_{threshold:03}')
+    #    # Needed dispatchable+storage
+    #    matrix = []
+    #    for i, solar_install_cap in enumerate(solar_gen_steps):
+    #        matrix.append([])
+    #        for j, wind_install_cap in enumerate(wind_gen_steps):
+    #            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
+    #            matrix[i].append(val)
+    #    ary = np.array(matrix)
+    #    plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'needed_dispatchablePlusStorage_{threshold:03}')
 
-        # Norm test p_val (null = distribution is based on normal)
-        matrix = []
-        for i, solar_install_cap in enumerate(solar_gen_steps):
-            matrix.append([])
-            for j, wind_install_cap in enumerate(wind_gen_steps):
-                val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][4][t]
-                matrix[i].append(val)
-        ary = np.array(matrix)
-        plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'norm_pval_{threshold:03}')
+    #    # Needed overbuild in dispatchable+storage
+    #    matrix = []
+    #    for i, solar_install_cap in enumerate(solar_gen_steps):
+    #        matrix.append([])
+    #        for j, wind_install_cap in enumerate(wind_gen_steps):
+    #            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1][t]
+    #            val /= study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
+    #            matrix[i].append(val)
+    #    ary = np.array(matrix)
+    #    plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'overbuild_dispatchablePlusStorage_{threshold:03}')
+
+    #    # Needed overbuild in dispatchable+storage 94% conf (based on ERCOT)
+    #    matrix = []
+    #    for i, solar_install_cap in enumerate(solar_gen_steps):
+    #        matrix.append([])
+    #        for j, wind_install_cap in enumerate(wind_gen_steps):
+    #            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3][t]
+    #            val /= study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2][t]
+    #            matrix[i].append(val)
+    #    ary = np.array(matrix)
+    #    plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'overbuild_95pct_dispatchablePlusStorage_{threshold:03}')
+
+    #    # Norm test p_val (null = distribution is based on normal)
+    #    matrix = []
+    #    for i, solar_install_cap in enumerate(solar_gen_steps):
+    #        matrix.append([])
+    #        for j, wind_install_cap in enumerate(wind_gen_steps):
+    #            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][4][t]
+    #            matrix[i].append(val)
+    #    ary = np.array(matrix)
+    #    plot_matrix_thresholds(region, plot_base, matrix, solar_gen_steps, wind_gen_steps, f'norm_pval_{threshold:03}')
 
 
 if make_scan:
