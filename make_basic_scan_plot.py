@@ -196,6 +196,33 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
     plt.clf()
 
 
+
+
+def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
+
+    print(f"Plotting: {save_name}")
+
+    plt.close()
+    matplotlib.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots()#figsize=(4.5, 4))
+
+    n, bins, patches = ax.hist(peak_load_original, 100, range=[0, 2], alpha=0.5, label='peak load values')
+    n, bins, patches = ax.hist(pls, 100, range=[0, 2], alpha=0.5, label='residual load of\npeak load values')
+    n, bins, patches = ax.hist(rls, 100, range=[0, 2], alpha=0.5, label='peak residual load values')
+
+    ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
+
+    ax.set_ylabel('hours/bin')
+    ax.set_xlabel('percent mean load')
+
+    plt.legend()
+
+    plt.savefig(f"{plot_base}/{region}_{save_name}.png")
+    plt.clf()
+
+
+
+
 def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values, save_name):
 
     print(f"Plotting: {save_name}")
@@ -214,19 +241,19 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     if 'RL_mean' in save_name:
         n_levels = np.arange(0,200,10)
         c_fmt = '%3.0f'
-        ylab = "$\mu$ residual load peak value\n(% mean demand)"
+        ylab = "$\mu$ residual load peak value\n(% mean load)"
     elif 'RL_std' in save_name:
         n_levels = np.arange(0,15,0.5)
         c_fmt = '%1.1f'
-        ylab = "$\sigma$ residual load peak values\n(% mean demand)"
+        ylab = "$\sigma$ residual load peak values\n(% mean load)"
     elif 'PL_mean' in save_name:
         n_levels = np.arange(-100,200,20)
         c_fmt = '%3.0f'
-        ylab = "$\mu$ residual load values of peak\nload hours (% mean demand)"
+        ylab = "$\mu$ residual load values of peak\nload hours (% mean load)"
     elif 'PL_std' in save_name:
         n_levels = np.arange(0,100,5)
         c_fmt = '%1.0f'
-        ylab = "$\sigma$ residual load values of peak\nload hours (% mean demand)"
+        ylab = "$\sigma$ residual load values of peak\nload hours (% mean load)"
     elif '_mean' in save_name: # else if so gets solar and wind means
         n_levels = np.arange(0,200,10)
         c_fmt = '%3.0f'
@@ -250,8 +277,8 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("wind generation\n(% mean demand)")
-    plt.ylabel("solar generation\n(% mean demand)")
+    plt.xlabel("wind generation\n(% mean load)")
+    plt.ylabel("solar generation\n(% mean load)")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(ylab)
     dec = 0
@@ -587,7 +614,7 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
         y_lim = ax.get_ylim()[1]
         ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}%') # histtype=u'step', linewidth=4)
         ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}%') # histtype=u'step', linewidth=4)
-        # Below values are w.r.t. to ERCOT's 2019 mean demand of 44 GW
+        # Below values are w.r.t. to ERCOT's 2019 mean load of 44 GW
         #ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}% (73 GW)') # histtype=u'step', linewidth=4)
         #ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}% (1.5 GW)') # histtype=u'step', linewidth=4)
         ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.2, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
@@ -830,6 +857,8 @@ if make_plots:
         m_pl_mean.append([])
         m_pl_std.append([])
         for j, wind_install_cap in enumerate(wind_gen_steps):
+            if i == 0 and j == 0:
+                peak_load_original = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
             rls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0]
             m_rl_mean[i].append(np.mean(rls)*100)
             m_rl_std[i].append(np.std(rls)*100)
@@ -840,6 +869,9 @@ if make_plots:
             pls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
             m_pl_mean[i].append(np.mean(pls)*100)
             m_pl_std[i].append(np.std(pls)*100)
+            if i%10==0 and j%10==0:
+                triple_hist(region, plot_base, peak_load_original, pls, rls,
+                        f'triple_hist_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}')
 
     plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
     plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
