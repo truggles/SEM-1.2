@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -76,6 +77,12 @@ def return_file_info_map(region):
     }
     return info_map[region]
 
+
+
+def get_peak_demand_hour_indices(df):
+
+    df_tmp = df.sort_values(by=['demand'], ascending=False)
+    return df_tmp.iloc[:20:].index
 
 
 def plot_corr(df, save_name):
@@ -191,26 +198,44 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
 
 def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values, save_name):
 
+    print(f"Plotting: {save_name}")
 
     plt.close()
     matplotlib.rcParams.update({'font.size': 14})
     fig, ax = plt.subplots()#figsize=(4.5, 4))
-    im = ax.imshow(matrix,interpolation='none',origin='lower')
+
+    # Set wind/solar mean CFs to 0-100 % scale
+    #if 'wind' in save_name or 'solar' in save_name:
+    #    im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=0, vmax=100)
+    #else:
+    im = ax.imshow(matrix, interpolation='none', origin='lower')
 
     # Contours
-    if '_mean' in save_name:
+    if 'RL_mean' in save_name:
         n_levels = np.arange(0,200,10)
-        cs = ax.contour(matrix, n_levels, colors='w')
-        # inline labels
-        ax.clabel(cs, inline=1, fontsize=12, fmt='%3.0f')
+        c_fmt = '%3.0f'
         ylab = "$\mu$ residual load peak value\n(% mean demand)"
-    else:
+    elif 'RL_std' in save_name:
         n_levels = np.arange(0,15,0.5)
-        cs = ax.contour(matrix, n_levels, colors='w')
-        # inline labels
-        ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
+        c_fmt = '%1.1f'
         ylab = "$\sigma$ residual load peak values\n(% mean demand)"
+    elif 'PL_mean' in save_name:
+        n_levels = np.arange(-100,200,20)
+        c_fmt = '%3.0f'
+        ylab = "$\mu$ residual load values of peak\nload hours (% mean demand)"
+    elif 'PL_std' in save_name:
+        n_levels = np.arange(0,100,5)
+        c_fmt = '%1.0f'
+        ylab = "$\sigma$ residual load values of peak\nload hours (% mean demand)"
+    elif '_mean' in save_name: # else if so gets solar and wind means
+        n_levels = np.arange(0,200,10)
+        c_fmt = '%3.0f'
+        app = 'wind' if 'wind' in save_name else 'solar'
+        ylab = f"$\mu$ {app} capacity factor\n(during peak residual load hours)"
 
+    cs = ax.contour(matrix, n_levels, colors='w')
+    # inline labels
+    ax.clabel(cs, inline=1, fontsize=12, fmt=c_fmt)
 
     wind_labs, solar_labs = [], []
     for v in wind_values:
@@ -229,7 +254,10 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     plt.ylabel("solar generation\n(% mean demand)")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(ylab)
-    cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
+    dec = 0
+    if region == 'NYISO':
+        dec = 1
+    cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=dec))
     cb_range = [np.min(matrix), np.max(matrix)]
     plt.title(f"")
     #plt.tight_layout()
@@ -575,17 +603,26 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
 
 
 
-def get_top_20_per_year(dfs, wind_install_cap, solar_install_cap):
+
+# Return top 20 values for: residual load (rls), wind/solar CFs (w/s_cfs), and
+# residual load values for peak 20 hours (pls)
+def get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap):
     first = True
     for year, df in dfs.items():
-        vals = df['demand'].values - df['solar'].values * solar_install_cap - df['wind'].values * wind_install_cap
-        vals = np.sort(vals)[::-1]
+        df['RL'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
+        df_sort = df.sort_values(by=['RL'], ascending=False)
         if first:
             first = False
-            rtn_vals = vals[:20:]
+            rls = df_sort.iloc[:20:]['RL'].values
+            w_cfs = df_sort.iloc[:20:]['wind'].values
+            s_cfs = df_sort.iloc[:20:]['solar'].values
+            pls = df_sort.loc[ peak_indices[year], 'RL' ].values
         else:
-            rtn_vals = np.append(rtn_vals, vals[:20:])
-    return rtn_vals
+            rls = np.append(rls, df_sort.iloc[:20:]['RL'].values)
+            w_cfs = np.append(w_cfs, df_sort.iloc[:20:]['wind'].values)
+            s_cfs = np.append(s_cfs, df_sort.iloc[:20:]['solar'].values)
+            pls = np.append(pls, df_sort.loc[ peak_indices[year], 'RL' ].values)
+    return rls, w_cfs, s_cfs, pls
 
 
 
@@ -656,14 +693,21 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 
 
 
-
-#region = 'TEXAS' # Don't use
-#region = 'TXv1' # Don't use
-#region = 'TXv2' # Don't use
+# Default regions for running `./make_basic_scan_plot.py`
 region = 'CONUS'
 region = 'NYISO'
 region = 'ERCOT'
 #region = 'PJM'
+
+
+print(f"\nRunning {sys.argv[0]}")
+print(f"Input arg list {sys.argv}")
+
+if len(sys.argv) > 1:
+    region = sys.argv[1]
+
+print(f"Region: {region}")
+
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
@@ -676,7 +720,7 @@ make_plots = True
 make_scan = True
 make_scan = False
 
-DATE = '20200629v2'
+DATE = '20200630v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -684,7 +728,7 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
 wind_max = 1.
-steps = 81
+steps = 21
 #solar_max = .25
 #wind_max = .5
 #steps = 21
@@ -703,6 +747,7 @@ pkl_file = f'pkl_{DATE}_{steps}x{steps}_{region}'
 
 if test_ordering:
     dfs = OrderedDict()
+    peak_indices = {}
     years = im['years']
     print(f"Number of years scanned: {len(years)}")
     #years = [y for y in range(2005, 2009)]
@@ -711,6 +756,7 @@ if test_ordering:
         w_yr = get_annual_df(region, year, wind, 'wind', im)
         s_yr = get_annual_df(region, year, solar, 'solar', im)
         dfs[year] = return_ordered_df(d_yr, w_yr, s_yr, im, 100)
+        peak_indices[year] = get_peak_demand_hour_indices(dfs[year])
 
     avg_wind_CF = get_avg_CF(dfs, 'wind', im)
     avg_solar_CF = get_avg_CF(dfs, 'solar', im)
@@ -739,8 +785,8 @@ if test_ordering:
             #    continue
 
             # Get top 20 residual load peak hours for each combo
-            top_20 = get_top_20_per_year(dfs, wind_install_cap, solar_install_cap)
-            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = top_20
+            rls, w_cfs, s_cfs, pls = get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap)
+            mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [rls, w_cfs, s_cfs, pls]
 
             #vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             #mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
@@ -773,18 +819,34 @@ if make_plots:
 
 
 
-    m_mean, m_std = [], []
+    m_rl_mean, m_rl_std = [], [] # Mean Residual Load, STD RL
+    m_w_mean, m_s_mean = [], [] # mean wind CFs, mean solar CFs
+    m_pl_mean, m_pl_std = [], [] # Mean residual load of the original peak load values
     for i, solar_install_cap in enumerate(solar_gen_steps):
-        m_mean.append([])
-        m_std.append([])
+        m_rl_mean.append([])
+        m_rl_std.append([])
+        m_w_mean.append([])
+        m_s_mean.append([])
+        m_pl_mean.append([])
+        m_pl_std.append([])
         for j, wind_install_cap in enumerate(wind_gen_steps):
-            val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))]
-            m_mean[i].append(np.mean(val)*100)
-            m_std[i].append(np.std(val)*100)
-    a_mean = np.array(m_mean)
-    plot_matrix_thresholds(region, plot_base, m_mean, solar_gen_steps, wind_gen_steps, f'top_20_mean')
-    a_std = np.array(m_std)
-    plot_matrix_thresholds(region, plot_base, m_std, solar_gen_steps, wind_gen_steps, f'top_20_std')
+            rls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0]
+            m_rl_mean[i].append(np.mean(rls)*100)
+            m_rl_std[i].append(np.std(rls)*100)
+            w_cfs = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1]
+            s_cfs = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2]
+            m_w_mean[i].append(np.mean(w_cfs)*100)
+            m_s_mean[i].append(np.mean(s_cfs)*100)
+            pls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
+            m_pl_mean[i].append(np.mean(pls)*100)
+            m_pl_std[i].append(np.std(pls)*100)
+
+    plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
+    plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
+    plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
+    plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
+    plot_matrix_thresholds(region, plot_base, m_pl_mean, solar_gen_steps, wind_gen_steps, f'top_20_PL_mean')
+    plot_matrix_thresholds(region, plot_base, m_pl_std, solar_gen_steps, wind_gen_steps, f'top_20_PL_std')
 
     #for int_threshold in int_thresholds:
     #    thresholds.append(int_threshold)
