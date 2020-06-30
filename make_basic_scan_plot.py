@@ -198,14 +198,18 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     im = ax.imshow(matrix,interpolation='none',origin='lower')
 
     # Contours
-    if not 'pval' in save_name:
-        n_levels = np.arange(0,10,0.5)
-        #n_levels = np.append(n_levels, [0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
-        n_levels.sort()
-        #cs = ax.contour(matrix, n_levels, colors='w', origin='lower')
+    if '_mean' in save_name:
+        n_levels = np.arange(0,200,10)
+        cs = ax.contour(matrix, n_levels, colors='w')
+        # inline labels
+        ax.clabel(cs, inline=1, fontsize=12, fmt='%3.0f')
+        ylab = "$\mu$ residual load peak value\n(% mean demand)"
+    else:
+        n_levels = np.arange(0,15,0.5)
         cs = ax.contour(matrix, n_levels, colors='w')
         # inline labels
         ax.clabel(cs, inline=1, fontsize=12, fmt='%1.1f')
+        ylab = "$\sigma$ residual load peak values\n(% mean demand)"
 
 
     wind_labs, solar_labs = [], []
@@ -221,13 +225,15 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("Wind Generation\n(% Mean Demand)")
-    plt.ylabel("Solar Generation\n(% Mean Demand)")
+    plt.xlabel("wind generation\n(% mean demand)")
+    plt.ylabel("solar generation\n(% mean demand)")
     cbar = ax.figure.colorbar(im)
-    cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    cbar.ax.set_ylabel(ylab)
+    cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
     cb_range = [np.min(matrix), np.max(matrix)]
     plt.title(f"")
-    plt.tight_layout()
+    #plt.tight_layout()
+    plt.subplots_adjust(left=0.14, bottom=0.25, right=0.88, top=0.97)
 
 
     plt.savefig(f"{plot_base}/{region}_{save_name}.png")
@@ -246,7 +252,7 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     #plt.xlabel("Wind Generation\n(% Mean Demand)")
     #plt.ylabel("Solar Generation\n(% Mean Demand)")
     #cbar = ax.figure.colorbar(im)
-    #cbar.ax.set_ylabel(f"Spread in Thershold Values ($\sigma$)")
+    #cbar.ax.set_ylabel(ylab)
     #plt.title(f"")
     #plt.tight_layout()
     #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.png")
@@ -657,14 +663,14 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
 region = 'CONUS'
 region = 'NYISO'
 region = 'ERCOT'
-region = 'PJM'
+#region = 'PJM'
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
 
 
 ### HERE
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
@@ -773,7 +779,7 @@ if make_plots:
         m_std.append([])
         for j, wind_install_cap in enumerate(wind_gen_steps):
             val = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))]
-            m_mean[i].append(np.mean(val))
+            m_mean[i].append(np.mean(val)*100)
             m_std[i].append(np.std(val)*100)
     a_mean = np.array(m_mean)
     plot_matrix_thresholds(region, plot_base, m_mean, solar_gen_steps, wind_gen_steps, f'top_20_mean')
