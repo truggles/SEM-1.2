@@ -35,7 +35,7 @@ def return_file_info_map(region):
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_mem_1998-2019.csv', 0, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/20200624v4_ERCO_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
             'solar': ['Input_Data/ReliabilityPaper/20200624v4_ERCO_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
-            'years' : [y for y in range(2003, 2019)],
+            'years' : [y for y in range(2003, 2020)],
         },
         'TEXAS': {
             'demand': ['Input_Data/ReliabilityPaper/ERCOT_demand_unnormalized.csv', 6, 'demand (MW)', 'year'],
@@ -66,13 +66,13 @@ def return_file_info_map(region):
             'demand': ['Input_Data/ReliabilityPaper/NYISO_demand_unnormalized.csv', 5, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/20200624v4_NYIS_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
             'solar': ['Input_Data/ReliabilityPaper/20200624v4_NYIS_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
-            'years' : [y for y in range(2004, 2019)],
+            'years' : [y for y in range(2004, 2020)],
         },
         'PJM': { # New files June 2020
             'demand': ['Input_Data/ReliabilityPaper/PJM_mem_1993-2019.csv', 0, 'demand (MW)', 'year'],
             'wind': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
             'solar': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
-            'years' : [y for y in range(2006, 2019)],
+            'years' : [y for y in range(2006, 2020)],
         }
     }
     return info_map[region]
@@ -741,7 +741,7 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 ### HERE
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
 #make_plots = False
 make_scan = True
@@ -869,9 +869,9 @@ if make_plots:
             pls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
             m_pl_mean[i].append(np.mean(pls)*100)
             m_pl_std[i].append(np.std(pls)*100)
-            if i%10==0 and j%10==0:
+            if i%20==0 and j%20==0:
                 triple_hist(region, plot_base, peak_load_original, pls, rls,
-                        f'triple_hist_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}')
+                        f'triple_hist_cnt{str(int(i*len(wind_gen_steps)+j))}_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}')
 
     plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
     plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
