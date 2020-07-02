@@ -213,7 +213,7 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
     ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
 
     ax.set_ylabel('hours/bin')
-    ax.set_xlabel('percent mean load')
+    ax.set_xlabel('percent mean annual load')
 
     plt.legend()
 
@@ -241,19 +241,19 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     if 'RL_mean' in save_name:
         n_levels = np.arange(0,200,10)
         c_fmt = '%3.0f'
-        ylab = "$\mu$ residual load peak value\n(% mean load)"
+        ylab = "$\mu$ residual load peak value\n(% mean annual load)"
     elif 'RL_std' in save_name:
         n_levels = np.arange(0,15,0.5)
         c_fmt = '%1.1f'
-        ylab = "$\sigma$ residual load peak values\n(% mean load)"
+        ylab = "$\sigma$ residual load peak values\n(% mean annual load)"
     elif 'PL_mean' in save_name:
         n_levels = np.arange(-100,200,20)
         c_fmt = '%3.0f'
-        ylab = "$\mu$ residual load values of peak\nload hours (% mean load)"
+        ylab = "$\mu$ residual load values of peak\nload hours (% mean annual load)"
     elif 'PL_std' in save_name:
         n_levels = np.arange(0,100,5)
         c_fmt = '%1.0f'
-        ylab = "$\sigma$ residual load values of peak\nload hours (% mean load)"
+        ylab = "$\sigma$ residual load values of peak\nload hours (% mean annual load)"
     elif '_mean' in save_name: # else if so gets solar and wind means
         n_levels = np.arange(0,200,10)
         c_fmt = '%3.0f'
@@ -277,8 +277,8 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
             solar_labs.append('')
     plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     plt.yticks(range(len(solar_values)), solar_labs)
-    plt.xlabel("wind generation\n(% mean load)")
-    plt.ylabel("solar generation\n(% mean load)")
+    plt.xlabel("wind generation\n(% mean annual load)")
+    plt.ylabel("solar generation\n(% mean annual load)")
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(ylab)
     dec = 0
@@ -350,6 +350,9 @@ def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap,
         adj = -6
         nm = 'CST'
     if 'NYISO' in base:
+        adj = -5
+        nm = 'EST'
+    if 'PJM' in base:
         adj = -5
         nm = 'EST'
     if 'CONUS' in base:
@@ -515,18 +518,19 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10,5))
     #fig.suptitle(f'Dem - wind CF x {round(wind_install_cap,2)} - solar CF x {round(solar_install_cap,2)}')
-    axs[0].set_title(f'Load Duration Curve')
-    axs[1].set_title(f'PDF of Hourly Values')
+    axs[0].set_title(f'Residual Load Duration Curve')
+    axs[1].set_title(f'PDF of Residual Load')
 
     good_max = 0
     threshold_vals = []
+    lw = 1.5
     for year, df in dfs.items():
         mod_df = df
         mod_df['mod_dem'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         mod_df = mod_df.sort_values(by=['mod_dem'], ascending=False)
-        axs[0].plot(np.linspace(0,100,len(mod_df.index)), mod_df['mod_dem']*100, linestyle='-', linewidth=0.5)
+        axs[0].plot(np.linspace(0,100,len(mod_df.index)), mod_df['mod_dem']*100, linestyle='-', linewidth=lw)
         to_bins = np.linspace(-10*100,2*100,601)
-        n, bins, patches = axs[1].hist(mod_df['mod_dem']*100, to_bins, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=0.5)
+        n, bins, patches = axs[1].hist(mod_df['mod_dem']*100, to_bins, orientation='horizontal', histtype=u'step', color=axs[0].lines[-1].get_color(), linewidth=lw)
         if np.max(n) > good_max:
             good_max = np.max(n)
 
@@ -551,17 +555,17 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
     axs[0].set_xlim(-0.5, 100)
     #axs[0].set_ylim(0, axs[0].get_ylim()[1])
     axs[0].set_ylim(0, 200)
-    axs[0].set_ylabel('Demand - VRE\n(% Mean Demand)')
-    axs[0].set_xlabel('Operating duration (% of year)')
+    axs[0].set_ylabel('residual load\n(% mean annual load)')
+    axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
+    axs[0].set_xlabel('operating duration (% of year)')
     #axs[1].yaxis.grid(True)
-    axs[1].set_ylabel('Demand - VRE\n(% Mean Demand)')
-    axs[1].set_xlabel('Hours / Bin')
+    axs[1].set_ylabel('residual load\n(% mean annual load)')
+    axs[1].set_xlabel('hours / bin')
     axs[1].set_xlim(0, good_max * 1.2)
+    axs[1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
     #axs[1].set_ylim(0, axs[1].get_ylim()[1])
     axs[1].set_ylim(0, 200)
     axs[1].yaxis.set_tick_params(labelleft=True)
-    #axs[1].set_xlabel('Demand - Wind - Solar (kWh)')
-    #plt.tight_layout()
     plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
 
 
@@ -614,7 +618,7 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
         y_lim = ax.get_ylim()[1]
         ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}%') # histtype=u'step', linewidth=4)
         ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}%') # histtype=u'step', linewidth=4)
-        # Below values are w.r.t. to ERCOT's 2019 mean load of 44 GW
+        # Below values are w.r.t. to ERCOT's 2019 mean annual load of 44 GW
         #ax.plot(np.ones(10)*(mean), np.linspace(0, y_lim*1.2, 10), 'r--', label=f'mean: {round(mean,1)}% (73 GW)') # histtype=u'step', linewidth=4)
         #ax.plot(np.ones(10)*(mean+std), np.linspace(0, y_lim*1.2, 10), 'b--', label=f'$\sigma$: {round(std,1)}% (1.5 GW)') # histtype=u'step', linewidth=4)
         ax.plot(np.ones(10)*(mean-std), np.linspace(0, y_lim*1.2, 10), 'b--', label='_nolabel_') # histtype=u'step', linewidth=4)
@@ -748,6 +752,7 @@ make_scan = True
 make_scan = False
 
 DATE = '20200630v1'
+DATE = '20200701v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -807,13 +812,20 @@ if test_ordering:
             solar_gen = solar_gen_steps[i]
             if cnt%100 == 0:
                 print(f" --- {cnt}, wind gen {wind_gen} solar gen {solar_gen}")
-            #if j > 0:
-            #    cnt += 1
-            #    continue
+
+
 
             # Get top 20 residual load peak hours for each combo
             rls, w_cfs, s_cfs, pls = get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap)
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [rls, w_cfs, s_cfs, pls]
+
+
+
+            if i%20==0 and j%20==0:
+                load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+                plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+
+
 
             #vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val = make_ordering_plotsX(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, thresholds, int_thresholds, cnt, plot_base, [wind_gen, solar_gen])
             #mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [vect_range, vect_std, vect_mean, vect_2nd_from_top, p_val]
