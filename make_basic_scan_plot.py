@@ -108,7 +108,7 @@ def plot_corr(df, save_name):
                     ha="center", va="center", color='k', fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(f'correlation_matrix_{save_name}.png')
+    plt.savefig(f'correlation_matrix_{save_name}.{TYPE}')
 
 
 
@@ -121,7 +121,7 @@ def make_dirs(base, tgt):
     to_make = []
     for f in files:
         print(f)
-        f1 = f.strip('.png')
+        f1 = f.strip(f'.{TYPE}')
         info = f1.split('_')
         for piece in info:
             if 'solarGen' in piece or 'windGen' in piece:
@@ -192,7 +192,7 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
     plt.tight_layout()
 
 
-    plt.savefig(f"{plot_base}/{save_name}.png")
+    plt.savefig(f"{plot_base}/{save_name}.{TYPE}")
     plt.clf()
 
 
@@ -217,7 +217,7 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
 
     plt.legend()
 
-    plt.savefig(f"{plot_base}/{region}_{save_name}.png")
+    plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
     plt.clf()
 
 
@@ -291,7 +291,7 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     plt.subplots_adjust(left=0.14, bottom=0.25, right=0.88, top=0.97)
 
 
-    plt.savefig(f"{plot_base}/{region}_{save_name}.png")
+    plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
     plt.clf()
 
     ## Make empty plots
@@ -310,7 +310,7 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     #cbar.ax.set_ylabel(ylab)
     #plt.title(f"")
     #plt.tight_layout()
-    #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.png")
+    #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.{TYPE}")
     #plt.clf()
 
 
@@ -386,12 +386,14 @@ def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap,
     axs[1].set_xlim(0.5,12.5)
     plt.xticks([i for i in range(1, 13)], ('Jan','Feb','Mar','Apr','May','Jun',
         'Jul','Aug','Sep','Oct','Nov','Dec'), rotation=45)
-    axs[0].set_ylabel(f'Top {top_X} Hours - Normalized')
-    axs[1].set_ylabel(f'Top {top_X} Hours - Normalized')
-    plt.subplots_adjust(wspace=0.3)
+    axs[0].set_ylabel(f'peak {top_X} residual load hours per year')
+    axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
+    axs[1].set_ylabel(f'peak {top_X} residual load hours per year')
+    axs[1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
+    plt.subplots_adjust(top=0.97, bottom=0.15, wspace=0.3)
 
     
-    plt.savefig(f"{base}/{save_name}_top{top_X:03}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
     plt.close()
     matplotlib.rcParams.update({'font.size': 10})
@@ -404,7 +406,7 @@ def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap,
     plt.xlabel(f'Hour ({nm})')
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(f'Top {top_X} Hours (%)')
-    plt.savefig(f"{base}/{save_name}_top{top_X:03}_2D_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_top{top_X:03}_2D_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
 
 
@@ -566,7 +568,7 @@ def load_duration_curve_and_PDF_plots(dfs, save_name, wind_install_cap, solar_in
     #axs[1].set_ylim(0, axs[1].get_ylim()[1])
     axs[1].set_ylim(0, 200)
     axs[1].yaxis.set_tick_params(labelleft=True)
-    plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_LDC_and_PDF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
 
 # Make box plots showing the wind and solar CFs for the top X thresholds
@@ -596,12 +598,13 @@ def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thre
     for val in box_thresholds:
         x_labels.append(f'Solar:\nTop {val} Hours')
     plt.xticks([i for i in range(1, len(box_thresholds)*2+1)], x_labels, rotation=30)
-    ax.set_ylabel('Wind/Solar Capacity Factors')
+    ax.set_ylabel('resource capacity factors')
     ax.set_ylim(0, 1)
+    plt.title(f"solar generation: {int(round(gens[1],4)*100)}%")
     plt.tight_layout()
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
-    plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+    plt.savefig(f"{base}/{save_name}_CFs_box_plot_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
 
 def make_threshold_hist(vect, save_name, cnt, base, gens):
@@ -629,7 +632,7 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
         ax.set_xlabel(f'Demand - VRE\n(% Mean Demand)')
         ax.set_ylabel(f'Entries / Bin')
         plt.tight_layout()
-        plt.savefig(f"{base}/{save_name}_threshold_hist_{bin_w}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+        plt.savefig(f"{base}/{save_name}_threshold_hist_{bin_w}_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
 
 
@@ -698,7 +701,7 @@ def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, th
     #plt.legend()
     plt.tight_layout()
     if wind_install_cap == 0 and solar_install_cap == 0:
-        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.png")
+        plt.savefig(f"{base}/{save_name}_dem_min_solar_vs_solarCF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
     plt.clf()
 
     # Make hist of threshold locations
@@ -744,6 +747,10 @@ demand, wind, solar = get_dem_wind_solar(im)
 
 
 ### HERE
+
+TYPE = 'png'
+TYPE = 'pdf'
+
 test_ordering = True
 #test_ordering = False
 make_plots = True
@@ -752,7 +759,7 @@ make_scan = True
 make_scan = False
 
 DATE = '20200630v1'
-DATE = '20200701v1'
+DATE = '20200702v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -760,7 +767,7 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
 wind_max = 1.
-steps = 21
+steps = 101
 #solar_max = .25
 #wind_max = .5
 #steps = 21
@@ -821,9 +828,12 @@ if test_ordering:
 
 
 
-            if i%20==0 and j%20==0:
+            #if i%20==0 and j%20==0:
+            if i<16 and j==0:
                 load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
+                box_thresholds = [20,]
+                make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
 
 
 
