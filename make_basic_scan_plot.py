@@ -206,10 +206,20 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
     matplotlib.rcParams.update({'font.size': 14})
     fig, ax = plt.subplots()#figsize=(4.5, 4))
 
-    n, bins, patches = ax.hist(peak_load_original, 100, range=[0, 2], alpha=0.5, label='peak load values')
-    n, bins, patches = ax.hist(pls, 100, range=[0, 2], alpha=0.5, label='residual load of\npeak load values')
-    n, bins, patches = ax.hist(rls, 100, range=[0, 2], alpha=0.5, label='peak residual load values')
+    n_bins = 100
+    min_x = 1
+    good_max = 0
+    n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label='peak load values')
+    if np.max(n) > good_max:
+        good_max = np.max(n)
+    n, bins, patches = ax.hist(pls, n_bins, range=[min_x, 2], alpha=0.5, label='residual load of\npeak load values')
+    if np.max(n) > good_max:
+        good_max = np.max(n)
+    n, bins, patches = ax.hist(rls, n_bins, range=[min_x, 2], alpha=0.5, label='peak residual load values')
+    if np.max(n) > good_max:
+        good_max = np.max(n)
 
+    ax.set_ylim(0, good_max * 1.7)
     ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
 
     ax.set_ylabel('hours/bin')
@@ -760,6 +770,7 @@ make_scan = False
 
 DATE = '20200630v1'
 DATE = '20200702v1'
+DATE = '20200706v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -767,7 +778,7 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 # Define scan space by "Total X Generation Potential" instead of installed Cap
 solar_max = 1.
 wind_max = 1.
-steps = 101
+steps = 21
 #solar_max = .25
 #wind_max = .5
 #steps = 21
@@ -857,9 +868,9 @@ if test_ordering:
     pickle.dump(mapper, pickle_file)
     pickle_file.close()
 
-    # Sort plots
-    tgt = plot_base+'/ordering*'
-    make_dirs(plot_base, tgt)
+    ## Sort plots
+    #tgt = plot_base+'/ordering*'
+    #make_dirs(plot_base, tgt)
 
 if make_plots:
     print("\nMAKE PLOTS\n")
@@ -891,7 +902,7 @@ if make_plots:
             pls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
             m_pl_mean[i].append(np.mean(pls)*100)
             m_pl_std[i].append(np.std(pls)*100)
-            if i%20==0 and j%20==0:
+            if (i%20==0 and j%20==0) or (i<16 and j==0):
                 triple_hist(region, plot_base, peak_load_original, pls, rls,
                         f'triple_hist_cnt{str(int(i*len(wind_gen_steps)+j))}_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}')
 
