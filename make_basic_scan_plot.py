@@ -256,6 +256,14 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
         n_levels = np.arange(0,15,0.5)
         c_fmt = '%1.1f'
         ylab = "$\sigma$ residual load peak values\n(% mean annual load)"
+    elif 'RL_50pct' in save_name:
+        n_levels = np.arange(0,50,2.5)
+        c_fmt = '%1.1f'
+        ylab = "mid-50% range residual load peak values\n(% mean annual load)"
+    elif 'RL_95pct' in save_name:
+        n_levels = np.arange(0,50,5)
+        c_fmt = '%1.1f'
+        ylab = "mid-95% range residual load peak values\n(% mean annual load)"
     elif 'PL_mean' in save_name:
         n_levels = np.arange(-100,200,20)
         c_fmt = '%3.0f'
@@ -789,7 +797,7 @@ make_scan = False
 
 DATE = '20200630v1'
 DATE = '20200702v1'
-DATE = '20200706v1'
+DATE = '20200706v2'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -943,11 +951,14 @@ if make_plots:
 
 
     m_rl_mean, m_rl_std = [], [] # Mean Residual Load, STD RL
+    m_rl_50pct, m_rl_95pct = [], [] # Other spreads for RL
     m_w_mean, m_s_mean = [], [] # mean wind CFs, mean solar CFs
     m_pl_mean, m_pl_std = [], [] # Mean residual load of the original peak load values
     for i, solar_install_cap in enumerate(solar_gen_steps):
         m_rl_mean.append([])
         m_rl_std.append([])
+        m_rl_50pct.append([])
+        m_rl_95pct.append([])
         m_w_mean.append([])
         m_s_mean.append([])
         m_pl_mean.append([])
@@ -958,6 +969,8 @@ if make_plots:
             rls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][0]
             m_rl_mean[i].append(np.mean(rls)*100)
             m_rl_std[i].append(np.std(rls)*100)
+            m_rl_50pct[i].append( (np.percentile(rls, 75) - np.percentile(rls, 25))*100)
+            m_rl_95pct[i].append( (np.percentile(rls, 97.5) - np.percentile(rls, 2.5))*100)
             w_cfs = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][1]
             s_cfs = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][2]
             m_w_mean[i].append(np.mean(w_cfs)*100)
@@ -971,6 +984,8 @@ if make_plots:
 
     plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
     plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
+    plot_matrix_thresholds(region, plot_base, m_rl_50pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_50pct')
+    plot_matrix_thresholds(region, plot_base, m_rl_95pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_95pct')
     plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
     plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
     plot_matrix_thresholds(region, plot_base, m_pl_mean, solar_gen_steps, wind_gen_steps, f'top_20_PL_mean')
