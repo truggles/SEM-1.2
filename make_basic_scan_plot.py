@@ -198,7 +198,7 @@ def plot_matrix(plot_base, matrix, solar_values, wind_values, save_name):
 
 
 
-def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
+def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name, verbose=False):
 
     print(f"Plotting: {save_name}")
 
@@ -209,13 +209,13 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
     n_bins = 100
     min_x = 1
     good_max = 0
-    n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label='peak load values')
+    n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label='peak load')
     if np.max(n) > good_max:
         good_max = np.max(n)
-    n, bins, patches = ax.hist(pls, n_bins, range=[min_x, 2], alpha=0.5, label='residual load of\npeak load values')
+    n, bins, patches = ax.hist(pls, n_bins, range=[min_x, 2], alpha=0.5, label='residual load of\npeak load hours')
     if np.max(n) > good_max:
         good_max = np.max(n)
-    n, bins, patches = ax.hist(rls, n_bins, range=[min_x, 2], alpha=0.5, label='peak residual load values')
+    n, bins, patches = ax.hist(rls, n_bins, range=[min_x, 2], alpha=0.5, label='peak residual load')
     if np.max(n) > good_max:
         good_max = np.max(n)
 
@@ -230,7 +230,13 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name):
     plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
     plt.clf()
 
-
+    # Print some info
+    if verbose:
+        print("                      std,    50%,   95%")
+        for k, vect in {'Peak load' : peak_load_original, 
+                    'Residual of peak load' : pls, 
+                    'Peak residual load' : rls}.items():
+            print(f"{k:21s} {round(np.std(vect),4)}, {round(np.percentile(vect, 75) - np.percentile(vect, 25),4)}, {round(np.percentile(vect, 97.5) - np.percentile(vect, 2.5),4)}")
 
 
 def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values, save_name):
@@ -322,12 +328,14 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     #im = ax.imshow(m_nan,interpolation='none',origin='lower',vmin=cb_range[0],vmax=cb_range[1])
     #plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     #plt.yticks(range(len(solar_values)), solar_labs)
-    #plt.xlabel("Wind Generation\n(% Mean Demand)")
-    #plt.ylabel("Solar Generation\n(% Mean Demand)")
+    #plt.xlabel("wind generation\n(% mean annual load)")
+    #plt.ylabel("solar generation\n(% mean annual load)")
     #cbar = ax.figure.colorbar(im)
     #cbar.ax.set_ylabel(ylab)
+    #cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=dec))
     #plt.title(f"")
-    #plt.tight_layout()
+    ##plt.tight_layout()
+    #plt.subplots_adjust(left=0.14, bottom=0.25, right=0.88, top=0.97)
     #plt.savefig(f"{plot_base}/{region}_{save_name}_empty.{TYPE}")
     #plt.clf()
 
@@ -978,9 +986,14 @@ if make_plots:
             pls = study_regions[str(round(solar_install_cap,2))][str(round(wind_install_cap,2))][3]
             m_pl_mean[i].append(np.mean(pls)*100)
             m_pl_std[i].append(np.std(pls)*100)
-            if (i%20==0 and j%20==0) or (i<16 and j==0):
-                triple_hist(region, plot_base, peak_load_original, pls, rls,
-                        f'triple_hist_cnt{str(int(i*len(wind_gen_steps)+j))}_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}')
+            #if (i%20==0 and j%20==0) or (i<16 and j==0):
+            if (i==0 and j==0) or (i<16 and j==0) or (i==15 and j<26):
+                save_name = f'triple_hist_cnt{str(int(i*len(wind_gen_steps)+j))}_w{str(round(wind_install_cap,2)).replace(".","p")}_s{str(round(solar_install_cap,2)).replace(".","p")}'
+                if (j==0 and i==15) or (i==15 and j==25):
+                    verbose = True
+                    triple_hist(region, plot_base, peak_load_original, pls, rls, save_name, verbose)
+                else:
+                    triple_hist(region, plot_base, peak_load_original, pls, rls, save_name)
 
     plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
     plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
