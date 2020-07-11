@@ -288,11 +288,11 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     elif '_inter' in save_name:
         n_levels = np.arange(0,20,1)
         c_fmt = '%3.1f'
-        ylab = "interannual var. of peak residual load\nload hours (% mean annual load)"
+        ylab = "inter-annual variability\n(% mean annual load)"
     elif '_intra' in save_name:
         n_levels = np.arange(0,20,1)
         c_fmt = '%3.1f'
-        ylab = "intra-annual var. of peak residual load\nload hours (% mean annual load)"
+        ylab = "intra-annual variability\n(% mean annual load)"
 
     cs = ax.contour(matrix, n_levels, colors='w')
     # inline labels
@@ -316,7 +316,7 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(ylab)
     dec = 0
-    if region == 'NYISO':
+    if region == 'NYISO' or '_inter' in save_name:
         dec = 1
     cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=dec))
     cb_range = [np.min(matrix), np.max(matrix)]
@@ -666,16 +666,19 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
                            'width_ratios': [3, 1]})
 
     #fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(8,5))
-    medianprops = dict(linestyle='-', linewidth=2.5)
-    bplot = axs[0].boxplot(rl_vects, whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
+    #medianprops = dict(linestyle='-', linewidth=2.5)
+    medianprops = dict(linestyle='-', linewidth=0.0)
+    meanprops = dict(linestyle='-', linewidth=2.5, color='C1', markersize=0)
+    #bplot = axs[0].boxplot(rl_vects, whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
+    bplot = axs[0].boxplot(rl_vects, whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops, meanline=True, showmeans=True, meanprops=meanprops)
     #axs[0].set_xtick([i for i in range(1, len(years)+1)], years, rotation=90)
     axs[0].set_xticklabels(years)
     plt.setp(axs[0].get_xticklabels(), rotation=90)
     axs[0].yaxis.grid(True)
-    axs[0].set_ylabel('residual load\n(% mean annual load)')
+    axs[0].set_ylabel('peak residual load\n(% mean annual load)')
     axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
-    #axs[0].set_ylim(1.4, 1.9)
-    axs[0].set_ylim(1, 2)
+    axs[0].set_ylim(1.2, 1.9)
+    #axs[0].set_ylim(1, 2)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
     stds = []
@@ -683,10 +686,11 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for row in rl_vects:
         stds.append(np.std(row))
         mus.append(np.mean(row))
-    axs[0].text(2, 1.15, f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%')
-    axs[0].text(2, 1.05, f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%')
+    #axs[0].text(2, 1.15, f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%')
+    #axs[0].text(2, 1.05, f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%')
     
-    bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
+    #bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
+    bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops, meanline=True, showmeans=True, meanprops=meanprops)
     axs[1].set_xticklabels([f'{years[0]}-{years[-1]}',])
     axs[1].yaxis.grid(True)
     #axs[0].yaxis.grid(True)
@@ -696,9 +700,9 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for patch in bplot2['boxes']:
         patch.set_facecolor('lightblue')
 
-    axs[1].text(.6, 1.15, f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%')
+    #axs[1].text(.6, 1.15, f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%')
 
-    plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
+    #plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
     plt.tight_layout()
     plt.savefig(f"{base}/{save_name}_RL_box_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
@@ -889,7 +893,7 @@ demand, wind, solar = get_dem_wind_solar(im)
 ### HERE
 
 TYPE = 'png'
-#TYPE = 'pdf'
+TYPE = 'pdf'
 
 use_TMY = False
 
@@ -904,6 +908,7 @@ DATE = '20200630v1'
 DATE = '20200702v1'
 DATE = '20200706v2'
 #DATE = '20200707v1'
+DATE = '20200710v1'
 DATE = '20200709v2'
 
 thresholds = [1,]
@@ -1021,7 +1026,7 @@ if test_ordering:
             #if i%20==0 and j%20==0:
             #if i<16 and j==0:
             #if (i<31 and j==0) or (i==30 and j<51) or (i==0 and j==50):
-            if (j<26 and i==0) or (j==25 and i<26) or (i==0 and j==50):
+            if (j<26 and i==0) or (j==25 and i<26) or (j==0 and i==25):
                 rl_cnt += 1
                 ##load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 #PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
