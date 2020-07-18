@@ -660,8 +660,8 @@ def PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, ge
 def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
 
     plt.close()
-    matplotlib.rcParams.update({'font.size': 14})
-    fig, axs = plt.subplots(1, 2, sharey=True, figsize=(6.5,5),
+    matplotlib.rcParams.update({'font.size': 16.5})
+    fig, axs = plt.subplots(1, 2, sharey=True, figsize=(7.5,6),
                        gridspec_kw={
                            'width_ratios': [3, 1]})
 
@@ -677,7 +677,7 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     axs[0].yaxis.grid(True)
     axs[0].set_ylabel('peak residual load\n(% mean annual load)')
     axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
-    axs[0].set_ylim(1.2, 1.9)
+    axs[0].set_ylim(1.2, 2.)
     #axs[0].set_ylim(1, 2)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
@@ -686,26 +686,43 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for row in rl_vects:
         stds.append(np.std(row))
         mus.append(np.mean(row))
-    #axs[0].text(2, 1.15, f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%')
-    #axs[0].text(2, 1.05, f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%')
     
     #bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
     bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops, meanline=True, showmeans=True, meanprops=meanprops)
     axs[1].set_xticklabels([f'{years[0]}-{years[-1]}',])
     axs[1].yaxis.grid(True)
     #axs[0].yaxis.grid(True)
-    #ax[1].set_ylabel('residual load\n(% mean annual load)')
-    #ax[1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
-    #ax[1].set_ylim(1.4, 1.9)
     for patch in bplot2['boxes']:
         patch.set_facecolor('lightblue')
 
-    #axs[1].text(.6, 1.15, f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%')
+    mt = r'$\mu_{total}$'
+    st = r'$\sigma_{total}$'
+    textstr = '\n'.join((
+        f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.0f}%; {st} = {np.std(np.array(rl_vects).flatten())*100:.2f}%',
+        f'inter-annual var. = {np.std(mus)*100:.2f}%',
+        f'intra-annual var. = {np.mean(stds)*100:.2f}%',
+        ))
+        #f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%',
+        #f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%',
+        #f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%'))
 
-    #plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
-    plt.tight_layout()
+    # these are matplotlib.patch.Patch properties
+    props = dict(boxstyle='round', facecolor='wheat')
+    
+    # place a text box in upper left in axes coords
+    axs[0].text(2, 1.98, textstr, fontsize=16.5,
+            verticalalignment='top', bbox=props)
+
+    #axs[0].text(2, 1.95, f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%')
+    #axs[0].text(2, 1.92, f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%')
+    #axs[0].text(2, 1.84, f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%')
+
+    plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
+    #plt.tight_layout()
+    plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.93)
     plt.savefig(f"{base}/{save_name}_RL_box_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
+    #n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label=f'peak load: $\mu$ = {np.mean(peak_load_original):.2f} $\sigma$ = {np.std(peak_load_original):.3f}')
 
 # Make box plots showing the wind and solar CFs for the top X thresholds
 def make_box_plots(dfs, save_name, wind_install_cap, solar_install_cap, box_thresholds, cnt, base, gens=[0, 0]):
@@ -893,14 +910,14 @@ demand, wind, solar = get_dem_wind_solar(im)
 ### HERE
 
 TYPE = 'png'
-TYPE = 'pdf'
+#TYPE = 'pdf'
 
 use_TMY = False
 
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
-#make_plots = False
+make_plots = False
 make_scan = True
 make_scan = False
 
@@ -910,6 +927,7 @@ DATE = '20200706v2'
 #DATE = '20200707v1'
 DATE = '20200710v1'
 DATE = '20200709v2'
+DATE = '20200717v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -1026,7 +1044,10 @@ if test_ordering:
             #if i%20==0 and j%20==0:
             #if i<16 and j==0:
             #if (i<31 and j==0) or (i==30 and j<51) or (i==0 and j==50):
-            if (j<26 and i==0) or (j==25 and i<26) or (j==0 and i==25):
+            #if (j<26 and i==0) or (j==25 and i<26) or (j==0 and i==25):
+            if (i<21 and j==0) or (i==20 and j<21) or (i==0 and j==20):
+                #if i%2!=0 or j%2!=0:
+                #    continue
                 rl_cnt += 1
                 ##load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 #PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
