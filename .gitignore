@@ -6,3 +6,4 @@ plots*
 slurm*
 regional_analysis/*.pdf
 *__pycache__
+*pkl
