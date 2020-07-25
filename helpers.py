@@ -45,7 +45,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
         else:
             axs.append( plt.subplot(7, 2, 2 * i - 1, sharex=axs[0]) )
             plt.setp(axs[-1].get_xticklabels(), visible=False)
-        axs[-1].set_ylabel('Power (kW)')
+        axs[-1].set_ylabel('power (kW)')
 
         ndays = 7 # days on each side of peak
         plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, ndays, set_max)
@@ -83,10 +83,11 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     df = pd.read_csv(full_file_name[0])
 
     # Find the idx to center to time series upon
-    center_idx = find_centering_hour_idx(df, case)
+    #center_idx = find_centering_hour_idx(df, case)
+    center_idx = df['demand (kW)'].idxmax()
     print(f"center_idx {center_idx}")
     #if case == 'Case2_NuclearStorage':
-    center_idx = [5370,] # Use same as Case 1
+    center_idx = [4821,] # Use same as Case 1
     print(f"center_idx NEW {center_idx}")
 
     plt.close()
@@ -102,7 +103,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
         if j == 0:
             axs.append( plt.subplot(1, 3, j+1) )
-            axs[-1].set_ylabel('Power (kW)')
+            axs[-1].set_ylabel('power (kW)')
         else:
             axs.append( plt.subplot(1, 3, j+1, sharey=axs[0]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
@@ -149,7 +150,7 @@ def get_start_datetime(xs):
     dts = []
     xsx = []
 
-    dt = datetime(2016, 1, 1, 1)
+    dt = datetime(2017, 1, 1, 1)
     first_hr = dt + timedelta(hours=xs.values[0])
     for i in range(len(xs)):
         if first_hr.hour == 0:
@@ -163,7 +164,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
     # Open out file as df
     full_file_name = glob(out_file_name)
-    assert(len(full_file_name) == 1)
+    assert(len(full_file_name) == 1), f"\n\nYour file list is: {full_file_name}"
     df = pd.read_csv(full_file_name[0])
 
     assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
@@ -267,12 +268,13 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots3'
+    save_dir = 'out_plots5'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
 
-    date = '20200311_v8'
+    date = '20200311_v8' # 2016 figs used in 20200526_fuels_paper_II_20200526_kc.docx
+    date = '20200608_v1'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
@@ -298,15 +300,18 @@ if '__main__' in __name__:
             #'10.20862',
     ]
     tgt_fuel_dems_select = [
-            #'0.012',
-            '0.02489',
-            #'0.05161',
-            '0.07432',
-            #'0.10702',
-            '0.2219',
-            #'0.31954',
-            #'1.14497',
-            #'10.20862',
+            ##'0.012',   # 40 cases
+            #'0.02489',   # 40 cases
+            ##'0.05161',   # 40 cases
+            #'0.07432',   # 40 cases
+            ##'0.10702',   # 40 cases
+            #'0.2219',   # 40 cases
+            ##'0.31954',   # 40 cases
+            ##'1.14497',   # 40 cases
+            ##'10.20862',   # 40 cases
+            '0.02593', # 75 cases
+            '0.07398', # 75 cases
+            '0.23221', # 75 cases 
     ]
 
     for case, info in cases.items():
