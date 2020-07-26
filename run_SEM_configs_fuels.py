@@ -498,10 +498,10 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
     ax.set_xlabel(kwargs['x_label'])
     
-    ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh)')
+    ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh$_{e}$)')
 
     # Electricity cost
-    ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='electricity cost ($/kWh)', marker='v')
+    ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
 
     # $/GGE fuel line use Dual Value
     ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
@@ -510,7 +510,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     # Stacked components
     f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
     f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
-    #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
+    f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
     f_tot = f_elec+f_chem#+f_store
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
     v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
@@ -528,6 +528,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
     print(f" ----- fixed cost electrolyzer          {round(f_elec[1],6)}         {round(f_elec[n],6)}")
     print(f" ----- fixed cost chem                  {round(f_chem[1],6)}         {round(f_chem[n],6)}")
+    print(f" ----- fixed cost storage               {round(f_store[1],6)}         {round(f_store[n],6)}")
     print(f" ----- variable chem                    {round(v_chem[1],6)}         {round(v_chem[n],6)}")
     print(f" ----- variable CO2                     {round(v_co2[1],6)}          {round(v_co2[n],6)}")
     print(f" ----- variable electrolyzer            {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}             {round(df.loc[n, 'fuel price ($/kWh)']-(f_tot[n]+v_chem[n]+v_co2[n]),6)}")
@@ -566,6 +567,77 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     ax.set_ylim(0, y_max)
     plt.grid()
     plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
+
+
+    #plt.tight_layout()
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+
+
+# Poorly written, the args are all required and are below.
+#save_name, save_dir
+def costs_plot_alt(df, var='fuel demand (kWh)', **kwargs):
+
+    plt.close()
+    #y_max = 0.7
+    y_max = 0.15
+    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel(kwargs['x_label'])
+    
+    #ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh$_{e}$)')
+    ax.set_ylabel(r'cost (\$/kWh$_{e}$)')
+
+    # Stacked components
+    f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
+    f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
+    f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
+    v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
+    v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
+    f_tot = f_elec+f_chem+f_store+v_chem+v_co2
+
+
+    # Electricity cost
+    ax.scatter(df[var], df['mean price ($/kWh)'], label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
+
+    ## $/GGE fuel line use Dual Value
+    #ax.scatter(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
+
+    tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+    # Add the cost of electric power for the fuel load
+    ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
+
+
+
+    # Add vertical bars deliniating 3 regions:
+    # 1) cheapest fuel cost --> +5%
+    # 2) cheapest + 5% --> most expensive - 5%
+    # 3) most expensive - 5% --> most expensive
+    if not 'Case0_NuclearFlatDemand' in save_dir:
+        cheapest_fuel = df.loc[1, 'fuel price ($/kWh)']
+        most_expensive_fuel = df.loc[len(df.index)-1, 'fuel price ($/kWh)']
+        fuel_dem_split_1 = get_threshold(df, cheapest_fuel, 1.05, var)
+        fuel_dem_split_2 = get_threshold(df, most_expensive_fuel, 0.95, var)
+        print(f"\nSave dir {save_dir}, lower threshold {fuel_dem_split_1}, upper threshold {fuel_dem_split_2}")
+        ax.plot(np.ones(100) * fuel_dem_split_1, np.linspace(0, y_max*.9, 100), 'k--', label='_nolegend_')
+        ax.plot(np.ones(100) * fuel_dem_split_2, np.linspace(0, y_max*.9, 100), 'k--', label='_nolegend_')
+
+
+    plt.xscale(kwargs['x_type'], nonposx='clip')
+    if kwargs['x_type'] == 'log':
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(myLogFormat))
+
+    if var == 'fuel demand (kWh)' or var == 'dispatch to fuel h2 storage (kW)':
+        ax.set_xlim(df.loc[1, var], df.loc[len(df.index)-1, var])
+    else:
+        plt.xscale('linear')
+        ax.set_xlim(0.0, 1.0)
+
+    ax.set_ylim(0, y_max)
+    plt.grid()
+    plt.legend(loc='upper left', framealpha = 1.0)
 
 
     #plt.tight_layout()
@@ -1180,6 +1252,8 @@ if '__main__' in __name__:
         ### Fuel cost compare scatter and use to fill electricity costs in stacked
         kwargs['save_name'] = 'stackedCostPlot' + m['app']
         costs_plot(df, k, **kwargs)
+        kwargs['save_name'] = 'stackedCostPlotAlt' + m['app']
+        costs_plot_alt(df, k, **kwargs)
     
 
 
