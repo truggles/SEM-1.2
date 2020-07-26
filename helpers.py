@@ -16,6 +16,13 @@ def get_fuel_demands(start, end, steps):
         fuel_demands.append(round(fuel_demands[-1]*steps,5))
     return fuel_demands
 
+def get_fuel_fractions(step_size):
+
+    ffs = np.arange(0.0, 1.0, step_size)
+    fuel_dem = ffs / (1.0 - ffs)
+
+    return fuel_dem
+
 
 def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, ldc=False):
 

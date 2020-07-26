@@ -12,7 +12,7 @@ import os
 import matplotlib
 from datetime import datetime, timedelta
 import copy
-from helpers import get_fuel_demands
+from helpers import get_fuel_demands, get_fuel_fractions
 matplotlib.rcParams.update({'font.size': 12.5})
 
 
@@ -173,6 +173,7 @@ def get_results(files, global_name):
                        info['problem status'].values[0],
                        float(info['fuel cost ($/GGE)'].values[0]),
                        float(info['fuel demand (kWh)'].values[0]),
+                       float(info['mean demand (kW)'].values[0]),
                        float(info['system cost ($ or $/kWh)'].values[0]),
                        float(info['capacity nuclear (kW)'].values[0]),
                        float(info['capacity solar (kW)'].values[0]),
@@ -223,7 +224,7 @@ def get_results(files, global_name):
     print('Writing results to "results/Results_{}.csv"'.format(global_name))
     ofile = open('results/Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -879,7 +880,7 @@ if '__main__' in __name__:
     date = '20200209' # default
     case = 'Case6_NuclearWindSolarStorage' # default
     version = 'v3'
-    multiplication_factor = 1.2 # default
+    multiplication_factor = 0.01 # default for step_size in new get_fuel_fractions method
     n_jobs = 1
     job_num = 1
     full_year = False # default to run over April only
@@ -989,7 +990,13 @@ if '__main__' in __name__:
             settings['fuel_demand'] = 0.1
         else:
             keys = ['fuel_demand',]
-            ranges = [get_fuel_demands(0.01, 10, multiplication_factor),] # start, end, steps
+            #ranges = [get_fuel_demands(0.01, 10, multiplication_factor),] # start, end, steps
+            step_size = multiplication_factor
+            fuel_dem = get_fuel_fractions(step_size)
+            fuel_dem = np.append(fuel_dem, [1e-6, 1e6, -1])
+            fuel_dem.sort()
+            ranges = [list(fuel_dem),]
+
 
         scan_map = make_scan_map(keys, ranges)
         print("Variables to scan")
@@ -1012,15 +1019,24 @@ if '__main__' in __name__:
             if not (idx >= min_job_idx and idx <= max_job_idx):
                 print(f'Skipping idx {idx}')
                 continue
-            
+
             print(f'Processing idx {idx}')
 
             for col in scan_map.columns:
                 settings[col] = scan_map.loc[idx, col]
 
+            # Deal with zero electricity case
+            if scan_map.loc[idx, 'fuel_demand'] == -1:
+                print(f"Fuel demand == -1 for idx {idx}")
+                print(scan_map.loc[idx])
+                settings['fuel_demand'] = 1e6
+            
+                # Set up new case file
+                case_file = set_up_new_cfg(input_file.replace('.csv', '_ZERO_ELEC.csv'), version, idx, **settings)
 
-            # Set up new case file
-            case_file = set_up_new_cfg(input_file, version, idx, **settings)
+            else:
+                # Set up new case file
+                case_file = set_up_new_cfg(input_file, version, idx, **settings)
 
             # Run MEM
             subprocess.call(["python", "Simple_Energy_Model.py", case_file])
