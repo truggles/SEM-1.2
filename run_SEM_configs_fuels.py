@@ -1132,6 +1132,10 @@ if '__main__' in __name__:
     df = pd.read_csv('results/Results_{}.csv'.format(global_name), index_col=False)
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
+    for i in range(len(df.index)):
+        if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
+            print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
+            df = df.drop([i,])
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
             df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + 
             df['dispatch solar (kW)'] + df['curtailment solar (kW)'] + 
@@ -1208,32 +1212,32 @@ if '__main__' in __name__:
     idx_max = len(df.index)-1
 
     details = {
-    'fuel demand (kWh)': {
-        'x_label' : 'fuel produced / electricity load',
-        'app' : '_fuelDemDivElecDem',
-        'x_lim' : [min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)]),
-                    max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)],
-        'x_type' : 'log',
-        },
-    'fuel load / available power' : {
-        'x_label' : 'fuel load / available power',
-        'app' : '_fuelLoadDivAvailPower',
-        'x_lim' : [0., 1.],
-        'x_type' : 'linear',
-        },
-    'fuel load / total load' : {
-        'x_label' : 'fuel load / total load',
-        'app' : '_fuelLoadDivTotalLoad',
-        'x_lim' : [0., 1.],
-        'x_type' : 'linear',
-        },
-    'dispatch to fuel h2 storage (kW)' : {
-        'x_label' : 'fuel load / electricity load',
-        'app' : '_fuelLoadDivElecDem',
-        'x_lim' : [min(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values[np.nonzero(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values)]),
-                    max(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values)],
-        'x_type' : 'log',
-        },
+        #'fuel demand (kWh)': {
+        #    'x_label' : 'fuel produced / electricity load',
+        #    'app' : '_fuelDemDivElecDem',
+        #    'x_lim' : [min(df.loc[0:idx_max, 'fuel demand (kWh)'].values[np.nonzero(df.loc[0:idx_max, 'fuel demand (kWh)'].values)]),
+        #                max(df.loc[0:idx_max, 'fuel demand (kWh)'].values)],
+        #    'x_type' : 'log',
+        #    },
+        #'fuel load / available power' : {
+        #    'x_label' : 'fuel load / available power',
+        #    'app' : '_fuelLoadDivAvailPower',
+        #    'x_lim' : [0., 1.],
+        #    'x_type' : 'linear',
+        #    },
+        'fuel load / total load' : {
+            'x_label' : 'fuel load / total load',
+            'app' : '_fuelLoadDivTotalLoad',
+            'x_lim' : [0., 1.],
+            'x_type' : 'linear',
+            },
+        #'dispatch to fuel h2 storage (kW)' : {
+        #    'x_label' : 'fuel load / electricity load',
+        #    'app' : '_fuelLoadDivElecDem',
+        #    'x_lim' : [min(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values[np.nonzero(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values)]),
+        #                max(df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'].values)],
+        #    'x_type' : 'log',
+        #    },
     }
 
 
@@ -1252,7 +1256,7 @@ if '__main__' in __name__:
         ### Fuel cost compare scatter and use to fill electricity costs in stacked
         kwargs['save_name'] = 'stackedCostPlot' + m['app']
         costs_plot(df, k, **kwargs)
-        kwargs['save_name'] = 'stackedCostPlotAlt' + m['app']
+        kwargs['save_name'] = 'costPlot' + m['app']
         costs_plot_alt(df, k, **kwargs)
     
 
