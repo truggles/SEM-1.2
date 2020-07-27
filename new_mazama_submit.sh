@@ -2,19 +2,18 @@
 
 
 export DATE=20200725
-export VERSION=v1
-nJobs=26
+export VERSION=v5
+nJobs=103
 
         #"Case0_NuclearFlatDemand" \
 
-        #"Case1_Nuclear" \
         #"Case2_NuclearStorage" \
         #"Case3_WindStorage" \
         #"Case4_SolarStorage" \
         #"Case5_WindSolarStorage" \
 
-
 for CASE in \
+        "Case1_Nuclear" \
         "Case6_NuclearWindSolarStorage" \
         ; do
 

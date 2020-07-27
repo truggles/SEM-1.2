@@ -1,9 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --export=ALL
-#SBATCH --time=10:00:00
+#SBATCH --time=2:00:00
 #SBATCH --ntasks=4
-#SBATCH --partition=clab
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
 #
