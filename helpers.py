@@ -116,7 +116,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
             plt.setp(axs[-1].get_yticklabels(), visible=False)
         axs[-1].set_xlabel('Hours')
 
-        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, 2, set_max)
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, .5, set_max)
         
 
     #plt.tight_layout()
@@ -152,16 +152,24 @@ def find_centering_hour_idx(df, case):
 
 
 # From list of hours as n hours from year start, find datetimes
-def get_start_datetime(xs):
+def get_start_datetime(xs, mod=99):
 
     dts = []
     xsx = []
 
     dt = datetime(2017, 1, 1, 1)
     first_hr = dt + timedelta(hours=xs.values[0])
+
+    # Set for Central Standard Time (CST) from UTC
+    if mod != 99:
+        first_hr += timedelta(hours=-6)
+        
     for i in range(len(xs)):
-        if first_hr.hour == 0:
+        if mod == 99 and first_hr.hour % mod == 0:
             dts.append(first_hr.strftime("%Y-%m-%d"))
+            xsx.append(xs.values[0] + i)
+        elif first_hr.hour % mod == 0:
+            dts.append(first_hr.strftime("%H:00"))
             xsx.append(xs.values[0] + i)
         first_hr += timedelta(hours=1)
     return dts, xsx
@@ -177,8 +185,8 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
     peak_idx = center_idx[0]
 
-    lo = peak_idx - 24*days
-    hi = peak_idx + 24*days
+    lo = peak_idx - int(24*days)
+    hi = peak_idx + int(24*days)
     if hi > len(df.index):
         lo = lo - (hi - len(df.index))
         hi = hi - (hi - len(df.index))
@@ -255,10 +263,14 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
     # Make x-axis datetime
     if not ldc:
-        dts, xsx = get_start_datetime(xs)
-        if days < 7: # we have more room, rotate less
+        if days <= 1: # Labels every 3 hours
+            dts, xsx = get_start_datetime(xs, 3)
+            plt.xticks(xsx, dts, rotation=90)
+        elif days < 7: # we have more room, rotate less
+            dts, xsx = get_start_datetime(xs)
             plt.xticks(xsx, dts, rotation=30)
         else:
+            dts, xsx = get_start_datetime(xs)
             plt.xticks(xsx, dts, rotation=90)
         ax.set_xlabel(None)
     
