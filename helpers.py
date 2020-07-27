@@ -16,10 +16,10 @@ def get_fuel_demands(start, end, steps):
         fuel_demands.append(round(fuel_demands[-1]*steps,5))
     return fuel_demands
 
-def get_fuel_fractions(step_size):
+def get_fuel_fractions(step_size, total_eff):
 
     ffs = np.arange(0.0, 1.0, step_size)
-    fuel_dem = ffs / (1.0 - ffs)
+    fuel_dem = (ffs / (1.0 - ffs)) * total_eff
 
     return fuel_dem
 

@@ -1064,7 +1064,8 @@ if '__main__' in __name__:
             keys = ['fuel_demand',]
             #ranges = [get_fuel_demands(0.01, 10, multiplication_factor),] # start, end, steps
             step_size = multiplication_factor
-            fuel_dem = get_fuel_fractions(step_size)
+            total_eff = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+            fuel_dem = get_fuel_fractions(step_size, total_eff)
             fuel_dem = np.append(fuel_dem, [1e-6, 1e6, -1])
             fuel_dem.sort()
             ranges = [list(fuel_dem),]
