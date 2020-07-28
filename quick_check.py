@@ -14,6 +14,8 @@ for idx in df.index:
     run = int(run[:3:])
     if run in missing:
         missing.remove(run)
+    else:
+        print(f"Already removed run {run}, must be a duplicate")
 
 out = "for JOB in "
 for m in missing:
