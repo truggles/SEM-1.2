@@ -419,6 +419,8 @@ def stacked_plot(**kwargs):
         tot += kwargs['elec_load']
         ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color='purple', label=f'fuel load {kwargs["legend_app"]}')
         tot += kwargs['fuel_load']
+        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses {kwargs["legend_app"]}')
+        tot += kwargs['battery_losses']
         ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'nuclear curtailment {kwargs["legend_app"]}')
         tot += kwargs['nuclear_curt']
         ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment {kwargs["legend_app"]}')
@@ -1133,10 +1135,6 @@ if '__main__' in __name__:
     df = pd.read_csv('results/Results_{}.csv'.format(global_name), index_col=False)
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
-    for i in range(len(df.index)):
-        if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
-            print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
-            df = df.drop([i,])
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
             df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + 
             df['dispatch solar (kW)'] + df['curtailment solar (kW)'] + 
@@ -1146,6 +1144,10 @@ if '__main__' in __name__:
             df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
             )
     df.to_csv('results/Results_{}_tmp.csv'.format(global_name))
+    for i in range(len(df.index)):
+        if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
+            print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
+            df = df.drop([i,])
 
     save_dir = f'./plots_{date}_{version}/'
     if not os.path.isdir(save_dir):
@@ -1287,6 +1289,7 @@ if '__main__' in __name__:
                 df.loc[0:idx_max, 'dispatch solar (kW)'] + df.loc[0:idx_max, 'curtailment solar (kW)']
         kwargs['nuclear_curt'] = df.loc[0:idx_max, 'curtailment nuclear (kW)'] / tot_avail
         kwargs['renewable_curt'] = (df.loc[0:idx_max, 'curtailment wind (kW)'] + df.loc[0:idx_max, 'curtailment solar (kW)']) / tot_avail
+        kwargs['battery_losses'] = (df.loc[0:idx_max, 'dispatch to storage (kW)'] - df.loc[0:idx_max, 'dispatch from storage (kW)']) / tot_avail
         kwargs['fuel_load'] = df.loc[0:idx_max, 'dispatch to fuel h2 storage (kW)'] / tot_avail
         kwargs['elec_load'] = 1. / tot_avail
         kwargs['y_label'] = 'fraction of available power'
@@ -1295,6 +1298,7 @@ if '__main__' in __name__:
         stacked_plot(**kwargs)
         del kwargs['nuclear_curt']
         del kwargs['renewable_curt']
+        del kwargs['battery_losses']
         del kwargs['fuel_load']
         del kwargs['elec_load']
 
