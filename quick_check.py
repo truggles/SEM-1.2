@@ -19,7 +19,7 @@ for idx in df.index:
 
 out = "for JOB in "
 for m in missing:
-    out += f"{m} "
+    out += f"{m+1} "
 out = out.strip()
 out += "; do"
 print(out)
