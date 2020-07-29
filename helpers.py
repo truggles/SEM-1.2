@@ -80,10 +80,10 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
     fig.savefig(f"{save_dir}/pdf/{case}.pdf")
 
 
-def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, ldc=False):
+def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, techs, save_dir, set_max=-1, plot_min_region=False):
 
     # Open out file as df
-    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD0.0')
+    f_name = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD0.0').replace('Run_','Run_101')
     print(f_name)
     full_file_name = glob(f_name)
     assert(len(full_file_name) == 1)
@@ -92,9 +92,12 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     # Find the idx to center to time series upon
     #center_idx = find_centering_hour_idx(df, case)
     center_idx = df['demand (kW)'].idxmax()
+    if plot_min_region:
+        center_idx = df['demand (kW)'].idxmin()
     print(f"center_idx {center_idx}")
-    #if case == 'Case2_NuclearStorage':
     center_idx = [4821,] # Use same as Case 1
+    if plot_min_region:
+        center_idx = [2529,] # Use same as Case 1
     print(f"center_idx NEW {center_idx}")
 
     plt.close()
@@ -131,8 +134,9 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, vert))
     plt.subplots_adjust(top=.75, bottom=.17, right=0.97, left=.1)
     fig = plt.gcf()
-    fig.savefig(f"{save_dir}/{case}_select.png")
-    fig.savefig(f"{save_dir}/pdf/{case}_select.pdf")
+    app = '' if not plot_min_region else '_min'
+    fig.savefig(f"{save_dir}/{case}_select{app}.png")
+    fig.savefig(f"{save_dir}/pdf/{case}_select{app}.pdf")
 
 
 def find_centering_hour_idx(df, case):
@@ -274,8 +278,16 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
             plt.xticks(xsx, dts, rotation=90)
         ax.set_xlabel(None)
     
+    # BAD HARDCODED FUEL FRACTIONS MAPPED TO DEMAND VALUES
+    ffs = {
+            '0.02179' : '0.05', # new FF w/ 103 cases 
+            '0.07305' : '0.15', # new FF w/ 103 cases 
+            '0.22291' : '0.35', # new FF w/ 103 cases 
+    }
+
+
     # Add fuel demand value
-    ax.text(0.03, 0.95, f'Fuel fraction: {round(float(dem),3)}',
+    ax.text(0.03, 0.95, f'Fuel fraction: {ffs[dem]}',
         verticalalignment='top', horizontalalignment='left',
         transform=ax.transAxes,fontsize=9
     )
@@ -287,13 +299,14 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots5'
+    save_dir = 'out_plots6'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
 
     date = '20200311_v8' # 2016 figs used in 20200526_fuels_paper_II_20200526_kc.docx
     date = '20200608_v1'
+    date = '20200725_v5'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
@@ -328,9 +341,12 @@ if '__main__' in __name__:
             ##'0.31954',   # 40 cases
             ##'1.14497',   # 40 cases
             ##'10.20862',   # 40 cases
-            '0.02593', # 75 cases
-            '0.07398', # 75 cases
-            '0.23221', # 75 cases 
+            #'0.02593', # 75 cases
+            #'0.07398', # 75 cases
+            #'0.23221', # 75 cases 
+            '0.02179', # new FF w/ 103 cases 
+            '0.07305', # new FF w/ 103 cases 
+            '0.22291', # new FF w/ 103 cases 
     ]
 
     for case, info in cases.items():
@@ -342,7 +358,9 @@ if '__main__' in __name__:
         out_file_dir = f'{base}fuel_test_{date}_{case}*/'
         out_file_name = f'fuel_test_{date}_{case}_*Run_*_fuelDXXXkWh_*.csv'
         #plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, info[0], save_dir, info[1], True)
-        plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems_select, case, info[0], save_dir, info[2], True)
+        plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems_select, case, info[0], save_dir, info[2])
+        plot_min_region = True
+        #plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems_select, case, info[0], save_dir, info[2], plot_min_region)
 
 
 
