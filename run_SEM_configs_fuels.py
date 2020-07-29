@@ -263,8 +263,11 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
         for y in ys:
             y_tmp = y[np.nonzero(y)]
             y_tmp = y_tmp[np.isfinite(y_tmp)]
-            if min(y_tmp) < y_min:
-                y_min = min(y_tmp)
+            try:
+                if min(y_tmp) < y_min:
+                    y_min = min(y_tmp)
+            except ValueError:
+                continue
             if max(y_tmp) > y_max:
                 y_max = max(y_tmp)
 
@@ -501,6 +504,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     ax.set_xlabel(kwargs['x_label'])
     
     ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh$_{e}$)')
+
 
     # Electricity cost
     ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
@@ -1353,7 +1357,7 @@ if '__main__' in __name__:
 
 
         # All system capacities
-        ylims=[.1,100]
+        ylims=[.05,1000]
         kwargs['y_label'] = 'capacities (kW)'
         simple_plot(df[k].values,
                 [#df['capacity fuel electrolyzer (kW)'].values, 
