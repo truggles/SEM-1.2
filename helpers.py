@@ -119,7 +119,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
             plt.setp(axs[-1].get_yticklabels(), visible=False)
         axs[-1].set_xlabel('Hours')
 
-        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, .5, set_max)
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, 1, set_max)
         
 
     #plt.tight_layout()
@@ -268,7 +268,8 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     # Make x-axis datetime
     if not ldc:
         if days <= 1: # Labels every 3 hours
-            dts, xsx = get_start_datetime(xs, 3)
+            mod = 6 if days == 1 else 3
+            dts, xsx = get_start_datetime(xs, mod)
             plt.xticks(xsx, dts, rotation=90)
         elif days < 7: # we have more room, rotate less
             dts, xsx = get_start_datetime(xs)
@@ -283,6 +284,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
             '0.02179' : '0.05', # new FF w/ 103 cases 
             '0.07305' : '0.15', # new FF w/ 103 cases 
             '0.22291' : '0.35', # new FF w/ 103 cases 
+            '0.27598' : '0.40', 
     }
 
 
@@ -346,7 +348,8 @@ if '__main__' in __name__:
             #'0.23221', # 75 cases 
             '0.02179', # new FF w/ 103 cases 
             '0.07305', # new FF w/ 103 cases 
-            '0.22291', # new FF w/ 103 cases 
+            #'0.22291', # new FF w/ 103 cases 
+            '0.27598', 
     ]
 
     for case, info in cases.items():
