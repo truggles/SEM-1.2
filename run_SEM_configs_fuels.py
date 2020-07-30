@@ -250,7 +250,14 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
         #print(label)
         #for i, j in zip(x, y):
         #    print(i, j)
-        #print(y)
+
+        # Skip adding empty and null arrays to legend
+        ary = np.array(y)
+        if np.isnan( ary ).sum() == len(y) or \
+                (ary == 0.0).sum() == len(y):
+            #print(f"Skipping: {ary}")
+            ax.scatter([], [])
+            continue
         if label == 'h2 storage':
             ax.scatter(x, y, label=r'H$_{2}$ storage', marker=markers[-1], color='C7')
         else:
@@ -313,7 +320,7 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     else:
         plt.legend(loc='upper left', framealpha = 1.0)
     fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
-    #fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
+    fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
 
 
 
@@ -333,6 +340,15 @@ def simple_plot_with_2nd_yaxis(df, x, ys, labels, y_label_1, y_label_2, save, **
     # First y-axis
     markers = marker_list()
     for i in range(len(ys)-1): # skip last set of y values
+
+        # Skip adding empty and null arrays to legend
+        ary = np.array(ys[i])
+        if np.isnan( ary ).sum() == len(ys[i]) or \
+                (ary == 0.0).sum() == len(ys[i]):
+            #print(f"Skipping: {ary}")
+            ax.scatter([], [])
+            continue
+
         ax.scatter(x, ys[i], label=labels[i], marker=markers[i])
     plt.legend(loc='upper left', framealpha = 1.0)
     ax.set_ylim(ax.get_ylim()[0]/1.5, ax.get_ylim()[1]*1.5)
@@ -369,13 +385,15 @@ def simple_plot_with_2nd_yaxis(df, x, ys, labels, y_label_1, y_label_2, save, **
     if 'y_type' in kwargs.keys() and kwargs['y_type'] == 'log':
         ax.set_yscale('log', nonposy='clip')
         ax2.set_yscale('log', nonposy='clip')
-        ax.set_ylim(.1, ax.get_ylim()[1]*10)
-        ax2.set_ylim(.1, ax2.get_ylim()[1]*10)
+        #ax.set_ylim(.1, ax.get_ylim()[1]*10)
+        #ax2.set_ylim(.1, ax2.get_ylim()[1]*10)
+        ax.set_ylim(.01, 1e3)
+        ax2.set_ylim(.1, 1e5)
 
     #plt.tight_layout()
     #plt.legend()
     fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
-    #fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
+    fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
 
 
 # The addition here compared to the simple_plot is coloring/sizing the dots
@@ -462,7 +480,7 @@ def stacked_plot(**kwargs):
         plt.legend(framealpha = 1.0)
     plt.grid()
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
-    #fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.pdf')
+    fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.pdf')
 
 
 def get_threshold(df, ref, threshold, var='fuel demand (kWh)'):
@@ -577,7 +595,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
     #plt.tight_layout()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
-    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 
@@ -648,7 +666,7 @@ def costs_plot_alt(df, var='fuel demand (kWh)', **kwargs):
 
     #plt.tight_layout()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
-    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 

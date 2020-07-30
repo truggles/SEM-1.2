@@ -163,6 +163,7 @@ def get_start_datetime(xs, mod=99):
 
     dt = datetime(2017, 1, 1, 1)
     first_hr = dt + timedelta(hours=xs.values[0])
+    print(f"First hour of x-axis {first_hr}")
 
     # Set for Central Standard Time (CST) from UTC
     if mod != 99:
