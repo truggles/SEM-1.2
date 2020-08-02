@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import copy
 from helpers import get_fuel_demands, get_fuel_fractions
 matplotlib.rcParams.update({'font.size': 12.5})
+matplotlib.rcParams.update({'lines.linewidth': 3})
 
 
 def marker_list():
@@ -320,6 +321,8 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     plt.grid()
     if 'systemCFs' in save:
         plt.legend(ncol=3, loc='upper left', framealpha = 1.0)
+    elif 'systemCosts' in save or 'powerSystemCosts' in save:
+        plt.legend(loc='upper right', framealpha = 1.0)
     else:
         plt.legend(loc='upper left', framealpha = 1.0)
     fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
@@ -1351,6 +1354,8 @@ if '__main__' in __name__:
         kwargs['y_label'] = 'total generation / total load'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 3]
+        if 'Case1' in kwargs['save_dir']:
+            kwargs['ylim'] = [0, 2]
         stacked_plot(**kwargs)
         del kwargs['nuclear_curt']
         del kwargs['renewable_curt']
@@ -1420,24 +1425,27 @@ if '__main__' in __name__:
 
 
         # All system capacities
-        ylims=[.05,1000]
-        kwargs['y_label'] = 'capacities (kW)'
-        simple_plot(df[k].values,
-                [#df['capacity fuel electrolyzer (kW)'].values, 
-                    #df['capacity fuel chem plant (kW)'].values,
-                    #df['capacity fuel h2 storage (kWh)'].values,
-                    df['capacity nuclear (kW)'].values,
-                    df['capacity wind (kW)'].values,
-                    df['capacity solar (kW)'].values,
-                    df['capacity storage (kWh)'].values/4.,
+        kwargs['y_label'] = 'capacity (kW) / total load (kW)'
+        logY = False
+        ylims=[0,2]
+        simple_plot(df[k],
+                [#df['capacity fuel electrolyzer (kW)'], 
+                    #df['capacity fuel chem plant (kW)'],
+                    #df['capacity fuel h2 storage (kWh)'],
+                    df['capacity nuclear (kW)'] / tot_load,
+                    df['capacity wind (kW)'] / tot_load,
+                    df['capacity solar (kW)'] / tot_load,
+                    df['capacity storage (kWh)']/4. / tot_load,
                     ], # y values 
                 [#'electrolyzer', 'chem plant', 'h2 storage',
                     'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
-                'powerSystemCapacities' + m['app'], True, ylims, **kwargs)
+                'powerSystemCapacities' + m['app'], logY, ylims, **kwargs)
 
 
         # All system costs
-        ylims=[0,.12]
+        ylims=[0,.08]
+        if 'Case1' in kwargs['save_dir']:
+            ylims = [0, .12]
         kwargs['y_label'] = r'cost (\$/kWh$_{e}$ of total load)'
         logY = False
         simple_plot(df[k],
@@ -1450,6 +1458,28 @@ if '__main__' in __name__:
                 [#'electrolyzer', 'chem plant', 'h2 storage',
                     'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
                 'powerSystemCosts' + m['app'], logY, ylims, **kwargs)
+
+
+        # All system costs
+        kwargs['y_label'] = r'cost (\$/kWh$_{e}$ of total load)'
+        logY = False
+        ylims=[0,.12]
+        logY = True
+        ylims=[1e-5,10]
+        simple_plot(df[k],
+                [
+                    df['capacity nuclear (kW)'] * df['fixed cost nuclear ($/kW/h)'] / tot_load,
+                    df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'] / tot_load,
+                    df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'] / tot_load,
+                    df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'] / tot_load,
+                    df['capacity fuel electrolyzer (kW)'] * df['fixed cost fuel electrolyzer ($/kW/h)'] / tot_load, 
+                    df['capacity fuel chem plant (kW)'] * df['fixed cost fuel chem plant ($/kW/h)'] / tot_load, 
+                    df['capacity fuel h2 storage (kWh)'] * df['fixed cost fuel h2 storage ($/kWh/h)'] / tot_load
+                    ], # y
+                [#'electrolyzer', 'chem plant', 'h2 storage',
+                    'dispatchable', 'wind', 'solar', 'battery\nstorage',
+                    'electrolyzer', 'chem plant', r'H$_{2}$ storage'], # labels
+                'systemCosts' + m['app'], logY, ylims, **kwargs)
 
 
         # Tot gen
