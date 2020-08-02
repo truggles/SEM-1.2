@@ -168,6 +168,8 @@ def get_results(files, global_name):
             info['dispatch from storage (kW)'] = 0.
             info['energy storage (kWh)'] = 0.
             info['fixed cost storage ($/kWh/h)'] = 0.
+        if not hasattr(info, 'dispatch unmet demand (kW)'):
+            info['dispatch unmet demand (kW)'] = 0.
         #print(info)
         keys.append(info['case name'].values[0])
         results[info['case name'].values[0]] = [

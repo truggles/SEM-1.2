@@ -1,0 +1,36 @@
+For running zero unmet demand cases, comment out these lines in Preprocess
+
+
+
+
+diff --git a/Preprocess_Input.py b/Preprocess_Input.py
+index a25a4e3..3cd902d 100644
+--- a/Preprocess_Input.py
++++ b/Preprocess_Input.py
+@@ -423,16 +423,16 @@ def preprocess_input(case_input_path_filename):
+             if case_list_dic['FIXED_COST_FUEL_ELECTROLYZER'][case_index] >= 0 and case_list_dic['VAR_COST_FUEL_ELECTROLYZER'][case_index] >= 0 :
+                 component_list.append('FUEL')
+                 
+-        if 'VAR_COST_UNMET_DEMAND' in have_keys:
+-            if case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] >= 0:
+-                component_list.append('UNMET_DEMAND')
+-                
+-        if 'SYSTEM_RELIABILITY' in have_keys:
+-            if case_list_dic['SYSTEM_RELIABILITY'][case_index] >= 0:
+-                if not 'UNMET_DEMAND' in component_list:  # If system reliability is specified make sure unmet demand is a possibility
+-                                                          # and set cost to zero if not otherwise set.
+-                    component_list.append('UNMET_DEMAND')
+-                    case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] = 0
++        #if 'VAR_COST_UNMET_DEMAND' in have_keys:
++        #    if case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] >= 0:
++        #        component_list.append('UNMET_DEMAND')
++        #        
++        #if 'SYSTEM_RELIABILITY' in have_keys:
++        #    if case_list_dic['SYSTEM_RELIABILITY'][case_index] >= 0:
++        #        if not 'UNMET_DEMAND' in component_list:  # If system reliability is specified make sure unmet demand is a possibility
++        #                                                  # and set cost to zero if not otherwise set.
++        #            component_list.append('UNMET_DEMAND')
++        #            case_list_dic['VAR_COST_UNMET_DEMAND'][case_index] = 0
+                                 
+         print("Included components:")
+         print(component_list)
