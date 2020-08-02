@@ -112,10 +112,10 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         i = len(tgt_fuel_dems) - j + 1
         this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
         if j == 0:
-            axs.append( plt.subplot(1, 3, j+1) )
+            axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1) )
             axs[-1].set_ylabel('power (kW)')
         else:
-            axs.append( plt.subplot(1, 3, j+1, sharey=axs[0]) )
+            axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1, sharey=axs[0]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
         axs[-1].set_xlabel('Hours')
 
@@ -123,7 +123,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         
 
     #plt.tight_layout()
-    horiz = -2.4
+    horiz = -3.8
     vert = 1.35
     if "Case5" in case or "Case6" in case:
         vert = 1.45
@@ -284,13 +284,15 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     ffs = {
             '0.02179' : '0.05', # new FF w/ 103 cases 
             '0.07305' : '0.15', # new FF w/ 103 cases 
+            '0.13799' : '0.25',
+            '0.17742' : '0.30',
             '0.22291' : '0.35', # new FF w/ 103 cases 
             '0.27598' : '0.40', 
     }
 
 
     # Add fuel demand value
-    ax.text(0.03, 0.95, f'Fuel fraction: {ffs[dem]}',
+    ax.text(0.03, 0.97, f'Fuel fraction: {ffs[dem]}',
         verticalalignment='top', horizontalalignment='left',
         transform=ax.transAxes,fontsize=9
     )
@@ -349,6 +351,8 @@ if '__main__' in __name__:
             #'0.23221', # 75 cases 
             '0.02179', # new FF w/ 103 cases 
             '0.07305', # new FF w/ 103 cases 
+            #'0.13799',
+            '0.17742',
             #'0.22291', # new FF w/ 103 cases 
             '0.27598', 
     ]
