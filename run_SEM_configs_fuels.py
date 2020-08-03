@@ -459,17 +459,35 @@ def stacked_plot(**kwargs):
     ax.set_ylabel(kwargs['y_label'])
 
     if 'stackedEndUseFraction' in kwargs["save_name"]:
-        tot = np.zeros(len(kwargs['elec_load']))
-        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color='gray', label=f'electricity load {kwargs["legend_app"]}')
-        tot += kwargs['elec_load']
-        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color='purple', label=f'fuel load {kwargs["legend_app"]}')
-        tot += kwargs['fuel_load']
-        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses {kwargs["legend_app"]}')
-        tot += kwargs['battery_losses']
-        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment {kwargs["legend_app"]}')
-        tot += kwargs['renewable_curt']
-        ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'dispatchable curtailment {kwargs["legend_app"]}')
-        tot += kwargs['nuclear_curt']
+        if 'ALT' in kwargs and kwargs['ALT'] == True:
+            tot = np.zeros(len(kwargs['elec_load']))
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color='gray', label=f'electricity load - renew')
+            tot += kwargs['elec_load']*kwargs['dem_renew_frac']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color='gray', alpha=0.5, label=f'electricity load - fixed')
+            tot += kwargs['elec_load']*(1. - kwargs['dem_renew_frac'])
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color='purple', label=f'fuel load - renew')
+            tot += kwargs['fuel_load']*kwargs['electro_renew_frac']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color='purple', alpha=0.5, label=f'fuel load - fixed')
+            tot += kwargs['fuel_load']*(1. - kwargs['electro_renew_frac'])
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses')
+            tot += kwargs['battery_losses']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment')
+            tot += kwargs['renewable_curt']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'dispatchable curtailment')
+            tot += kwargs['nuclear_curt']
+
+        else:
+            tot = np.zeros(len(kwargs['elec_load']))
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color='gray', label=f'electricity load')
+            tot += kwargs['elec_load']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color='purple', label=f'fuel load')
+            tot += kwargs['fuel_load']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses')
+            tot += kwargs['battery_losses']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment')
+            tot += kwargs['renewable_curt']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'dispatchable curtailment')
+            tot += kwargs['nuclear_curt']
 
     else:
         ax.fill_between(kwargs['x_vals'], 0., kwargs['nuclear'], color='red', label=f'dispatchable {kwargs["legend_app"]}')
@@ -1211,7 +1229,7 @@ if '__main__' in __name__:
 
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
-    df = pd.read_csv('results/Results_{}.csv'.format(global_name), index_col=False)
+    df = pd.read_csv('results/Results_{}_app.csv'.format(global_name), index_col=False)
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -1398,11 +1416,30 @@ if '__main__' in __name__:
         if 'Case1' in kwargs['save_dir']:
             kwargs['ylim'] = [0, 2]
         stacked_plot(**kwargs)
+        ### Stacked curtailment fraction plot - new y-axis, Total Generation
+        kwargs['save_name'] = 'stackedEndUseFractionTotGenAlt' + m['app']
+        kwargs['nuclear_curt'] = df['curtailment nuclear (kW)'] / tot_load
+        kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_load
+        kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
+        kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
+        kwargs['elec_load'] = 1. / tot_load
+        kwargs['y_label'] = 'total generation / total load'
+        kwargs['legend_app'] = ''
+        kwargs['ylim'] = [0, 3]
+        kwargs['ALT'] = True
+        kwargs['dem_renew_frac'] = df['dem_renew_frac']
+        kwargs['electro_renew_frac'] = df['electro_renew_frac']
+        if 'Case1' in kwargs['save_dir']:
+            kwargs['ylim'] = [0, 2]
+        stacked_plot(**kwargs)
         del kwargs['nuclear_curt']
         del kwargs['renewable_curt']
         del kwargs['battery_losses']
         del kwargs['fuel_load']
         del kwargs['elec_load']
+        del kwargs['dem_renew_frac']
+        del kwargs['electro_renew_frac']
+        del kwargs['ALT']
 
     
         # System capacities
