@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
 
-Date="20200608"
+Date="20200803"
 version="v1"
 #ARGS="run_sem make_results_file"
 #ARGS="make_results_file"
 ARGS="run_sem make_results_file make_plots"
 ARGS="make_plots"
 ARGS="make_results_file"
-ARGS="make_plots"
 
 
         #"Case0_NuclearFlatDemand" \
@@ -17,9 +16,13 @@ ARGS="make_plots"
         #"Case5_WindSolarStorage" \
         #"Case1_Nuclear" \
         #"Case2_NuclearStorage" \
+        #"Case6_NuclearWindSolarStorage" \
+
 
 for CASE in \
-        "Case6_NuclearWindSolarStorage" \
+        "Case7_NatGasCCS" \
+        "Case8_NatGasCCSStorage" \
+        "Case9_NatGasCCSWindSolarStorage" \
         ; do
      
     ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 
-export DATE=20200725
-export VERSION=v5
+export DATE=20200803
+export VERSION=v1
 nJobs=103
 
         #"Case0_NuclearFlatDemand" \
@@ -11,10 +11,13 @@ nJobs=103
         #"Case3_WindStorage" \
         #"Case4_SolarStorage" \
         #"Case5_WindSolarStorage" \
+        #"Case1_Nuclear" \
+        #"Case6_NuclearWindSolarStorage" \
 
 for CASE in \
-        "Case1_Nuclear" \
-        "Case6_NuclearWindSolarStorage" \
+        "Case7_NatGasCCS" \
+        "Case8_NatGasCCSStorage" \
+        "Case9_NatGasCCSWindSolarStorage" \
         ; do
 
     for (( JOB=1; JOB<=$nJobs; JOB++ )); do

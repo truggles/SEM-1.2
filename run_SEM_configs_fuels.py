@@ -190,7 +190,7 @@ def get_results(files, global_name):
                        float(info['capacity nuclear (kW)'].values[0]),
                        float(info['capacity natgas_ccs (kW)'].values[0]),
                        float(info['dispatch natgas_ccs (kW)'].values[0]),
-                       float(info['curtailment natgas_ccs (kW)'].values[0]),
+                       float(info['capacity natgas_ccs (kW)'].values[0]) - float(info['dispatch natgas_ccs (kW)'].values[0]), # 'curtailment natgas_ccs (kW)'
                        float(info['fixed cost natgas_ccs ($/kW/h)'].values[0]),
                        float(info['capacity solar (kW)'].values[0]),
                        float(info['capacity wind (kW)'].values[0]),
@@ -1196,7 +1196,7 @@ if '__main__' in __name__:
         base = os.getcwd()
         print(f'Checking path {base}/{results_search}')
         files = get_output_file_names(base+'/'+results_search+'fuel_test_*')
-        #results = get_results(files, global_name)
+        results = get_results(files, global_name)
 
         # Add attribute energy use to renewable vs. dispatchable
         results_search2 = 'Output_Data/fuel_test_{}_{}*/fuel_test_{}_{}'.format(date, version, date, version)
