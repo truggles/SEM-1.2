@@ -134,7 +134,7 @@ def save_vector_results_as_csv( global_dic, case_dic, result_dic ):
     header_list += ['dispatch natgas (kW)']
     series_list.append( result_dic['DISPATCH_NATGAS'].flatten() )
     
-    header_list += ['dispatch natgas ccs (kW)']
+    header_list += ['dispatch natgas_ccs (kW)']
     series_list.append( result_dic['DISPATCH_NATGAS_CCS'].flatten() )
     
     header_list += ['dispatch solar (kW)']
@@ -523,7 +523,7 @@ def save_basic_results( global_dic, case_dic_list ):
         header_list += ['capacity natgas_ccs (kW)']
         series_list.append( case_list_dic['CAPACITY_NATGAS_CCS'])
     
-        header_list += ['dispatch natgas ccs (kW)']
+        header_list += ['dispatch natgas_ccs (kW)']
         series_list.append( case_list_dic['DISPATCH_NATGAS_CCS'])
     
     # Results: SOLAR
