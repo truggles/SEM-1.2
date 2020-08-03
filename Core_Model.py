@@ -233,7 +233,8 @@ def core_model (global_dic, case_dic):
             capacity_natgas_ccs = cvx.Variable(1) # calculate natgas capacity
             constraints += [
                 capacity_natgas_ccs >= 0,
-                capacity_natgas_ccs <= max_demand]
+                #capacity_natgas_ccs <= max_demand
+                ]
         else:
             capacity_natgas_ccs = case_dic['CAPACITY_NATGAS_CCS'] * numerics_demand_scaling
 
