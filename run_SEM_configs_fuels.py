@@ -13,6 +13,7 @@ import matplotlib
 from datetime import datetime, timedelta
 import copy
 from helpers import get_fuel_demands, get_fuel_fractions
+from end_use_fractions import add_detailed_results
 matplotlib.rcParams.update({'font.size': 12.5})
 matplotlib.rcParams.update({'lines.linewidth': 3})
 
@@ -1165,7 +1166,14 @@ if '__main__' in __name__:
         base = os.getcwd()
         print(f'Checking path {base}/{results_search}')
         files = get_output_file_names(base+'/'+results_search+'fuel_test_*')
-        results = get_results(files, global_name)
+        #results = get_results(files, global_name)
+
+        # Add attribute energy use to renewable vs. dispatchable
+        results_search2 = 'Output_Data/fuel_test_{}_{}*/fuel_test_{}_{}'.format(date, version, date, version)
+        print(f"For detailed results from profiles checking {base+'/'+results_search2}")
+        files = get_output_file_names(base+'/'+results_search2)
+        df_name = 'results/Results_{}.csv'.format(global_name)
+        add_detailed_results(df_name, files)
 
     if not make_plots:
         print("Exit before plotting")
