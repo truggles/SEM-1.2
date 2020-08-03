@@ -17,24 +17,22 @@ def add_detailed_results(df_name, files, fixed = 'nuclear', storage_eff = 0.9):
             if run not in f_name:
                 continue
 
-            print(idx, run, f_name)
+            #print(run, end=' ')
+            print(run)
             dem_renew, dem_fix, electro_renew, electro_fix = get_single_file_details(f_name, fixed, storage_eff)
             dem_renews.append(dem_renew)
             dem_fixes.append(dem_fix)
             electro_renews.append(electro_renew)
             electro_fixes.append(electro_fix)
             break
-    print(dem_renews)
-    print(dem_fixes)
-    print(electro_renews)
-    print(electro_fixes)
 
     df['dem_renew'] = dem_renews
     df['dem_fix'] = dem_fixes
+    df['dem_renew_frac'] = df['dem_renew'] / (df['dem_renew'] + df['dem_fix'])
     df['electro_renew'] = electro_renews
     df['electro_fix'] = electro_fixes
+    df['electro_renew_frac'] = df['electro_renew'] / (df['electro_renew'] + df['electro_fix'])
 
-    print(df_name.replace('.csv', '_app.csv'))
     df.to_csv(df_name.replace('.csv', '_app.csv'), index=False)
 
 
@@ -111,9 +109,6 @@ def get_single_file_details(f_name, fixed, storage_eff):
         electro_fix += df.loc[idx, 'dispatch to fuel h2 storage (kW)'] * (1. - disp_frac_renew)
         disp_tot -= df.loc[idx, 'dispatch to fuel h2 storage (kW)']
     
-        #print(f"Idx {idx} .... disp_tot = {disp_tot}")
-        #if idx > 10:
-        #    break
         remainder += disp_tot
             
     
@@ -125,4 +120,9 @@ def get_single_file_details(f_name, fixed, storage_eff):
     #
     #print(f"Remainder {remainder}")
 
-    return dem_renew, dem_fix, electro_renew, electro_fix
+    # Return normalized versions
+    l = len(df.index)
+    return dem_renew/l, dem_fix/l, electro_renew/l, electro_fix/l
+
+
+
