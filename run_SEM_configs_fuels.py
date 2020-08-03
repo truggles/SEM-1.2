@@ -74,6 +74,7 @@ def set_case_info(cfg, **settings):
     fixed_cost_solar_position = -999
     fixed_cost_wind_position = -999
     fixed_cost_nuclear_position = -999
+    fixed_cost_nat_gas_ccs_position = -999
     fixed_cost_storage_position = -999
     fixed_cost_fuel_electrolyzer_position = -999
     efficiency_fuel_electrolyzer_position = -999
@@ -93,6 +94,7 @@ def set_case_info(cfg, **settings):
             fixed_cost_solar_position = line.index('FIXED_COST_SOLAR')
             fixed_cost_wind_position = line.index('FIXED_COST_WIND')
             fixed_cost_nuclear_position = line.index('FIXED_COST_NUCLEAR')
+            fixed_cost_nat_gas_ccs_position = line.index('FIXED_COST_NATGAS_CCS')
             fixed_cost_storage_position = line.index('FIXED_COST_STORAGE')
             fixed_cost_fuel_electrolyzer_position = line.index('FIXED_COST_FUEL_ELECTROLYZER')
             efficiency_fuel_electrolyzer_position = line.index('EFFICIENCY_FUEL_ELECTROLYZER')
@@ -109,6 +111,7 @@ def set_case_info(cfg, **settings):
             line[fixed_cost_solar_position] = settings['fixed_cost_solar']
             line[fixed_cost_wind_position] = settings['fixed_cost_wind']
             line[fixed_cost_nuclear_position] = settings['fixed_cost_nuclear']
+            line[fixed_cost_nat_gas_ccs_position] = settings['fixed_cost_nat_gas_ccs']
             line[fixed_cost_storage_position] = settings['fixed_cost_storage']
             line[fixed_cost_fuel_electrolyzer_position] = settings['fixed_cost_fuel_electrolyzer']
             line[efficiency_fuel_electrolyzer_position] = settings['efficiency_fuel_electrolyzer']
@@ -153,6 +156,11 @@ def get_results(files, global_name):
             info['dispatch nuclear (kW)'] = 0.
             info['curtailment nuclear (kW)'] = 0.
             info['fixed cost nuclear ($/kW/h)'] = 0.
+        if not hasattr(info, 'capacity natgas_ccs (kW)'):
+            info['capacity natgas_ccs (kW)'] = 0.
+            info['dispatch natgas_ccs (kW)'] = 0.
+            info['curtailment natgas_ccs (kW)'] = 0.
+            info['fixed cost natgas_ccs ($/kW/h)'] = 0.
         if not hasattr(info, 'capacity wind (kW)'):
             info['capacity wind (kW)'] = 0.
             info['dispatch wind (kW)'] = 0.
@@ -180,6 +188,10 @@ def get_results(files, global_name):
                        float(info['mean demand (kW)'].values[0]),
                        float(info['system cost ($ or $/kWh)'].values[0]),
                        float(info['capacity nuclear (kW)'].values[0]),
+                       float(info['capacity natgas_ccs (kW)'].values[0]),
+                       float(info['dispatch natgas_ccs (kW)'].values[0]),
+                       float(info['curtailment natgas_ccs (kW)'].values[0]),
+                       float(info['fixed cost natgas_ccs ($/kW/h)'].values[0]),
                        float(info['capacity solar (kW)'].values[0]),
                        float(info['capacity wind (kW)'].values[0]),
                        float(info['capacity storage (kWh)'].values[0]),
@@ -228,7 +240,7 @@ def get_results(files, global_name):
     print('Writing results to "results/Results_{}.csv"'.format(global_name))
     ofile = open('results/Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity natgas_ccs (kW),dispatch natgas_ccs (kW),curtailment natgas_ccs (kW),fixed cost natgas_ccs ($/kW/h),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
@@ -1053,6 +1065,7 @@ if '__main__' in __name__:
         'fixed_cost_solar' : 1,
         'fixed_cost_wind' : 1,
         'fixed_cost_nuclear' : 1,
+        'fixed_cost_nat_gas_ccs' : -1,
         'fixed_cost_storage' : 1,
         'fixed_cost_fuel_electrolyzer' : 1,
         'efficiency_fuel_electrolyzer' : 1,
@@ -1068,23 +1081,40 @@ if '__main__' in __name__:
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_wind'] = -1
         settings['fixed_cost_storage'] = -1
-    if case == 'Case1_Nuclear':
+    elif case == 'Case1_Nuclear':
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_wind'] = -1
         settings['fixed_cost_storage'] = -1
-    if case == 'Case2_NuclearStorage':
+    elif case == 'Case2_NuclearStorage':
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_wind'] = -1
-    if case == 'Case3_WindStorage':
+    elif case == 'Case3_WindStorage':
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_nuclear'] = -1
-    if case == 'Case4_SolarStorage':
+    elif case == 'Case4_SolarStorage':
         settings['fixed_cost_wind'] = -1
         settings['fixed_cost_nuclear'] = -1
-    if case == 'Case5_WindSolarStorage':
+    elif case == 'Case5_WindSolarStorage':
         settings['fixed_cost_nuclear'] = -1
-    #if case == 'Case6_NuclearWindSolarStorage':
     # Includes all by default
+    #elif case == 'Case6_NuclearWindSolarStorage': # NatGas+CCS is off by default
+    elif case == 'Case7_NatGasCCS':
+        settings['fixed_cost_nuclear'] = -1
+        settings['fixed_cost_nat_gas_ccs'] = 1
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_wind'] = -1
+        settings['fixed_cost_storage'] = -1
+    elif case == 'Case8_NatGasCCSStorage':
+        settings['fixed_cost_nuclear'] = -1
+        settings['fixed_cost_nat_gas_ccs'] = 1
+        settings['fixed_cost_solar'] = -1
+        settings['fixed_cost_wind'] = -1
+    elif case == 'Case9_NatGasCCSWindSolarStorage':
+        settings['fixed_cost_nuclear'] = -1
+        settings['fixed_cost_nat_gas_ccs'] = 1
+    else:
+        print(f"Case {case} does not meet the defaults")
+
 
     vre_start = 0.1
     vre_end = 1.5
