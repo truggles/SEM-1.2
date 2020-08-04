@@ -1222,7 +1222,8 @@ if '__main__' in __name__:
         print(f"For detailed results from profiles checking {base+'/'+results_search2}")
         files = get_output_file_names(base+'/'+results_search2)
         df_name = 'results/Results_{}.csv'.format(global_name)
-        add_detailed_results(df_name, files)
+        fixed = 'natgas_ccs'
+        add_detailed_results(df_name, files, fixed)
 
     if not make_plots:
         print("Exit before plotting")

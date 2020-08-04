@@ -53,7 +53,10 @@ def get_single_file_details(f_name, fixed, storage_eff):
     dem_renew = 0.
     dem_fix = 0.
     remainder = 0. # Just to track how far off totals are
-    
+
+
+
+
     for idx in df.index:
     
     
@@ -65,7 +68,12 @@ def get_single_file_details(f_name, fixed, storage_eff):
     
         # Dispatch from X
         # From generation
-        disp_renew = df.loc[idx, 'dispatch wind (kW)'] + df.loc[idx, 'dispatch solar (kW)']
+        if 'dispatch wind (kW)' in df.columns and 'dispatch solar (kW)' in df.columns:
+            disp_renew = df.loc[idx, 'dispatch wind (kW)'] + df.loc[idx, 'dispatch solar (kW)']
+        elif 'dispatch wind (kW)' in df.columns and 'dispatch solar (kW)' not in df.columns:
+            disp_renew = df.loc[idx, 'dispatch wind (kW)']
+        elif 'dispatch wind (kW)' not in df.columns and 'dispatch solar (kW)' in df.columns:
+            disp_renew = df.loc[idx, 'dispatch solar (kW)']
         disp_fix = df.loc[idx, f'dispatch {fixed} (kW)']
     
         # From storage content
@@ -83,7 +91,11 @@ def get_single_file_details(f_name, fixed, storage_eff):
             stored_frac_renew = stored_renew / stored_energy
     
         disp_tot = disp_renew + disp_fix
-        disp_frac_renew = disp_renew / disp_tot
+        if disp_tot == 0.:
+            disp_frac_renew = 0.
+        else:
+            disp_frac_renew = disp_renew / disp_tot
+
     
         
         # Dispatch to Y
