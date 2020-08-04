@@ -2,7 +2,7 @@
 
 
 export DATE=20200803
-export VERSION=v1
+export VERSION=v2
 nJobs=103
 
         #"Case0_NuclearFlatDemand" \
