@@ -1012,6 +1012,7 @@ if '__main__' in __name__:
     print(f"\nRunning {sys.argv[0]}")
     print(f"Input arg list {sys.argv}")
 
+    
     run_sem = False
     make_results_file = False
     make_plots = False
@@ -1227,6 +1228,9 @@ if '__main__' in __name__:
         print("Exit before plotting")
         exit()
 
+    fixed = 'nuclear'
+    fixed = 'natgas_ccs'
+    print(f"\nPlotting using {fixed} as the dispatchable tech\n")
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
     df = pd.read_csv('results/Results_{}_app.csv'.format(global_name), index_col=False)
@@ -1235,7 +1239,7 @@ if '__main__' in __name__:
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
             df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + 
             df['dispatch solar (kW)'] + df['curtailment solar (kW)'] + 
-            df['dispatch nuclear (kW)'] + df['curtailment nuclear (kW)']
+            df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)']
             )
     df['fuel load / total load'] = df['dispatch to fuel h2 storage (kW)'] / (
             df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
@@ -1366,10 +1370,10 @@ if '__main__' in __name__:
 
         ### Stacked dispatch fraction plot
         kwargs['save_name'] = 'stackedDispatchFraction' + m['app']
-        tot_disp = df['dispatch nuclear (kW)'] + \
+        tot_disp = df[f'dispatch {fixed} (kW)'] + \
                 df['dispatch wind (kW)'] + \
                 df['dispatch solar (kW)']
-        kwargs['nuclear'] = df['dispatch nuclear (kW)'] / tot_disp
+        kwargs['nuclear'] = df[f'dispatch {fixed} (kW)'] / tot_disp
         kwargs['wind'] = df['dispatch wind (kW)'] / tot_disp
         kwargs['solar'] = df['dispatch solar (kW)'] / tot_disp
         kwargs['y_label'] = 'fraction of dispatch'
@@ -1384,10 +1388,10 @@ if '__main__' in __name__:
         del kwargs['wind']
         del kwargs['solar']
         kwargs['save_name'] = 'stackedEndUseFraction' + m['app']
-        tot_avail = df['dispatch nuclear (kW)'] + df['curtailment nuclear (kW)'] + \
+        tot_avail = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)'] + \
                 df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + \
                 df['dispatch solar (kW)'] + df['curtailment solar (kW)']
-        kwargs['nuclear_curt'] = df['curtailment nuclear (kW)'] / tot_avail
+        kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)'] / tot_avail
         kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_avail
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_avail
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_avail
@@ -1405,7 +1409,7 @@ if '__main__' in __name__:
     
         ### Stacked curtailment fraction plot - new y-axis, Total Generation
         kwargs['save_name'] = 'stackedEndUseFractionTotGen' + m['app']
-        kwargs['nuclear_curt'] = df['curtailment nuclear (kW)'] / tot_load
+        kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)'] / tot_load
         kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_load
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
@@ -1418,7 +1422,7 @@ if '__main__' in __name__:
         stacked_plot(**kwargs)
         ### Stacked curtailment fraction plot - new y-axis, Total Generation
         kwargs['save_name'] = 'stackedEndUseFractionTotGenAlt' + m['app']
-        kwargs['nuclear_curt'] = df['curtailment nuclear (kW)'] / tot_load
+        kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)'] / tot_load
         kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_load
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
@@ -1446,7 +1450,7 @@ if '__main__' in __name__:
         kwargs['y_type'] = 'linear'
         simple_plot_with_2nd_yaxis(df, df[k],
                 [
-                    df['capacity nuclear (kW)'] / tot_load,
+                    df[f'capacity {fixed} (kW)'] / tot_load,
                     df['capacity wind (kW)'] / tot_load,
                     df['capacity solar (kW)'] / tot_load,
                     df['capacity storage (kWh)']/4. / tot_load,
@@ -1481,7 +1485,7 @@ if '__main__' in __name__:
                 [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                     df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
                     df['fuel h2 storage (kWh)'].values/df['capacity fuel h2 storage (kWh)'].values,
-                    df['dispatch nuclear (kW)'].values/df['capacity nuclear (kW)'].values,
+                    df[f'dispatch {fixed} (kW)'].values/df[f'capacity {fixed} (kW)'].values,
                     df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values,
                     df['dispatch solar (kW)'].values/df['capacity solar (kW)'].values,
                     df['energy storage (kWh)'].values/df['capacity storage (kWh)'].values,
@@ -1510,7 +1514,7 @@ if '__main__' in __name__:
                 [#df['capacity fuel electrolyzer (kW)'], 
                     #df['capacity fuel chem plant (kW)'],
                     #df['capacity fuel h2 storage (kWh)'],
-                    df['capacity nuclear (kW)'] / tot_load,
+                    df[f'capacity {fixed} (kW)'] / tot_load,
                     df['capacity wind (kW)'] / tot_load,
                     df['capacity solar (kW)'] / tot_load,
                     df['capacity storage (kWh)']/4. / tot_load,
@@ -1528,7 +1532,7 @@ if '__main__' in __name__:
         logY = False
         simple_plot(df[k],
                 [
-                    df['capacity nuclear (kW)'] * df['fixed cost nuclear ($/kW/h)'] / tot_load,
+                    df[f'capacity {fixed} (kW)'] * df[f'fixed cost {fixed} ($/kW/h)'] / tot_load,
                     df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'] / tot_load,
                     df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'] / tot_load,
                     df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'] / tot_load,
@@ -1546,7 +1550,7 @@ if '__main__' in __name__:
         ylims=[1e-5,10]
         simple_plot(df[k],
                 [
-                    df['capacity nuclear (kW)'] * df['fixed cost nuclear ($/kW/h)'] / tot_load,
+                    df[f'capacity {fixed} (kW)'] * df[f'fixed cost {fixed} ($/kW/h)'] / tot_load,
                     df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'] / tot_load,
                     df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'] / tot_load,
                     df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'] / tot_load,
@@ -1565,7 +1569,7 @@ if '__main__' in __name__:
         kwargs['y_label'] = 'mean total hourly generation (kW)'
         simple_plot(df[k].values,
                 [
-                    df['dispatch nuclear (kW)'].values + df['curtailment nuclear (kW)'].values,
+                    df[f'dispatch {fixed} (kW)'].values + df[f'curtailment {fixed} (kW)'].values,
                     df['dispatch wind (kW)'].values + df['curtailment wind (kW)'].values,
                     df['dispatch solar (kW)'].values + df['curtailment solar (kW)'].values,
                     ], # y values 
@@ -1578,10 +1582,10 @@ if '__main__' in __name__:
         ## This figure is covered by the new "stackedEndUseFraction" plot
         #### Stacked curtailment fraction plot
         #kwargs['save_name'] = 'stackedCurtailmentFraction' + m['app']
-        #tot_avail = df['dispatch nuclear (kW)'] + df['curtailment nuclear (kW)'] + \
+        #tot_avail = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)'] + \
         #        df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + \
         #        df['dispatch solar (kW)'] + df['curtailment solar (kW)']
-        #kwargs['nuclear'] = df['curtailment nuclear (kW)'] / tot_avail
+        #kwargs['nuclear'] = df[f'curtailment {fixed} (kW)'] / tot_avail
         #kwargs['wind'] = df['curtailment wind (kW)'] / tot_avail
         #kwargs['solar'] = df['curtailment solar (kW)'] / tot_avail
         #kwargs['y_label'] = 'fraction of available power curtailed'
@@ -1594,7 +1598,7 @@ if '__main__' in __name__:
 
     ## Relative curtailment based on available power
     ## This version factors out the wind CF of 0.43
-    #nuclear = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
+    #nuclear = df[f'curtailment {fixed} (kW)']/df[f'capacity {fixed} (kW)']
     #wind = df['curtailment wind (kW)']/(df['curtailment wind (kW)']+df['dispatch wind (kW)'])
     #solar = df['curtailment solar (kW)']/(df['curtailment solar (kW)']+df['dispatch solar (kW)'])
     ##for idx, val in nuclear.items():
@@ -1607,7 +1611,7 @@ if '__main__' in __name__:
     #        'Relative Curtailment of Generation Capacities', 'ratiosCurtailmentDivAvailablePower')
 
     
-    #print(df[['fuel demand (kWh)', 'fuel price ($/kWh)', 'mean price ($/kWh)', 'capacity nuclear (kW)', 'capacity wind (kW)', 'capacity solar (kW)', 'dispatch wind (kW)', 'dispatch solar (kW)']])
+    #print(df[['fuel demand (kWh)', 'fuel price ($/kWh)', 'mean price ($/kWh)', f'capacity {fixed} (kW)', 'capacity wind (kW)', 'capacity solar (kW)', 'dispatch wind (kW)', 'dispatch solar (kW)']])
 
 
 
@@ -1625,9 +1629,9 @@ if '__main__' in __name__:
 
 
     ## Curtailment vs. fuel cost with marker color as fuel fraction
-    #tot_curtailment = (df['curtailment nuclear (kW)'] + df['curtailment wind (kW)'] + \
+    #tot_curtailment = (df[f'curtailment {fixed} (kW)'] + df['curtailment wind (kW)'] + \
     #        df['curtailment solar (kW)'])
-    #        #/ (df['capacity nuclear (kW)'] + df['capacity wind (kW)'] + \
+    #        #/ (df[f'capacity {fixed} (kW)'] + df['capacity wind (kW)'] + \
     #        #df['capacity solar (kW)'])
     #biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
     #        df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
@@ -1635,9 +1639,9 @@ if '__main__' in __name__:
 
 
     ## Curtailment vs. fuel cost with marker color as fuel fraction
-    #tot_curtailment = (df['curtailment nuclear (kW)'].fillna(0) + df['curtailment wind (kW)'].fillna(0) + \
+    #tot_curtailment = (df[f'curtailment {fixed} (kW)'].fillna(0) + df['curtailment wind (kW)'].fillna(0) + \
     #        df['curtailment solar (kW)'].fillna(0)) / \
-    #        (df['capacity nuclear (kW)'].fillna(0) + df['capacity wind (kW)'].fillna(0) + \
+    #        (df[f'capacity {fixed} (kW)'].fillna(0) + df['capacity wind (kW)'].fillna(0) + \
     #        df['capacity solar (kW)'].fillna(0))
     #biv_curtailment_cost_plot(tot_curtailment.loc[1:len(df.index)-1], \
     #        df['fuel price ($/kWh)'].loc[1:len(df.index)-1], df['fuel demand (kWh)'].loc[1:len(df.index)-1], \
@@ -1647,7 +1651,7 @@ if '__main__' in __name__:
 
 
     #### Stacked dispatch plot
-    #kwargs['nuclear'] = df['dispatch nuclear (kW)']
+    #kwargs['nuclear'] = df[f'dispatch {fixed} (kW)']
     #kwargs['wind'] = df['dispatch wind (kW)']
     #kwargs['solar'] = df['dispatch solar (kW)']
     #kwargs['y_label'] = 'normalized dispatch (kW)'
@@ -1660,7 +1664,7 @@ if '__main__' in __name__:
 
 
     #### Stacked generation capacity plot
-    #kwargs['nuclear'] = df['capacity nuclear (kW)']
+    #kwargs['nuclear'] = df[f'capacity {fixed} (kW)']
     #kwargs['wind'] = df['capacity wind (kW)']
     #kwargs['solar'] = df['capacity solar (kW)']
     #kwargs['y_label'] = 'normalized capacity (kW)'
@@ -1673,7 +1677,7 @@ if '__main__' in __name__:
 
 
     #### Stacked curtailment plot
-    #kwargs['nuclear'] = df['curtailment nuclear (kW)']
+    #kwargs['nuclear'] = df[f'curtailment {fixed} (kW)']
     #kwargs['wind'] = df['curtailment wind (kW)']
     #kwargs['solar'] = df['curtailment solar (kW)']
     #kwargs['y_label'] = 'curtailment of dispatch (kW)'
@@ -1685,7 +1689,7 @@ if '__main__' in __name__:
 
 
     #### Stacked curtailment / capacity plot
-    #kwargs['nuclear'] = df['curtailment nuclear (kW)']/df['capacity nuclear (kW)']
+    #kwargs['nuclear'] = df[f'curtailment {fixed} (kW)']/df[f'capacity {fixed} (kW)']
     #kwargs['wind'] = df['curtailment wind (kW)']/df['capacity wind (kW)']
     #kwargs['solar'] = df['curtailment solar (kW)']/df['capacity solar (kW)']
     #kwargs['nuclear'].fillna(value=0, inplace=True)
@@ -1699,7 +1703,7 @@ if '__main__' in __name__:
 
 
     #### Stacked curtailment / dispatch plot
-    #kwargs['nuclear'] = df['curtailment nuclear (kW)']/df['dispatch nuclear (kW)']
+    #kwargs['nuclear'] = df[f'curtailment {fixed} (kW)']/df[f'dispatch {fixed} (kW)']
     #kwargs['wind'] = df['curtailment wind (kW)']/df['dispatch wind (kW)']
     #kwargs['solar'] = df['curtailment solar (kW)']/df['dispatch solar (kW)']
     #kwargs['nuclear'].fillna(value=0, inplace=True)
