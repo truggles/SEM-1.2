@@ -463,11 +463,11 @@ def stacked_plot(**kwargs):
             tot = np.zeros(len(kwargs['elec_load']))
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color='gray', label=f'electricity load - renew')
             tot += kwargs['elec_load']*kwargs['dem_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color='gray', alpha=0.5, label=f'electricity load - fixed')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color='gray', alpha=0.5, label=f'electricity load - dispatch')
             tot += kwargs['elec_load']*(1. - kwargs['dem_renew_frac'])
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color='purple', label=f'fuel load - renew')
             tot += kwargs['fuel_load']*kwargs['electro_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color='purple', alpha=0.5, label=f'fuel load - fixed')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color='purple', alpha=0.5, label=f'fuel load - dispatch')
             tot += kwargs['fuel_load']*(1. - kwargs['electro_renew_frac'])
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses')
             tot += kwargs['battery_losses']
