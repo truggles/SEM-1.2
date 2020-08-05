@@ -1505,12 +1505,13 @@ if '__main__' in __name__:
 
     
         # Fuel system capacities ratios
+        tot_eff = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
         simple_plot_with_2nd_yaxis(df, df[k],
-                [df['capacity fuel electrolyzer (kW)']/df['fuel demand (kWh)'], 
-                    df['capacity fuel chem plant (kW)']/df['fuel demand (kWh)'], 
-                    df['capacity fuel h2 storage (kWh)']/df['fuel demand (kWh)']], # y values
+                [df['capacity fuel electrolyzer (kW)']/df['fuel demand (kWh)'] * tot_eff, 
+                    df['capacity fuel chem plant (kW)']/df['fuel demand (kWh)'] * tot_eff, 
+                    df['capacity fuel h2 storage (kWh)']/df['fuel demand (kWh)'] * tot_eff], # y values
                 ['electrolyzer', 'chem plant', r'H$_{2}$ storage'], # labels
-                'fuel system capacities (kW) /\nfuel demand (kWh/h)', 'storage capacity (kWh) /\nfuel demand (kWh/h)',
+                'capacity (kW) / fuel load (kW)', 'storage capacity (kWh) /\nfuel load (kW)',
                 'ratiosFuelSystem' + m['app'], **kwargs)
 
 
