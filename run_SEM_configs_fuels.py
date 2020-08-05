@@ -95,6 +95,10 @@ def set_case_info(cfg, **settings):
     fixed_cost_storage_position = -999
     fixed_cost_fuel_electrolyzer_position = -999
     efficiency_fuel_electrolyzer_position = -999
+    fixed_cost_fuel_chem_plant_position = -999
+    fixed_cost_fuel_h2_storage_position = -999
+    var_cost_fuel_chem_plant_position = -999
+    var_cost_fuel_co2_position = -999
     for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
@@ -115,6 +119,11 @@ def set_case_info(cfg, **settings):
             fixed_cost_storage_position = line.index('FIXED_COST_STORAGE')
             fixed_cost_fuel_electrolyzer_position = line.index('FIXED_COST_FUEL_ELECTROLYZER')
             efficiency_fuel_electrolyzer_position = line.index('EFFICIENCY_FUEL_ELECTROLYZER')
+            fixed_cost_fuel_chem_plant_position = line.index('FIXED_COST_FUEL_CHEM_PLANT')
+            fixed_cost_fuel_h2_storage_position = line.index('FIXED_COST_FUEL_H2_STORAGE')
+            var_cost_fuel_chem_plant_position = line.index('VAR_COST_FUEL_CHEM_PLANT')
+            var_cost_fuel_co2_position = line.index('VAR_COST_FUEL_CO2')
+
             print(" --- demand pos: {}, value pos {}, fuel_demand {}x, do_demand_constraint {}, start/end month {}-{}".format(
                     fuel_demand_position, fuel_value_position, settings['fuel_demand'], settings['do_demand_constraint'], 
                     settings['start_month'], settings['end_month']))
@@ -132,6 +141,10 @@ def set_case_info(cfg, **settings):
             line[fixed_cost_storage_position] = settings['fixed_cost_storage']
             line[fixed_cost_fuel_electrolyzer_position] = settings['fixed_cost_fuel_electrolyzer']
             line[efficiency_fuel_electrolyzer_position] = settings['efficiency_fuel_electrolyzer']
+            line[fixed_cost_fuel_chem_plant_position] = settings['fixed_cost_fuel_chem_plant']
+            line[fixed_cost_fuel_h2_storage_position] = settings['fixed_cost_fuel_h2_storage']
+            line[var_cost_fuel_chem_plant_position] = settings['var_cost_fuel_chem_plant']
+            line[var_cost_fuel_co2_position] = settings['var_cost_fuel_co2']
 
             line[fuel_value_position] = settings['fuel_value']
             line[fuel_demand_position] = settings['fuel_demand']
@@ -1068,6 +1081,7 @@ if '__main__' in __name__:
     n_jobs = 1
     job_num = 1
     full_year = False # default to run over April only
+    h2_only = False # if h2_only is True, costs for CO2, H2 storage, and chem plant are set to 1e-9
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -1083,6 +1097,8 @@ if '__main__' in __name__:
             job_num = int(arg.split('_')[1])
         if 'FULL_YEAR' in arg:
             full_year = True
+        if 'H2_ONLY' in arg:
+            h2_only = True
 
     input_file = 'fuel_test_20200802_AllCases_EIAPrices.csv'
     #input_file = 'fuel_test_20200802_AllCases_EIAPrices_100PctReli.csv'
@@ -1100,6 +1116,7 @@ if '__main__' in __name__:
     print(f'Results path                   {results}')
     print(f'Input File:                    {input_file}')
     print(f'Demand multiplication factor:  {round(multiplication_factor,3)}')
+    print(f'H2_ONLY:                       {h2_only}')
     print(f'Number of jobs:                {n_jobs}')
     print(f'Job number:                    {job_num}')
     print(f'\n - RUN_SEM =          {run_sem}')
@@ -1172,6 +1189,12 @@ if '__main__' in __name__:
     else:
         print(f"Case {case} does not meet the defaults")
 
+    # if h2_only is True, costs for CO2, H2 storage, and chem plant are set to 1e-9
+    if h2_only:
+        settings['fixed_cost_fuel_chem_plant'] = 1e-9
+        settings['fixed_cost_fuel_h2_storage'] = 1e-9
+        settings['var_cost_fuel_chem_plant'] = 1e-9
+        settings['var_cost_fuel_co2'] = 1e-9
 
     vre_start = 0.1
     vre_end = 1.5
