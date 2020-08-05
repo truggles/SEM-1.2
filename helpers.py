@@ -113,17 +113,18 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
         if j == 0:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1) )
-            axs[-1].set_ylabel('power (kW)')
+            axs[-1].set_ylabel('power\n(% annual mean electric load)')
+            axs[-1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
         else:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1, sharey=axs[0]) )
             plt.setp(axs[-1].get_yticklabels(), visible=False)
         axs[-1].set_xlabel('Hours')
 
-        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, info[0], save_dir, case, 1, set_max)
+        plot_peak_demand_system(axs[-1], dem, center_idx, this_file, techs, save_dir, case, 1, set_max)
         
 
     #plt.tight_layout()
-    horiz = -3.8
+    horiz = -3.65
     vert = 1.35
     if "Case5" in case or "Case6" in case:
         vert = 1.45
@@ -132,7 +133,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     #if len(handles) > 9:
     #    vert = 1.2
     plt.legend(ncol=3, loc='upper left', bbox_to_anchor=(horiz, vert))
-    plt.subplots_adjust(top=.75, bottom=.17, right=0.97, left=.1)
+    plt.subplots_adjust(top=.75, bottom=.17, right=0.97, left=.12)
     fig = plt.gcf()
     app = '' if not plot_min_region else '_min'
     fig.savefig(f"{save_dir}/{case}_select{app}.png")
@@ -203,7 +204,12 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     else:
         xs = dfs['time (hr)']
 
-    cap_nuke = np.max(df['dispatch nuclear (kW)'])
+    if 'natgas_ccs' in techs:
+        disp = 'natgas_ccs'
+    #if 'nuclear' in techs:
+    else:
+        disp = 'nuclear' 
+    cap_disp = np.max(df[f'dispatch {disp} (kW)'])
 
     fblw = 0.25
     if days < 7:
@@ -216,26 +222,26 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     if 'wind' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='power from wind', lw=fblw)
         bottom += dfs['dispatch wind (kW)'].values
-    if 'nuclear' in techs:
-        ax.fill_between(xs, bottom, bottom + dfs['dispatch nuclear (kW)'], color='tan', alpha=0.5, label='power from dispatchable', lw=fblw)
-        bottom += dfs['dispatch nuclear (kW)'].values
+    if disp in techs:
+        ax.fill_between(xs, bottom, bottom + dfs[f'dispatch {disp} (kW)'], color='tan', alpha=0.5, label='power from dispatch', lw=fblw)
+        bottom += dfs[f'dispatch {disp} (kW)'].values
     if 'storage' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='power from storage', lw=fblw)
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to demand', lw=fblw)
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
-    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to electrolyzer', lw=fblw)
+    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to fuel load', lw=fblw)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet demand', lw=fblw)
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet electric load', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='demand')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='electric load')
 
     bottom3 = np.zeros(len(xs))
     lab = 'cap.'
@@ -251,12 +257,12 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
             lab += ' wind'
         ax.plot(xs, bottom3 + dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)'], 'b-', linewidth=fblw, label=lab)
         bottom3 += dfs['dispatch wind (kW)'] + dfs['cutailment wind (kW)']
-    if 'nuclear' in techs:
+    if disp in techs:
         if 'solar' in techs or 'wind' in techs:
             lab += ' + disp.'
         else:
-            lab = 'capacity dispatchable'
-        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_nuke, 'r-', linewidth=fblw, label=lab)
+            lab = 'capacity dispatch'
+        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_disp, 'r-', linewidth=fblw, label=lab)
 
     if set_max == -1:
         set_max = ax.get_ylim()[1]
@@ -304,7 +310,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots6'
+    save_dir = 'out_plots7'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
@@ -312,15 +318,17 @@ if '__main__' in __name__:
     date = '20200311_v8' # 2016 figs used in 20200526_fuels_paper_II_20200526_kc.docx
     date = '20200608_v1'
     date = '20200725_v5'
+    date = '20200803_v2'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
-            "Case1_Nuclear" : [['nuclear',], 2, 2],
-            "Case2_NuclearStorage" : [['nuclear','storage'], 2, 2],
-            "Case3_WindStorage" : [['wind', 'storage'], 6, 5],
-            "Case4_SolarStorage" : [['solar', 'storage'], 5, 8],
-            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 3, 3.5],
-            "Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3, 2.5],
+            #"Case1_Nuclear" : [['nuclear',], 2, 2],
+            #"Case2_NuclearStorage" : [['nuclear','storage'], 2, 2],
+            #"Case3_WindStorage" : [['wind', 'storage'], 6, 5],
+            #"Case4_SolarStorage" : [['solar', 'storage'], 5, 8],
+            #"Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 3, 3.5],
+            #"Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3, 2.5],
+            "Case7_NatGasCCS" : [['natgas_ccs',], 2, 2],
     }
 
     #possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps

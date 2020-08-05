@@ -14,12 +14,29 @@ from datetime import datetime, timedelta
 import copy
 from helpers import get_fuel_demands, get_fuel_fractions
 from end_use_fractions import add_detailed_results
+from analytic_fuels import kWh_to_GGE
 matplotlib.rcParams.update({'font.size': 12.5})
 matplotlib.rcParams.update({'lines.linewidth': 3})
 
 
 def marker_list():
     return ['o', 'v', '^', 's', 'P', '*', 'H', 'X', 'd', '<', '>']
+
+# Based on common color blindness
+# https://www.nature.com/articles/nmeth.1618/figures/2
+# Skip black and reserve it for other specific lines
+def color_list():
+    l = [
+            np.array([230, 159, 0]), # orange
+            np.array([86, 180, 233]), # Sky blue
+            np.array([0, 158, 115]), # Bluish green
+            np.array([240, 228, 66]), # Yellow
+            np.array([0, 114, 178]), # Blue
+            np.array([213, 94, 0]), # Vermillion
+            np.array([204, 121, 167]), # Reddish purple
+    ]
+    return [i/255. for i in l]
+
 
 
 # Use Pandas to retrieve the output values b/c it handles
@@ -337,7 +354,10 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     if 'systemCFs' in save:
         plt.legend(ncol=3, loc='upper left', framealpha = 1.0)
     elif 'systemCosts' in save or 'powerSystemCosts' in save:
-        plt.legend(loc='upper right', framealpha = 1.0)
+        if 'CostsExp' in save:
+            plt.legend(loc='upper left', framealpha = 1.0)
+        else:
+            plt.legend(loc='upper right', framealpha = 1.0)
     else:
         plt.legend(loc='upper left', framealpha = 1.0)
     fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
@@ -458,44 +478,45 @@ def stacked_plot(**kwargs):
     ax.set_xlabel(kwargs['x_label'])
     ax.set_ylabel(kwargs['y_label'])
 
+    colors = color_list()
     if 'stackedEndUseFraction' in kwargs["save_name"]:
         if 'ALT' in kwargs and kwargs['ALT'] == True:
             tot = np.zeros(len(kwargs['elec_load']))
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color='gray', label=f'electricity load - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color=colors[0], linewidth=0, label=f'power to elec. load - renew')
             tot += kwargs['elec_load']*kwargs['dem_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color='gray', alpha=0.5, label=f'electricity load - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color=colors[0], linewidth=0, alpha=0.5, label=f'power to elec. load - dispatch')
             tot += kwargs['elec_load']*(1. - kwargs['dem_renew_frac'])
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color='purple', label=f'fuel load - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color=colors[1], linewidth=0, label=f'power to fuel load - renew')
             tot += kwargs['fuel_load']*kwargs['electro_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color='purple', alpha=0.5, label=f'fuel load - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color=colors[1], linewidth=0, alpha=0.5, label=f'power to fuel load - dispatch')
             tot += kwargs['fuel_load']*(1. - kwargs['electro_renew_frac'])
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses')
-            tot += kwargs['battery_losses']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment')
+            #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
+            #tot += kwargs['battery_losses']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailment - renew')
             tot += kwargs['renewable_curt']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'dispatchable curtailment')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'curtailment - dispatch')
             tot += kwargs['nuclear_curt']
 
         else:
             tot = np.zeros(len(kwargs['elec_load']))
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color='gray', label=f'electricity load')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color=colors[0], linewidth=0, label=f'power to elec. load')
             tot += kwargs['elec_load']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color='purple', label=f'fuel load')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color=colors[1], linewidth=0, label=f'power to fuel load')
             tot += kwargs['fuel_load']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', label=f'battery losses')
-            tot += kwargs['battery_losses']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color='green', label=f'wind + solar curtailment')
+            #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
+            #tot += kwargs['battery_losses']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailment - renew')
             tot += kwargs['renewable_curt']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color='red', label=f'dispatchable curtailment')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'curtailment - dispatch')
             tot += kwargs['nuclear_curt']
 
     else:
-        ax.fill_between(kwargs['x_vals'], 0., kwargs['nuclear'], color='red', label=f'dispatchable {kwargs["legend_app"]}')
+        ax.fill_between(kwargs['x_vals'], 0., kwargs['nuclear'], color=colors[5], linewidth=0, label=f'dispatchable {kwargs["legend_app"]}')
         if 'renewables' in kwargs.keys():
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['renewables'], color='green', label=f'renewables {kwargs["legend_app"]}')
+            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['renewables'], color=colors[1], linewidth=0, label=f'renewables {kwargs["legend_app"]}')
         else:
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['wind'], color='blue', label=f'wind {kwargs["legend_app"]}')
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color='orange', label=f'solar {kwargs["legend_app"]}')
+            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['wind'], color=colors[1], linewidth=0, label=f'wind {kwargs["legend_app"]}')
+            ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color=colors[0], linewidth=0, label=f'solar {kwargs["legend_app"]}')
 
 
 
@@ -515,12 +536,12 @@ def stacked_plot(**kwargs):
     if 'ylim' in kwargs.keys():
         ax.set_ylim(kwargs['ylim'][0], kwargs['ylim'][1])
         if 'stackedEndUseFraction' in kwargs["save_name"]:
-            plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
+            plt.legend(loc='upper right', ncol=1, framealpha = 1.0)
         else:
             plt.legend(ncol=3, framealpha = 1.0)
     else:
         plt.legend(framealpha = 1.0)
-    plt.grid()
+    #plt.grid()
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.png')
     fig.savefig(f'{kwargs["save_dir"]}/{kwargs["save_name"]}.pdf')
 
@@ -556,41 +577,54 @@ def myLogFormat(y,pos):
 #save_name, save_dir
 def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
+    colors = color_list()
     plt.close()
-    y_max = 0.7
+    y_max = 20
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
 
     ax.set_xlabel(kwargs['x_label'])
     
-    ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh$_{e}$)')
+    ax.set_ylabel(r'cost (\$/GGE)')
 
 
     # Electricity cost
     #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
-    ax.plot(df[var], df['mean price ($/kWh)'], 'k-.', label=r'electricity cost (\$/kWh$_{e}$)')
+    #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='power to electric\n'+r'load (\$/kWh$_{e}$)')
 
     # $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    ax.plot(df[var], df['fuel price ($/kWh)'], 'k-', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
+    ax.plot(df[var], df['fuel price ($/kWh)'] * kWh_to_GGE, 'k-', label='electrofuel total')
 
 
     # Stacked components
     f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
     f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
     f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
-    f_tot = f_elec+f_chem+f_store
+    f_tot = (f_elec+f_chem+f_store)
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
     v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
 
+    f_elec *= kWh_to_GGE
+    f_chem *= kWh_to_GGE
+    f_store *= kWh_to_GGE
+    f_tot *= kWh_to_GGE
+    v_chem *= kWh_to_GGE
+    v_co2 *= kWh_to_GGE
 
     # Build stack
-    ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
-    ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
-    ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
-    ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant')
-    ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$')
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='var: electrolyzer')
+    ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor', color=colors[0])
+    ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant', color=colors[1])
+    ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
+    ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant', color=colors[3])
+    ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
+    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * kWh_to_GGE, label='var: electrolyzer', color=colors[5])
+    #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
+    #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
+    #ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
+    #ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant')
+    #ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$')
+    #ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='var: electrolyzer')
 
     n = len(df.index)-1
     print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
@@ -607,8 +641,8 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     # To print the estimated MEM electricity cost per point
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
     #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
-    ax.plot(df[var], df['mean price ($/kWh)'], 'k-.', label='_nolegend_')
-    ax.plot(df[var], df['fuel price ($/kWh)'], 'k-', label='_nolegend_')
+    #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
+    ax.plot(df[var], df['fuel price ($/kWh)'] * kWh_to_GGE, 'k-', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
@@ -635,9 +669,13 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
         ax.set_xlim(0.0, 1.0)
 
     ax.set_ylim(0, y_max)
-    plt.grid()
+    #plt.grid()
     plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
 
+    # 2nd y-axis for $/kWh_e
+    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+    ax2.set_ylabel(r'cost (\$/kWh$_{LHV}$)')
+    ax2.set_ylim(0, ax.get_ylim()[1] / kWh_to_GGE)
 
     #plt.tight_layout()
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -671,16 +709,16 @@ def costs_plot_alt(df, var='fuel demand (kWh)', **kwargs):
 
     # Electricity cost
     #ax.scatter(df[var], df['mean price ($/kWh)'], label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
-    ax.plot(df[var], df['mean price ($/kWh)'], label=r'electricity cost (\$/kWh$_{e}$)')
+    ax.plot(df[var], df['mean price ($/kWh)'], label=r'power to electric load')
 
     ## $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
     #ax.plot(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
 
     tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-    # Add the cost of electric power for the fuel load
+    # Add the cost of electric power to the fuel load
     #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
-    ax.plot(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)')
+    ax.plot(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'power to fuel load')
 
 
 
@@ -1229,8 +1267,9 @@ if '__main__' in __name__:
         print("Exit before plotting")
         exit()
 
-    fixed = 'nuclear'
     fixed = 'natgas_ccs'
+    if case == 'Case5_WindSolarStorage':
+        fixed = 'nuclear'
     print(f"\nPlotting using {fixed} as the dispatchable tech\n")
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
@@ -1331,7 +1370,7 @@ if '__main__' in __name__:
         #    'x_type' : 'linear',
         #    },
         'fuel load / total load' : {
-            'x_label' : 'fuel load / total load',
+            'x_label' : 'fuel load (kW) / total load (kW)',
             'app' : '_fuelLoadDivTotalLoad',
             'x_lim' : [0., 1.],
             'x_type' : 'linear',
@@ -1388,24 +1427,24 @@ if '__main__' in __name__:
         del kwargs['nuclear']
         del kwargs['wind']
         del kwargs['solar']
-        kwargs['save_name'] = 'stackedEndUseFraction' + m['app']
-        tot_avail = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)'] + \
-                df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + \
-                df['dispatch solar (kW)'] + df['curtailment solar (kW)']
-        kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)'] / tot_avail
-        kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_avail
-        kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_avail
-        kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_avail
-        kwargs['elec_load'] = 1. / tot_avail
-        kwargs['y_label'] = 'fraction of available power'
-        kwargs['legend_app'] = ''
-        kwargs['ylim'] = [0, 1.6]
-        stacked_plot(**kwargs)
-        del kwargs['nuclear_curt']
-        del kwargs['renewable_curt']
-        del kwargs['battery_losses']
-        del kwargs['fuel_load']
-        del kwargs['elec_load']
+        #kwargs['save_name'] = 'stackedEndUseFraction' + m['app']
+        #tot_avail = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)'] + \
+        #        df['dispatch wind (kW)'] + df['curtailment wind (kW)'] + \
+        #        df['dispatch solar (kW)'] + df['curtailment solar (kW)']
+        #kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)'] / tot_avail
+        #kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)']) / tot_avail
+        #kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_avail
+        #kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_avail
+        #kwargs['elec_load'] = 1. / tot_avail
+        #kwargs['y_label'] = 'fraction of available power'
+        #kwargs['legend_app'] = ''
+        #kwargs['ylim'] = [0, 1.6]
+        #stacked_plot(**kwargs)
+        #del kwargs['nuclear_curt']
+        #del kwargs['renewable_curt']
+        #del kwargs['battery_losses']
+        #del kwargs['fuel_load']
+        #del kwargs['elec_load']
 
     
         ### Stacked curtailment fraction plot - new y-axis, Total Generation
@@ -1415,7 +1454,7 @@ if '__main__' in __name__:
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
         kwargs['elec_load'] = 1. / tot_load
-        kwargs['y_label'] = 'total generation / total load'
+        kwargs['y_label'] = 'total generation (kW) / total load (kW)'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 3]
         if 'Case1' in kwargs['save_dir']:
@@ -1428,7 +1467,7 @@ if '__main__' in __name__:
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
         kwargs['elec_load'] = 1. / tot_load
-        kwargs['y_label'] = 'total generation / total load'
+        kwargs['y_label'] = 'total generation (kW) / total load (kW)'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 3]
         kwargs['ALT'] = True
@@ -1480,20 +1519,20 @@ if '__main__' in __name__:
 
         kwargs['df'] = df
 
-        # All system capacity factor ratios
-        kwargs['y_label'] = 'capacity factors'
-        simple_plot(df[k].values,
-                [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
-                    df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
-                    df['fuel h2 storage (kWh)'].values/df['capacity fuel h2 storage (kWh)'].values,
-                    df[f'dispatch {fixed} (kW)'].values/df[f'capacity {fixed} (kW)'].values,
-                    df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values,
-                    df['dispatch solar (kW)'].values/df['capacity solar (kW)'].values,
-                    df['energy storage (kWh)'].values/df['capacity storage (kWh)'].values,
-                    ], # y values 
-                ['electrolyzer', 'chem plant', 'h2 storage',
-                    'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
-                'systemCFs' + m['app'], False, ylims, **kwargs)
+        ## All system capacity factor ratios
+        #kwargs['y_label'] = 'capacity factors'
+        #simple_plot(df[k].values,
+        #        [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
+        #            df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
+        #            df['fuel h2 storage (kWh)'].values/df['capacity fuel h2 storage (kWh)'].values,
+        #            df[f'dispatch {fixed} (kW)'].values/df[f'capacity {fixed} (kW)'].values,
+        #            df['dispatch wind (kW)'].values/df['capacity wind (kW)'].values,
+        #            df['dispatch solar (kW)'].values/df['capacity solar (kW)'].values,
+        #            df['energy storage (kWh)'].values/df['capacity storage (kWh)'].values,
+        #            ], # y values 
+        #        ['electrolyzer', 'chem plant', 'h2 storage',
+        #            'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
+        #        'systemCFs' + m['app'], False, ylims, **kwargs)
 
 
         # EF system capacity factor ratios
@@ -1507,22 +1546,22 @@ if '__main__' in __name__:
                 'systemCFsEF' + m['app'], False, ylims, **kwargs)
 
 
-        # All system capacities
-        kwargs['y_label'] = 'capacity (kW) / total load (kW)'
-        logY = False
-        ylims=[0,2]
-        simple_plot(df[k],
-                [#df['capacity fuel electrolyzer (kW)'], 
-                    #df['capacity fuel chem plant (kW)'],
-                    #df['capacity fuel h2 storage (kWh)'],
-                    df[f'capacity {fixed} (kW)'] / tot_load,
-                    df['capacity wind (kW)'] / tot_load,
-                    df['capacity solar (kW)'] / tot_load,
-                    df['capacity storage (kWh)']/4. / tot_load,
-                    ], # y values 
-                [#'electrolyzer', 'chem plant', 'h2 storage',
-                    'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
-                'powerSystemCapacities' + m['app'], logY, ylims, **kwargs)
+        ## All system capacities
+        #kwargs['y_label'] = 'capacity (kW) / total load (kW)'
+        #logY = False
+        #ylims=[0,2]
+        #simple_plot(df[k],
+        #        [#df['capacity fuel electrolyzer (kW)'], 
+        #            #df['capacity fuel chem plant (kW)'],
+        #            #df['capacity fuel h2 storage (kWh)'],
+        #            df[f'capacity {fixed} (kW)'] / tot_load,
+        #            df['capacity wind (kW)'] / tot_load,
+        #            df['capacity solar (kW)'] / tot_load,
+        #            df['capacity storage (kWh)']/4. / tot_load,
+        #            ], # y values 
+        #        [#'electrolyzer', 'chem plant', 'h2 storage',
+        #            'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
+        #        'powerSystemCapacities' + m['app'], logY, ylims, **kwargs)
 
 
         # All system costs
@@ -1544,39 +1583,57 @@ if '__main__' in __name__:
 
 
         # All system costs
-        kwargs['y_label'] = r'cost (\$/kWh$_{e}$ of total load)'
-        logY = False
-        ylims=[0,.12]
+        ylims=[5e-4,1]
+        if 'Case1' in kwargs['save_dir']:
+            ylims = [5e-4,1]
+        kwargs['y_label'] = r'cost (\$/kWh$_{e}$ of electric load)'
         logY = True
-        ylims=[1e-5,10]
         simple_plot(df[k],
                 [
-                    df[f'capacity {fixed} (kW)'] * df[f'fixed cost {fixed} ($/kW/h)'] / tot_load,
-                    df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'] / tot_load,
-                    df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'] / tot_load,
-                    df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'] / tot_load,
-                    df['capacity fuel electrolyzer (kW)'] * df['fixed cost fuel electrolyzer ($/kW/h)'] / tot_load, 
-                    df['capacity fuel chem plant (kW)'] * df['fixed cost fuel chem plant ($/kW/h)'] / tot_load, 
-                    df['capacity fuel h2 storage (kWh)'] * df['fixed cost fuel h2 storage ($/kWh/h)'] / tot_load
-                    ], # y
-                [#'electrolyzer', 'chem plant', 'h2 storage',
-                    'dispatchable', 'wind', 'solar', 'battery\nstorage',
-                    'electrolyzer', 'chem plant', r'H$_{2}$ storage'], # labels
-                'systemCosts' + m['app'], logY, ylims, **kwargs)
-
-
-        # Tot gen
-        ylims=[5e-2,1e2]
-        kwargs['y_label'] = 'mean total hourly generation (kW)'
-        simple_plot(df[k].values,
-                [
-                    df[f'dispatch {fixed} (kW)'].values + df[f'curtailment {fixed} (kW)'].values,
-                    df['dispatch wind (kW)'].values + df['curtailment wind (kW)'].values,
-                    df['dispatch solar (kW)'].values + df['curtailment solar (kW)'].values,
+                    df[f'capacity {fixed} (kW)'] * df[f'fixed cost {fixed} ($/kW/h)'],
+                    df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'],
+                    df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'],
+                    df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'],
                     ], # y values 
                 [#'electrolyzer', 'chem plant', 'h2 storage',
-                    'dispatchable', 'wind', 'solar'], # labels
-                'powerSystemGen' + m['app'], True, ylims, **kwargs)
+                    'dispatchable', 'wind', 'solar', 'battery\nstorage'], # labels
+                'powerSystemCostsExp' + m['app'], logY, ylims, **kwargs)
+
+
+        ## All system costs
+        #kwargs['y_label'] = r'cost (\$/kWh$_{e}$ of total load)'
+        #logY = False
+        #ylims=[0,.12]
+        #logY = True
+        #ylims=[1e-5,10]
+        #simple_plot(df[k],
+        #        [
+        #            df[f'capacity {fixed} (kW)'] * df[f'fixed cost {fixed} ($/kW/h)'] / tot_load,
+        #            df['capacity wind (kW)'] * df['fixed cost wind ($/kW/h)'] / tot_load,
+        #            df['capacity solar (kW)'] * df['fixed cost solar ($/kW/h)'] / tot_load,
+        #            df['capacity storage (kWh)'] * df['fixed cost storage ($/kWh/h)'] / tot_load,
+        #            df['capacity fuel electrolyzer (kW)'] * df['fixed cost fuel electrolyzer ($/kW/h)'] / tot_load, 
+        #            df['capacity fuel chem plant (kW)'] * df['fixed cost fuel chem plant ($/kW/h)'] / tot_load, 
+        #            df['capacity fuel h2 storage (kWh)'] * df['fixed cost fuel h2 storage ($/kWh/h)'] / tot_load
+        #            ], # y
+        #        [#'electrolyzer', 'chem plant', 'h2 storage',
+        #            'dispatchable', 'wind', 'solar', 'battery\nstorage',
+        #            'electrolyzer', 'chem plant', r'H$_{2}$ storage'], # labels
+        #        'systemCosts' + m['app'], logY, ylims, **kwargs)
+
+
+        ## Tot gen
+        #ylims=[5e-2,1e2]
+        #kwargs['y_label'] = 'mean total hourly generation (kW)'
+        #simple_plot(df[k].values,
+        #        [
+        #            df[f'dispatch {fixed} (kW)'].values + df[f'curtailment {fixed} (kW)'].values,
+        #            df['dispatch wind (kW)'].values + df['curtailment wind (kW)'].values,
+        #            df['dispatch solar (kW)'].values + df['curtailment solar (kW)'].values,
+        #            ], # y values 
+        #        [#'electrolyzer', 'chem plant', 'h2 storage',
+        #            'dispatchable', 'wind', 'solar'], # labels
+        #        'powerSystemGen' + m['app'], True, ylims, **kwargs)
 
 
     
