@@ -1145,10 +1145,10 @@ if '__main__' in __name__:
         'efficiency_fuel_electrolyzer' : 1,
         'fuel_demand' : 1, # equal fuel output as electric demand
         'fuel_value' : 0,
-        'fixed_cost_fuel_chem_plant' : 1e-9,
-        'fixed_cost_fuel_h2_storage' : 1e-9,
-        'var_cost_fuel_chem_plant' : 1e-9,
-        'var_cost_fuel_co2' : 1e-9,
+        'fixed_cost_fuel_chem_plant' : 1,
+        'fixed_cost_fuel_h2_storage' : 1,
+        'var_cost_fuel_chem_plant' : 1,
+        'var_cost_fuel_co2' : 1,
     }
     if full_year:
         settings['start_month'] = 1
