@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import copy
 from helpers import get_fuel_demands, get_fuel_fractions
 from end_use_fractions import add_detailed_results
-from analytic_fuels import kWh_to_GGE
+from analytic_fuels import kWh_to_GGE, kWh_LHV_per_kg_H2
 matplotlib.rcParams.update({'font.size': 12.5})
 matplotlib.rcParams.update({'lines.linewidth': 3})
 
@@ -305,6 +305,11 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
             #ax.scatter([], [])
             ax.plot([], [])
             continue
+        if 'h2_only' in kwargs.keys() and (label == 'chem plant' or label == 'h2 storage'):
+            ax.plot([], [])
+            continue
+
+
         if label == 'h2 storage':
             #ax.scatter(x, y, label=r'H$_{2}$ storage', marker=markers[-1], color='C7')
             ax.plot(x, y, label=r'H$_{2}$ storage', color='C7')
@@ -364,7 +369,9 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
 
     #plt.tight_layout()
     plt.grid()
-    if 'systemCFs' in save:
+    if 'systemCFsEF' in save:
+        plt.legend(ncol=2, loc='upper left', framealpha = 1.0)
+    elif 'systemCFs' in save:
         plt.legend(ncol=3, loc='upper left', framealpha = 1.0)
     elif 'systemCosts' in save or 'powerSystemCosts' in save:
         if 'CostsExp' in save:
@@ -403,6 +410,10 @@ def simple_plot_with_2nd_yaxis(df, x, ys, labels, y_label_1, y_label_2, save, **
             #ax.scatter([], [])
             ax.plot([], [])
             continue
+        elif 'h2_only' in kwargs.keys() and kwargs['h2_only'] == True and labels[i] == 'chem plant':
+            ax.plot([], [])
+            continue
+
 
         #ax.scatter(x, ys[i], label=labels[i], marker=markers[i])
         ax.plot(x, ys[i], label=labels[i])
@@ -425,14 +436,15 @@ def simple_plot_with_2nd_yaxis(df, x, ys, labels, y_label_1, y_label_2, save, **
 
     ax.set_ylim(0, ax.get_ylim()[1])
     
-    # Second y-axis
-    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel(y_label_2, color='C7')  # we already handled the x-label with ax1
-    #ax2.scatter(x, ys[-1], color='C7', label=labels[-1], marker=markers[-1])
-    ax2.plot(x, ys[-1], color='C7', label=labels[-1])
-    ax2.tick_params(axis='y', labelcolor='C7')
-    plt.legend(loc='upper right', framealpha = 1.0)
-    ax2.set_ylim(0, ax2.get_ylim()[1]*1.3)
+    if 'h2_only' not in kwargs.keys():
+        # Second y-axis
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.set_ylabel(y_label_2, color='C7')  # we already handled the x-label with ax1
+        #ax2.scatter(x, ys[-1], color='C7', label=labels[-1], marker=markers[-1])
+        ax2.plot(x, ys[-1], color='C7', label=labels[-1])
+        ax2.tick_params(axis='y', labelcolor='C7')
+        plt.legend(loc='upper right', framealpha = 1.0)
+        ax2.set_ylim(0, ax2.get_ylim()[1]*1.3)
 
     plt.xscale(kwargs['x_type'], nonposx='clip')
     if kwargs['x_type'] == 'log':
@@ -441,11 +453,12 @@ def simple_plot_with_2nd_yaxis(df, x, ys, labels, y_label_1, y_label_2, save, **
 
     if 'y_type' in kwargs.keys() and kwargs['y_type'] == 'log':
         ax.set_yscale('log', nonposy='clip')
-        ax2.set_yscale('log', nonposy='clip')
         #ax.set_ylim(.1, ax.get_ylim()[1]*10)
-        #ax2.set_ylim(.1, ax2.get_ylim()[1]*10)
         ax.set_ylim(.01, 1e3)
-        ax2.set_ylim(.1, 1e5)
+        if 'h2_only' not in kwargs.keys():
+            ax2.set_yscale('log', nonposy='clip')
+            #ax2.set_ylim(.1, ax2.get_ylim()[1]*10)
+            ax2.set_ylim(.1, 1e5)
 
     #plt.tight_layout()
     #plt.legend()
@@ -593,12 +606,21 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     colors = color_list()
     plt.close()
     y_max = 20
+    if 'h2_only' in kwargs.keys():
+        y_max = 12
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
 
+    # The left y-axis will use $/GGE for electrofuel or $/kg for H2
+    if 'h2_only' in kwargs.keys():
+        conversion = kWh_LHV_per_kg_H2
+        ax.set_ylabel(r'cost (\$/kg$_{H2}$)')
+    else:
+        conversion = kWh_to_GGE
+        ax.set_ylabel(r'cost (\$/GGE)')
+
     ax.set_xlabel(kwargs['x_label'])
     
-    ax.set_ylabel(r'cost (\$/GGE)')
 
 
     # Electricity cost
@@ -607,7 +629,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
     # $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    ax.plot(df[var], df['fuel price ($/kWh)'] * kWh_to_GGE, 'k-', label='electrofuel total')
+    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='electrofuel total')
 
 
     # Stacked components
@@ -618,26 +640,27 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
     v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
 
-    f_elec *= kWh_to_GGE
-    f_chem *= kWh_to_GGE
-    f_store *= kWh_to_GGE
-    f_tot *= kWh_to_GGE
-    v_chem *= kWh_to_GGE
-    v_co2 *= kWh_to_GGE
+    f_elec *= conversion
+    f_chem *= conversion
+    f_store *= conversion
+    f_tot *= conversion
+    v_chem *= conversion
+    v_co2 *= conversion
 
     # Build stack
     ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor', color=colors[0])
-    ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant', color=colors[1])
-    ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
-    ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant', color=colors[3])
-    ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * kWh_to_GGE, label='var: electrolyzer', color=colors[5])
+    if 'h2_only' not in kwargs.keys():
+        ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant', color=colors[1])
+        ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
+        ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant', color=colors[3])
+        ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
+    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label='electric power', color=colors[5])
     #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
     #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
     #ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
     #ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant')
     #ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$')
-    #ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='var: electrolyzer')
+    #ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='electric power')
 
     n = len(df.index)-1
     print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
@@ -655,7 +678,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
     #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
     #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
-    ax.plot(df[var], df['fuel price ($/kWh)'] * kWh_to_GGE, 'k-', label='_nolegend_')
+    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
@@ -683,7 +706,11 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
     ax.set_ylim(0, y_max)
     #plt.grid()
-    plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
+    if 'h2_only' not in kwargs.keys():
+        plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
+    else:
+        plt.legend(loc='upper left', ncol=1, framealpha = 1.0)
+        plt.subplots_adjust(left=0.12, right=.85)
 
     # 2nd y-axis for $/kWh_e
     ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
@@ -733,6 +760,8 @@ def costs_plot_alt(df, var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
     ax.plot(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'power to fuel load')
 
+    avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + ((df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process) * df[var]
+    ax.plot(df[var], avg_elec_cost, 'k--', label=r'mean system power', linewidth=2)
 
 
     # Add vertical bars deliniating 3 regions:
@@ -1422,6 +1451,8 @@ if '__main__' in __name__:
         kwargs['x_label'] = m['x_label']
         kwargs['x_type'] = m['x_type']
         kwargs['x_var'] = k
+        if h2_only:
+            kwargs['h2_only'] = True
 
 
         tot_load = df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
@@ -1564,7 +1595,7 @@ if '__main__' in __name__:
 
 
         # EF system capacity factor ratios
-        kwargs['y_label'] = 'capacity factors'
+        kwargs['y_label'] = 'capacity factor'
         simple_plot(df[k].values,
                 [df['dispatch to fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_ELECTROLYZER/df['capacity fuel electrolyzer (kW)'].values, 
                     df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
