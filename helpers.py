@@ -232,7 +232,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     bottom2 = np.zeros(len(xs))
     ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
-    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to fuel load', lw=fblw)
+    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to flexible load', lw=fblw)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)

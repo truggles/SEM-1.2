@@ -505,16 +505,16 @@ def stacked_plot(**kwargs):
     ax.set_ylabel(kwargs['y_label'])
 
     colors = color_list()
+    tot = np.zeros(len(kwargs['x_vals']))
     if 'stackedEndUseFraction' in kwargs["save_name"]:
         if 'ALT' in kwargs and kwargs['ALT'] == True:
-            tot = np.zeros(len(kwargs['elec_load']))
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color=colors[0], linewidth=0, label=f'power to elec. load - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*kwargs['dem_renew_frac'], color=colors[0], linewidth=0, label=f'power to electric load - renew')
             tot += kwargs['elec_load']*kwargs['dem_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color=colors[0], linewidth=0, alpha=0.5, label=f'power to elec. load - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load']*(1. - kwargs['dem_renew_frac']), color=colors[0], linewidth=0, alpha=0.5, label=f'power to electric load - dispatch')
             tot += kwargs['elec_load']*(1. - kwargs['dem_renew_frac'])
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color=colors[1], linewidth=0, label=f'power to fuel load - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*kwargs['electro_renew_frac'], color=colors[1], linewidth=0, label=f'power to flexible load - renew')
             tot += kwargs['fuel_load']*kwargs['electro_renew_frac']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color=colors[1], linewidth=0, alpha=0.5, label=f'power to fuel load - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load']*(1. - kwargs['electro_renew_frac']), color=colors[1], linewidth=0, alpha=0.5, label=f'power to flexible load - dispatch')
             tot += kwargs['fuel_load']*(1. - kwargs['electro_renew_frac'])
             #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
             #tot += kwargs['battery_losses']
@@ -524,10 +524,9 @@ def stacked_plot(**kwargs):
             tot += kwargs['nuclear_curt']
 
         else:
-            tot = np.zeros(len(kwargs['elec_load']))
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color=colors[0], linewidth=0, label=f'power to elec. load')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['elec_load'], color=colors[0], linewidth=0, label=f'power to electric load')
             tot += kwargs['elec_load']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color=colors[1], linewidth=0, label=f'power to fuel load')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['fuel_load'], color=colors[1], linewidth=0, label=f'power to flexible load')
             tot += kwargs['fuel_load']
             #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
             #tot += kwargs['battery_losses']
@@ -537,12 +536,22 @@ def stacked_plot(**kwargs):
             tot += kwargs['nuclear_curt']
 
     else:
+        #if not (np.isnan( kwargs['nuclear'] ).sum() == len(kwargs['nuclear']) or (kwargs['nuclear'] == 0.0).sum() == len(kwargs['nuclear'])):
         ax.fill_between(kwargs['x_vals'], 0., kwargs['nuclear'], color=colors[5], linewidth=0, label=f'dispatchable {kwargs["legend_app"]}')
+        tot += kwargs['nuclear']
         if 'renewables' in kwargs.keys():
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['renewables'], color=colors[1], linewidth=0, label=f'renewables {kwargs["legend_app"]}')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewables'], color=colors[1], linewidth=0, label=f'renewables {kwargs["legend_app"]}')
+            tot += kwargs['renewables']
         else:
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear'], kwargs['nuclear']+kwargs['wind'], color=colors[1], linewidth=0, label=f'wind {kwargs["legend_app"]}')
-            ax.fill_between(kwargs['x_vals'], kwargs['nuclear']+kwargs['wind'], kwargs['nuclear']+kwargs['wind']+kwargs['solar'], color=colors[0], linewidth=0, label=f'solar {kwargs["legend_app"]}')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['wind'], color=colors[1], linewidth=0, label=f'wind {kwargs["legend_app"]}')
+            tot += kwargs['wind']
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['solar'], color=colors[0], linewidth=0, label=f'solar {kwargs["legend_app"]}')
+            tot += kwargs['solar']
+        if 'stackedGenerationElecNorm' in kwargs["save_name"]:
+            ax.plot(kwargs['x_vals'], tot, 'k-', label='total generation')
+            #for x, y in zip(kwargs['x_vals'], tot):
+            #    print(x, y)
+
 
 
 
@@ -563,6 +572,8 @@ def stacked_plot(**kwargs):
         ax.set_ylim(kwargs['ylim'][0], kwargs['ylim'][1])
         if 'stackedEndUseFraction' in kwargs["save_name"]:
             plt.legend(loc='upper right', ncol=1, framealpha = 1.0)
+        elif 'stackedGenerationElecNorm' in kwargs["save_name"]:
+            plt.legend(loc='upper left', ncol=1, framealpha = 1.0)
         else:
             plt.legend(ncol=3, framealpha = 1.0)
     else:
@@ -1426,7 +1437,7 @@ if '__main__' in __name__:
         #    'x_type' : 'linear',
         #    },
         'fuel load / total load' : {
-            'x_label' : 'fuel load (kW) / total load (kW)',
+            'x_label' : 'flexible load (kW) / total load (kW)',
             'app' : '_fuelLoadDivTotalLoad',
             'x_lim' : [0., 1.],
             'x_type' : 'linear',
@@ -1479,6 +1490,14 @@ if '__main__' in __name__:
         kwargs['ylim'] = [0, 1.2]
         stacked_plot(**kwargs)
 
+        kwargs['save_name'] = 'stackedGenerationElecNorm' + m['app']
+        kwargs['nuclear'] = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)']
+        kwargs['wind'] = df['dispatch wind (kW)'] + df['curtailment wind (kW)']
+        kwargs['solar'] = df['dispatch solar (kW)'] + df['curtailment solar (kW)']
+        kwargs['y_label'] = 'total generation (kW) / electric load (kWh)'
+        kwargs['legend_app'] = ''
+        kwargs['ylim'] = [0, 4]
+        stacked_plot(**kwargs)
 
     
         ### Stacked curtailment fraction plot
@@ -1534,6 +1553,22 @@ if '__main__' in __name__:
         if 'Case1' in kwargs['save_dir']:
             kwargs['ylim'] = [0, 2]
         stacked_plot(**kwargs)
+        ### Stacked curtailment fraction plot - normalized by electric load
+        #kwargs['save_name'] = 'stackedEndUseFractionTotGenAlt2' + m['app']
+        #kwargs['nuclear_curt'] = df[f'curtailment {fixed} (kW)']
+        #kwargs['renewable_curt'] = (df['curtailment wind (kW)'] + df['curtailment solar (kW)'])
+        #kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)'])
+        #kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)']
+        #kwargs['elec_load'] = np.ones(len(kwargs['x_vals']))
+        #kwargs['y_label'] = 'total generation (kW) / electric load (kWh)'
+        #kwargs['legend_app'] = ''
+        #kwargs['ylim'] = [0, 6]
+        #kwargs['ALT'] = True
+        #kwargs['dem_renew_frac'] = df['dem_renew_frac']
+        #kwargs['electro_renew_frac'] = df['electro_renew_frac']
+        #if 'Case1' in kwargs['save_dir']:
+        #    kwargs['ylim'] = [0, 2]
+        #stacked_plot(**kwargs)
         del kwargs['nuclear_curt']
         del kwargs['renewable_curt']
         del kwargs['battery_losses']
