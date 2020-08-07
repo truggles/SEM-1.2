@@ -111,6 +111,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
 
         i = len(tgt_fuel_dems) - j + 1
         this_file = out_file_dir + out_file_name.replace('fuelDXXX', f'fuelD{dem}')
+        #print(this_file)
         if j == 0:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1) )
             axs[-1].set_ylabel('power\n(% annual mean electric load)')
@@ -164,7 +165,7 @@ def get_start_datetime(xs, mod=99):
 
     dt = datetime(2017, 1, 1, 1)
     first_hr = dt + timedelta(hours=xs.values[0])
-    print(f"First hour of x-axis {first_hr}")
+    #print(f"First hour of x-axis {first_hr}")
 
     # Set for Central Standard Time (CST) from UTC
     if mod != 99:
@@ -181,12 +182,27 @@ def get_start_datetime(xs, mod=99):
     return dts, xsx
 
 
+def print_flexible_CFs(df):
+    
+    to_flex = df['dispatch to fuel h2 storage (kW)']
+
+    m = np.max(to_flex)
+    n_max = (to_flex == m).sum()/8760.
+    n_zero = (to_flex == 0.0).sum()/8760.
+    cf = np.sum(to_flex) / 8760. / m
+    print(f"{round(n_max*100,1)}%,{round((1. - n_max - n_zero)*100,1)}%,{round(n_zero*100,1)}%,{round(cf*100,1)}%")
+
+
+
+
 def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir, case, days, set_max=-1, ldc=False):
 
     # Open out file as df
     full_file_name = glob(out_file_name)
     assert(len(full_file_name) == 1), f"\n\nYour file list is: {full_file_name}"
     df = pd.read_csv(full_file_name[0])
+
+    print_flexible_CFs(df)
 
     assert(len(center_idx) == 1), f"\n\nThere are multiple instances of peak demand value, {center_idx}\n\n"
     peak_idx = center_idx[0]
@@ -298,7 +314,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 
 
     # Add fuel demand value
-    ax.text(0.03, 0.97, f'Fuel fraction: {ffs[dem]}',
+    ax.text(0.03, 0.97, f'flexible frac: {ffs[dem]}',
         verticalalignment='top', horizontalalignment='left',
         transform=ax.transAxes,fontsize=9
     )
