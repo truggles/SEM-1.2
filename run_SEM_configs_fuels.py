@@ -549,6 +549,8 @@ def stacked_plot(**kwargs):
             tot += kwargs['solar']
         if 'stackedGenerationElecNorm' in kwargs["save_name"]:
             ax.plot(kwargs['x_vals'], tot, 'k-', label='total generation')
+            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])), 'k--', label='electric load')
+            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])) / (1. - kwargs['x_vals']), 'k:', label='electric +\nflexible load')
             #for x, y in zip(kwargs['x_vals'], tot):
             #    print(x, y)
 
@@ -1496,7 +1498,7 @@ if '__main__' in __name__:
         kwargs['solar'] = df['dispatch solar (kW)'] + df['curtailment solar (kW)']
         kwargs['y_label'] = 'total generation (kW) / electric load (kWh)'
         kwargs['legend_app'] = ''
-        kwargs['ylim'] = [0, 4]
+        kwargs['ylim'] = [0, 5]
         stacked_plot(**kwargs)
 
     
