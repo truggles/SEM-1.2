@@ -12,6 +12,7 @@ version="v2"
 ARGS="run_sem make_results_file make_plots"
 ARGS="make_plots"
 ARGS="make_results_file"
+ARGS="make_plots"
 
 
         #"Case0_NuclearFlatDemand" \
@@ -19,19 +20,28 @@ ARGS="make_results_file"
         #"Case2_NuclearStorage" \
         #"Case3_WindStorage" \
         #"Case4_SolarStorage" \
-        #"Case5_WindSolarStorage" \
         #"Case6_NuclearWindSolarStorage" \
+        #"Case8_NatGasCCSStorage" \
 
 
+Date="20200805" # NatGas+CCS H2_ONLY
+version="v2"
 for CASE in \
+        "Case5_WindSolarStorage" \
         "Case7_NatGasCCS" \
-        "Case8_NatGasCCSStorage" \
         "Case9_NatGasCCSWindSolarStorage" \
         ; do
-     
-    ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS
-
+    ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS H2_ONLY
 done
 
+#Date="20200805" # NatGas+CCS
+#version="v5"
+#for CASE in \
+#        "Case5_WindSolarStorage" \
+#        "Case7_NatGasCCS" \
+#        "Case9_NatGasCCSWindSolarStorage" \
+#        ; do
+#    ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS
+#done
 
 
