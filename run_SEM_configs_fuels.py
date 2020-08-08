@@ -620,7 +620,7 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     plt.close()
     y_max = 20
     if 'h2_only' in kwargs.keys():
-        y_max = 12
+        y_max = 10
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
 
@@ -642,7 +642,8 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
 
     # $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='electrofuel total')
+    lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
+    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab)
 
 
     # Stacked components
@@ -661,7 +662,8 @@ def costs_plot(df, var='fuel demand (kWh)', **kwargs):
     v_co2 *= conversion
 
     # Build stack
-    ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor', color=colors[0])
+    lab = 'fixed cost: electrolysis plant' if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
+    ax.fill_between(df[var], 0, f_elec, label=lab, color=colors[0])
     if 'h2_only' not in kwargs.keys():
         ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant', color=colors[1])
         ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
