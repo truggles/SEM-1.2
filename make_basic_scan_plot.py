@@ -1165,6 +1165,10 @@ if make_plots:
     plot_matrix_thresholds(region, plot_base, intra, solar_gen_steps, wind_gen_steps, f'top_20_intra')
     plot_matrix_thresholds(region, plot_base, inter, solar_gen_steps, wind_gen_steps, f'top_20_inter')
 
+    # idx 0 = solar idx 1 = wind
+    for k, m in {'intra':intra, 'inter':inter, 'var':m_rl_std}.items():
+        print(f"{k},{round(m[0][0],2)}%,{round(m[25][0],2)}%,{round(m[25][0]/m[0][0] - 1.,2)}%,{round(m[0][25],2)}%,{round(m[0][25]/m[0][0] - 1.,2)}%,{round(m[25][25],2)}%,{round(m[25][25]/m[0][0] - 1.,2)}%")
+
     #for int_threshold in int_thresholds:
     #    thresholds.append(int_threshold)
     #for t, threshold in enumerate(thresholds):
