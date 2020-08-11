@@ -521,8 +521,12 @@ def stacked_plot(**kwargs):
             #tot += kwargs['battery_losses']
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailment - renew')
             tot += kwargs['renewable_curt']
+            #for ff, y in zip(kwargs['x_vals'], tot):
+            #    print(ff, y)
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'curtailment - dispatch')
             tot += kwargs['nuclear_curt']
+            #for ff, y in zip(kwargs['x_vals'], tot):
+            #    print(ff, y)
 
             # Highlight transition region
             threshold = 0.0025
@@ -567,6 +571,16 @@ def stacked_plot(**kwargs):
             #for x, y in zip(kwargs['x_vals'], tot):
             #    print(x, y)
 
+            # Highlight transition region
+            threshold = 0.0025
+            ff_1_idx, ff_2_idx = get_two_thresholds(kwargs['df'], threshold, kwargs['x_var'])
+            if 'ylim' in kwargs.keys():
+                y_max = kwargs['ylim'][1]
+            else:
+                y_max = 9999
+            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, color=colors[-1], alpha=0.2)
+            ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
+            #ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
 
 
 
@@ -653,6 +667,9 @@ def myLogFormat(y,pos):
 def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     df = kwargs['df']
+    threshold = 0.0025
+    ff_1_idx, ff_2_idx = get_two_thresholds(df, threshold, var)
+
     colors = color_list()
     plt.close()
     y_max = 20
@@ -681,7 +698,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
     lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab)
-
+    #for ff, cost in zip(df[var], df['fuel price ($/kWh)'] * conversion):
+    #    print(ff, cost)
 
     # Stacked components
     f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
@@ -724,6 +742,10 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     print(f" ----- variable electrolyzer            {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}             {round(df.loc[n, 'fuel price ($/kWh)']-(f_tot[n]+v_chem[n]+v_co2[n]),6)}")
     print(f" ----- TOTAL:                           {round(df.loc[1, 'fuel price ($/kWh)'],6)}           {round(df.loc[n, 'fuel price ($/kWh)'],6)}")
     print(f" ----- mean cost electricity            {round(df.loc[1, 'mean price ($/kWh)'],6)}           {round(df.loc[n, 'mean price ($/kWh)'],6)}")
+
+    # Highlight transition region
+    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
+    ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
 
 
     # To print the estimated MEM electricity cost per point
@@ -813,9 +835,13 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
     # Add the cost of electric power to the fuel load
     #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
     ax.plot(df[var], df['fuel_load_cost'], label=r'power to flexible load', color=colors[1])
+    #for ff, cost in zip(df[var], df['fuel_load_cost']):
+    #    print(ff, cost)
 
     avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
     ax.plot(df[var], avg_elec_cost, 'k--', label=r'mean system power', linewidth=2)
+    #for ff, cost in zip(df[var], avg_elec_cost):
+    #    print(ff, cost)
 
 
     # Add vertical bars deliniating 3 regions:
@@ -1289,7 +1315,7 @@ if '__main__' in __name__:
     vre_num = 20
 
 
-                
+ 
 
     if run_sem:
 
