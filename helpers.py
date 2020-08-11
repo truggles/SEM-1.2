@@ -20,6 +20,8 @@ def get_fuel_fractions(step_size, total_eff):
 
     ffs = np.arange(0.0, 1.0, step_size)
     fuel_dem = (ffs / (1.0 - ffs)) * total_eff
+    #for ff, dem in zip(ffs, fuel_dem):
+    #    print(ff, dem)
 
     return fuel_dem
 
@@ -114,7 +116,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         #print(this_file)
         if j == 0:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1) )
-            axs[-1].set_ylabel('power\n(% annual mean electric load)')
+            axs[-1].set_ylabel('power\n(% annual mean firm electric load)')
             axs[-1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
         else:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1, sharey=axs[0]) )
@@ -246,18 +248,18 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to firm electric load', lw=fblw)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
     ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to flexible load', lw=fblw)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet electric load', lw=fblw)
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet firm electric load', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='electric load')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='firm electric load')
 
     bottom3 = np.zeros(len(xs))
     lab = 'cap.'
@@ -326,7 +328,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots7'
+    save_dir = 'out_plots8'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
@@ -335,6 +337,7 @@ if '__main__' in __name__:
     date = '20200608_v1'
     date = '20200725_v5'
     date = '20200803_v2'
+    date = '20200805_v2'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
