@@ -245,21 +245,18 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     matplotlib.rcParams.update({'font.size': 14})
     fig, ax = plt.subplots()#figsize=(4.5, 4))
 
-    # Set wind/solar mean CFs to 0-100 % scale
-    #if 'wind' in save_name or 'solar' in save_name:
-    #    im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=0, vmax=100)
-    #else:
-    im = ax.imshow(matrix, interpolation='none', origin='lower')
-
     # Contours
+    min_and_max = []
     if 'RL_mean' in save_name:
         n_levels = np.arange(0,200,10)
         c_fmt = '%3.0f'
         ylab = "$\mu$ peak residual load\n(% mean annual load)"
+        min_and_max = [100, 170]
     elif 'RL_std' in save_name:
         n_levels = np.arange(0,15,0.5)
         c_fmt = '%1.1f'
         ylab = "$\sigma$ peak residual load\n(% mean annual load)"
+        min_and_max = [4, 10]
     elif 'RL_50pct' in save_name:
         n_levels = np.arange(0,50,2.5)
         c_fmt = '%1.1f'
@@ -285,14 +282,30 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
         c_fmt = '%3.0f'
         app = 'wind' if 'wind' in save_name else 'solar'
         ylab = f"$\mu$ {app} capacity factor\n(during peak residual load hours)"
+        if '_solar' in save_name:
+            min_and_max = [0, 70]
+        if '_wind' in save_name:
+            min_and_max = [0, 50]
+
     elif '_inter' in save_name:
         n_levels = np.arange(0,20,1)
         c_fmt = '%3.1f'
         ylab = "inter-annual variability\n(% mean annual load)"
+        min_and_max = [3, 10]
     elif '_intra' in save_name:
         n_levels = np.arange(0,20,1)
         c_fmt = '%3.1f'
         ylab = "intra-annual variability\n(% mean annual load)"
+        min_and_max = [2, 8]
+
+    # Set wind/solar mean CFs to 0-100 % scale
+    #if 'wind' in save_name or 'solar' in save_name:
+    #    im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=0, vmax=100)
+    #else:
+    if len(min_and_max) == 0:
+        im = ax.imshow(matrix, interpolation='none', origin='lower', cmap='plasma')
+    else:
+        im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=min_and_max[0], vmax=min_and_max[1], cmap='plasma')
 
     cs = ax.contour(matrix, n_levels, colors='w')
     # inline labels
@@ -316,10 +329,9 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     cbar = ax.figure.colorbar(im)
     cbar.ax.set_ylabel(ylab)
     dec = 0
-    if region == 'NYISO' or '_inter' in save_name:
-        dec = 1
+    #if region == 'NYISO' or '_inter' in save_name:
+    #    dec = 1
     cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=dec))
-    cb_range = [np.min(matrix), np.max(matrix)]
     plt.title(f"")
     #plt.tight_layout()
     plt.subplots_adjust(left=0.14, bottom=0.25, right=0.88, top=0.97)
@@ -335,6 +347,7 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
     #for i in range(len(m_nan)):
     #    for j in range(len(m_nan[i])):
     #        m_nan[i][j] = np.nan
+    #cb_range = [np.min(matrix), np.max(matrix)]
     #im = ax.imshow(m_nan,interpolation='none',origin='lower',vmin=cb_range[0],vmax=cb_range[1])
     #plt.xticks(range(len(wind_values)), wind_labs, rotation=90)
     #plt.yticks(range(len(solar_values)), solar_labs)
@@ -915,9 +928,9 @@ TYPE = 'png'
 use_TMY = False
 
 test_ordering = True
-#test_ordering = False
+test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
 make_scan = False
 
@@ -928,6 +941,7 @@ DATE = '20200706v2'
 DATE = '20200710v1'
 DATE = '20200709v2'
 DATE = '20200717v1'
+DATE = '20200897v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -1045,7 +1059,8 @@ if test_ordering:
             #if i<16 and j==0:
             #if (i<31 and j==0) or (i==30 and j<51) or (i==0 and j==50):
             #if (j<26 and i==0) or (j==25 and i<26) or (j==0 and i==25):
-            if (i<21 and j==0) or (i==20 and j<21) or (i==0 and j==20):
+            #if (i<21 and j==0) or (i==20 and j<21) or (i==0 and j==20):
+            if (i==0 and j==0) or (i==25 and j==0) or (i==0 and j==25) or (i==25 and j==25) or (i==20 and j==0) or (i==0 and j==20) or (i==20 and j==20):
                 #if i%2!=0 or j%2!=0:
                 #    continue
                 rl_cnt += 1
