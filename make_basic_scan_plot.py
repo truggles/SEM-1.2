@@ -297,6 +297,11 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
         c_fmt = '%3.1f'
         ylab = "intra-annual variability\n(% mean annual load)"
         min_and_max = [2, 8]
+    elif 'QuadR' in save_name:
+        n_levels = np.arange(-10,10,1)
+        c_fmt = '%1.1f'
+        ylab = "$\sigma$ residual load of peak\nload hours (% mean annual load)"
+        #min_and_max = [-6, 1]
 
     # Set wind/solar mean CFs to 0-100 % scale
     #if 'wind' in save_name or 'solar' in save_name:
@@ -1153,17 +1158,42 @@ if make_plots:
             #    else:
             #        triple_hist(region, plot_base, peak_load_original, pls, rls, save_name, [wind_gen, solar_gen])
 
-    plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
-    plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
-    plot_matrix_thresholds(region, plot_base, m_rl_50pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_50pct')
-    plot_matrix_thresholds(region, plot_base, m_rl_95pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_95pct')
-    plot_matrix_thresholds(region, plot_base, m_rl_Mto97p5pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_Mto97p5pct')
-    plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
-    plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
-    #plot_matrix_thresholds(region, plot_base, m_pl_mean, solar_gen_steps, wind_gen_steps, f'top_20_PL_mean')
-    #plot_matrix_thresholds(region, plot_base, m_pl_std, solar_gen_steps, wind_gen_steps, f'top_20_PL_std')
-    plot_matrix_thresholds(region, plot_base, intra, solar_gen_steps, wind_gen_steps, f'top_20_intra')
-    plot_matrix_thresholds(region, plot_base, inter, solar_gen_steps, wind_gen_steps, f'top_20_inter')
+    intra_ary = np.array( intra ).flatten()
+    inter_ary = np.array( inter ).flatten()
+    mean_ary = np.array( m_rl_mean ).flatten()
+    print(f"Intra-annual & mean corr coef:\n{np.corrcoef(mean_ary, intra_ary)}")
+    print(f"\nInter-annual & mean corr coef:\n{np.corrcoef(mean_ary, inter_ary)}")
+
+    quad = np.sqrt( np.power(np.array( intra ), 2) + np.power( np.array( inter ), 2) )
+    quad_R = (quad / np.array( m_rl_std ) - 1.) * 100.
+    quad_ary = quad.flatten()
+    std_ary = np.array( m_rl_std ).flatten()
+    print(f"\nTotal variability & quad corr coef:\n{np.corrcoef(std_ary, quad_ary)}")
+
+    #plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
+    #plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
+    #plot_matrix_thresholds(region, plot_base, m_rl_50pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_50pct')
+    #plot_matrix_thresholds(region, plot_base, m_rl_95pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_95pct')
+    #plot_matrix_thresholds(region, plot_base, m_rl_Mto97p5pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_Mto97p5pct')
+    #plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
+    #plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
+    ##plot_matrix_thresholds(region, plot_base, m_pl_mean, solar_gen_steps, wind_gen_steps, f'top_20_PL_mean')
+    ##plot_matrix_thresholds(region, plot_base, m_pl_std, solar_gen_steps, wind_gen_steps, f'top_20_PL_std')
+    #plot_matrix_thresholds(region, plot_base, intra, solar_gen_steps, wind_gen_steps, f'top_20_intra')
+    #plot_matrix_thresholds(region, plot_base, inter, solar_gen_steps, wind_gen_steps, f'top_20_inter')
+    plot_matrix_thresholds(region, plot_base, quad, solar_gen_steps, wind_gen_steps, f'top_20_RL_stdQ')
+    plot_matrix_thresholds(region, plot_base, quad_R, solar_gen_steps, wind_gen_steps, f'top_20_QuadR')
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.scatter(mean_ary, intra_ary)
+    plt.savefig(f"{plot_base}/{region}_scatter_mean_vs_intra.{TYPE}")
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.scatter(std_ary, quad_ary)
+    plt.savefig(f"{plot_base}/{region}_scatter_std_vs_quad.{TYPE}")
+    plt.close()
+
 
     # idx 0 = solar idx 1 = wind
     for k, m in {'intra':intra, 'inter':inter, 'var':m_rl_std}.items():
