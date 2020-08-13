@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from scipy import stats
 
 from scipy.stats import rankdata, normaltest
 from collections import OrderedDict
@@ -839,6 +840,26 @@ def get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap):
 
 
 
+def scatter_and_fit(x, y, x_label, y_label, print_name, plot_base, region, save_name):
+    print(f"\n{print_name} corr coef:\n{np.corrcoef(x, y)}")
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    print("slope, intercept, r_value, p_value, std_err")
+    print(f"{slope}, {intercept}, {r_value}, {p_value}, {std_err}")
+
+    plt.close()
+    fig, ax = plt.subplots()
+    ax.scatter(x, y, label='data')
+    x1 = np.linspace(0, np.max(x), 100)
+    ax.plot(x1, intercept + slope*x1, 'r', label='fitted line')
+    ax.set_xlim(0, ax.get_xlim()[1]*1.1)
+    ax.set_ylim(0, ax.get_ylim()[1]*1.1)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
+    plt.legend()
+    plt.close()
+
+
 def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pcts, cnt, base, gens=[0, 0]):
     plt.close()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
@@ -1161,14 +1182,16 @@ if make_plots:
     intra_ary = np.array( intra ).flatten()
     inter_ary = np.array( inter ).flatten()
     mean_ary = np.array( m_rl_mean ).flatten()
-    print(f"Intra-annual & mean corr coef:\n{np.corrcoef(mean_ary, intra_ary)}")
-    print(f"\nInter-annual & mean corr coef:\n{np.corrcoef(mean_ary, inter_ary)}")
+    scatter_and_fit(mean_ary, intra_ary, '', '', "Mean vs intra-annual", plot_base, region, "mean_vs_intra")
+    scatter_and_fit(mean_ary, inter_ary, '', '', "Mean vs inter-annual", plot_base, region, "mean_vs_inter")
 
     quad = np.sqrt( np.power(np.array( intra ), 2) + np.power( np.array( inter ), 2) )
     quad_R = (quad / np.array( m_rl_std ) - 1.) * 100.
     quad_ary = quad.flatten()
     std_ary = np.array( m_rl_std ).flatten()
-    print(f"\nTotal variability & quad corr coef:\n{np.corrcoef(std_ary, quad_ary)}")
+    scatter_and_fit(std_ary, quad_ary, 'total variability', 'estimated total variability', "Std vs Quad", plot_base, region, "std_vs_quad")
+
+    print(f"\n\nDummy chi2 = {np.sum( np.power((quad_ary - std_ary), 2) / std_ary )}")
 
     #plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
     #plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
@@ -1184,15 +1207,6 @@ if make_plots:
     plot_matrix_thresholds(region, plot_base, quad, solar_gen_steps, wind_gen_steps, f'top_20_RL_stdQ')
     plot_matrix_thresholds(region, plot_base, quad_R, solar_gen_steps, wind_gen_steps, f'top_20_QuadR')
 
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.scatter(mean_ary, intra_ary)
-    plt.savefig(f"{plot_base}/{region}_scatter_mean_vs_intra.{TYPE}")
-    plt.close()
-    fig, ax = plt.subplots()
-    ax.scatter(std_ary, quad_ary)
-    plt.savefig(f"{plot_base}/{region}_scatter_std_vs_quad.{TYPE}")
-    plt.close()
 
 
     # idx 0 = solar idx 1 = wind
