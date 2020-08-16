@@ -842,7 +842,7 @@ def get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap):
 
 
 
-def scatter_and_fit(x, y, x_label, y_label, print_name, plot_base, region, save_name):
+def scatter_and_fit(x, y, x_label, y_label, print_name, plot_base, region, save_name, save_csv=False):
     print(f"\n{print_name} corr coef:\n{np.corrcoef(x, y)}")
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
     print("slope, intercept, r_value, p_value, std_err")
@@ -860,6 +860,9 @@ def scatter_and_fit(x, y, x_label, y_label, print_name, plot_base, region, save_
     plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
     plt.legend()
     plt.close()
+    if save_csv:
+        df = pd.DataFrame({x_label: x, y_label: y})
+        df.to_csv(f"{plot_base}/csv_{region}_{save_name}.csv", index=False)
 
 
 def make_ordering_plotsX(dfs, save_name, wind_install_cap, solar_install_cap, thresholds, threshold_pcts, cnt, base, gens=[0, 0]):
@@ -1184,30 +1187,31 @@ if make_plots:
     intra_ary = np.array( intra ).flatten()
     inter_ary = np.array( inter ).flatten()
     mean_ary = np.array( m_rl_mean ).flatten()
-    scatter_and_fit(mean_ary, intra_ary, '', '', "Mean vs intra-annual", plot_base, region, "mean_vs_intra")
+    save_csv = True
+    scatter_and_fit(mean_ary, intra_ary, '', '', "Mean vs intra-annual", plot_base, region, "mean_vs_intra", save_csv)
     scatter_and_fit(mean_ary, inter_ary, '', '', "Mean vs inter-annual", plot_base, region, "mean_vs_inter")
 
     quad = np.sqrt( np.power(np.array( intra ), 2) + np.power( np.array( inter ), 2) )
     quad_R = (quad / np.array( m_rl_std ) - 1.) * 100.
     quad_ary = quad.flatten()
     std_ary = np.array( m_rl_std ).flatten()
-    scatter_and_fit(std_ary, quad_ary, 'total variability', 'estimated total variability', "Std vs Quad", plot_base, region, "std_vs_quad")
+    scatter_and_fit(std_ary, quad_ary, 'total variability', 'estimated total variability', "Std vs Quad", plot_base, region, "std_vs_quad", save_csv)
 
     print(f"\n\nDummy chi2 = {np.sum( np.power((quad_ary - std_ary), 2) / std_ary )}")
 
-    #plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
-    #plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
+    plot_matrix_thresholds(region, plot_base, m_rl_mean, solar_gen_steps, wind_gen_steps, f'top_20_RL_mean')
+    plot_matrix_thresholds(region, plot_base, m_rl_std, solar_gen_steps, wind_gen_steps, f'top_20_RL_std')
     #plot_matrix_thresholds(region, plot_base, m_rl_50pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_50pct')
     #plot_matrix_thresholds(region, plot_base, m_rl_95pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_95pct')
     #plot_matrix_thresholds(region, plot_base, m_rl_Mto97p5pct, solar_gen_steps, wind_gen_steps, f'top_20_RL_Mto97p5pct')
-    #plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
-    #plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
+    plot_matrix_thresholds(region, plot_base, m_w_mean, solar_gen_steps, wind_gen_steps, f'top_20_wind_mean')
+    plot_matrix_thresholds(region, plot_base, m_s_mean, solar_gen_steps, wind_gen_steps, f'top_20_solar_mean')
     ##plot_matrix_thresholds(region, plot_base, m_pl_mean, solar_gen_steps, wind_gen_steps, f'top_20_PL_mean')
     ##plot_matrix_thresholds(region, plot_base, m_pl_std, solar_gen_steps, wind_gen_steps, f'top_20_PL_std')
-    #plot_matrix_thresholds(region, plot_base, intra, solar_gen_steps, wind_gen_steps, f'top_20_intra')
-    #plot_matrix_thresholds(region, plot_base, inter, solar_gen_steps, wind_gen_steps, f'top_20_inter')
-    plot_matrix_thresholds(region, plot_base, quad, solar_gen_steps, wind_gen_steps, f'top_20_RL_stdQ')
-    plot_matrix_thresholds(region, plot_base, quad_R, solar_gen_steps, wind_gen_steps, f'top_20_QuadR')
+    plot_matrix_thresholds(region, plot_base, intra, solar_gen_steps, wind_gen_steps, f'top_20_intra')
+    plot_matrix_thresholds(region, plot_base, inter, solar_gen_steps, wind_gen_steps, f'top_20_inter')
+    #plot_matrix_thresholds(region, plot_base, quad, solar_gen_steps, wind_gen_steps, f'top_20_RL_stdQ')
+    #plot_matrix_thresholds(region, plot_base, quad_R, solar_gen_steps, wind_gen_steps, f'top_20_QuadR')
 
 
 
