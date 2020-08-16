@@ -304,14 +304,16 @@ def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values,
         ylab = "$\sigma$ residual load of peak\nload hours (% mean annual load)"
         #min_and_max = [-6, 1]
 
-    # Set wind/solar mean CFs to 0-100 % scale
-    #if 'wind' in save_name or 'solar' in save_name:
-    #    im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=0, vmax=100)
-    #else:
+    # Clip colormap before yellow high values so white
+    # contour text shows up.
+    cmapBig = matplotlib.cm.get_cmap('plasma', 512)
+    top = 0.85
+    cmapShort = matplotlib.colors.ListedColormap(cmapBig(np.linspace(0.0, top, int(512*top))))
+
     if len(min_and_max) == 0:
-        im = ax.imshow(matrix, interpolation='none', origin='lower', cmap='plasma')
+        im = ax.imshow(matrix, interpolation='none', origin='lower', cmap=cmapShort)
     else:
-        im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=min_and_max[0], vmax=min_and_max[1], cmap='plasma')
+        im = ax.imshow(matrix, interpolation='none', origin='lower', vmin=min_and_max[0], vmax=min_and_max[1], cmap=cmapShort)
 
     cs = ax.contour(matrix, n_levels, colors='w')
     # inline labels
