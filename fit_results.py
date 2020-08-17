@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.ticker import MaxNLocator
 from scipy import stats
 
 from scipy.stats import rankdata, normaltest
@@ -99,6 +100,48 @@ def scatter_and_fit(regions, x, y, x_label, y_label, plot_base, save_name):
     plt.close()
 
 
+
+def scatter_and_fit3(regions, x, y, x_label, y_label, plot_base, save_name):
+
+    plt.close()
+    fig, axs = plt.subplots(ncols=3, nrows=1, figsize=(7,4), sharey=True)
+    print(len(axs))
+    
+    markers = ['o', 'o', 'o']
+    colors = color_list()
+    idx = 0
+    for r, x, y, m, c in zip(regions, xs, ys, markers, colors):
+        print(f"\ncorr coef:\n{np.corrcoef(x, y)}")
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        print("slope, intercept, r2_value, p_value, std_err")
+        print(f"{slope}, {intercept}, {r_value**2}, {p_value}, {std_err}")
+
+        axs[idx].scatter(x, y, c=[c,], marker=m, alpha=.01, s=30, label='_nolabel_')
+        x_perfect = np.arange(15)
+        axs[idx].plot(x_perfect, x_perfect, 'k--', label=f'f(x) = x', linewidth=2)
+        axs[idx].set_xlim(0, 15)
+        if idx == 0:
+            axs[idx].xaxis.set_major_locator(MaxNLocator(4, steps=[5,]))
+        else:
+            axs[idx].xaxis.set_major_locator(MaxNLocator(4, prune='lower', steps=[5,]))
+        axs[idx].set_ylim(0, 15)
+        if idx == 1:
+            axs[idx].set_xlabel(x_label)
+
+        idx += 1
+
+    for r, x, y, m, c in zip(regions, xs, ys, markers, colors):
+        axs[2].scatter([], [], label=r, s=20, c=[c,], marker=m)
+        plt.legend(ncol=2, framealpha = 1.0)
+
+    axs[0].set_ylabel(y_label)
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.0)
+    plt.savefig(f"{plot_base}/{save_name}.png")
+    plt.savefig(f"{plot_base}/{save_name}.pdf")
+    plt.close()
+
+
 date = '20200897v1'
 save_name = 'std_vs_quad'
 
@@ -106,20 +149,20 @@ xs = []
 ys = []
 
 
-regions = ["ERCOT","PJM","NYISO"]
+regions = ["PJM","ERCOT","NYISO"]
 
 
 for r in regions:
     d = f'plots_{date}_101x101_{r}'
     df = pd.read_csv(f'{d}/csv_{r}_{save_name}.csv')
-    print(df.head())
     xs.append(df['total variability'])
     ys.append(df['estimated total variability'])
 
 x_label = r"total variability ($\sigma_{tot}$)"
 y_label = r"estimated total variability ($\hat{\sigma}_{tot}$)"
 plot_base = f'plots_{date}_101x101'
-scatter_and_fit(regions, xs, ys, x_label, y_label, plot_base, save_name)
+#scatter_and_fit(regions, xs, ys, x_label, y_label, plot_base, save_name)
+scatter_and_fit3(regions, xs, ys, x_label, y_label, plot_base, save_name+'3')
 
 
 
