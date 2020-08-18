@@ -698,7 +698,7 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     axs[0].yaxis.grid(True)
     axs[0].set_ylabel('peak residual load\n(% mean annual load)')
     axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
-    axs[0].set_ylim(1.2, 2.)
+    axs[0].set_ylim(0.8, 2.)
     #axs[0].set_ylim(1, 2)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
@@ -707,6 +707,9 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for row in rl_vects:
         stds.append(np.std(row))
         mus.append(np.mean(row))
+
+    axs[0].plot( np.linspace(0.5, len(rl_vects) + 0.5, 100 ), np.ones(100), 'k--', label='mean annual load')
+    axs[0].legend(loc='lower center')
     
     #bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
     bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops, meanline=True, showmeans=True, meanprops=meanprops)
@@ -716,31 +719,42 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for patch in bplot2['boxes']:
         patch.set_facecolor('lightblue')
 
-    mt = r'$\mu_{total}$'
-    st = r'$\sigma_{total}$'
-    textstr = '\n'.join((
-        f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.0f}%; {st} = {np.std(np.array(rl_vects).flatten())*100:.2f}%',
-        f'inter-annual var. = {np.std(mus)*100:.2f}%',
-        f'intra-annual var. = {np.mean(stds)*100:.2f}%',
-        ))
-        #f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%',
-        #f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%',
-        #f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%'))
+    axs[1].plot( np.linspace(0.5, 1.5, 100 ), np.ones(100), 'k--', label='mean annual load')
 
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat')
     
+    mt = r'$\mu_{RL}$'
+    st = r'$\sigma_{tot}$'
+    st2 = r'$\sigma_{intra}$'
+    st3 = r'$\sigma_{inter}$'
+    #textstr = '\n'.join((
+    #    f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.0f}%        {st} = {np.std(np.array(rl_vects).flatten())*100:.2f}%',
+    #    f'{st2} = {np.std(mus)*100:.2f}%    {st3} = {np.mean(stds)*100:.2f}%',
+    #    ))
+
     # place a text box in upper left in axes coords
-    axs[0].text(2, 1.98, textstr, fontsize=16.5,
-            verticalalignment='top', bbox=props)
+    #axs[0].text(2, 1.98, textstr, fontsize=16.5,
+    #        verticalalignment='top', bbox=props)
 
-    #axs[0].text(2, 1.95, f'mean of annual $\sigma$s = {np.mean(stds)*100:.2f}%')
-    #axs[0].text(2, 1.92, f'$\sigma$ of annual $\mu$s = {np.std(mus)*100:.2f}%')
-    #axs[0].text(2, 1.84, f'$\sigma$={np.std(np.array(rl_vects).flatten())*100:.2f}%')
+    textstr1 = '\n'.join((
+        f'{st2} = {np.std(mus)*100:.3g}%',
+        f'{st3} = {np.mean(stds)*100:.3g}%',
+        ))
+    textstr2 = '\n'.join((
+        f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.3g}%',
+        f'{st} = {np.std(np.array(rl_vects).flatten())*100:.3g}%',
+        ))
 
-    plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
-    #plt.tight_layout()
-    plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.93)
+    axs[0].text(5, 1.17, textstr1, fontsize=18,
+        verticalalignment='top', bbox=props)
+    axs[1].text(0.35, 1.17, textstr2, fontsize=18,
+        verticalalignment='top', bbox=props)
+
+
+    #plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
+    #plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.93)
+    plt.subplots_adjust(left=0.18, bottom=0.13, right=0.97, top=0.96)
     plt.savefig(f"{base}/{save_name}_RL_box_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
     #n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label=f'peak load: $\mu$ = {np.mean(peak_load_original):.2f} $\sigma$ = {np.std(peak_load_original):.3f}')
@@ -959,9 +973,9 @@ TYPE = 'png'
 use_TMY = False
 
 test_ordering = True
-test_ordering = False
+#test_ordering = False
 make_plots = True
-#make_plots = False
+make_plots = False
 make_scan = True
 make_scan = False
 
@@ -973,6 +987,7 @@ DATE = '20200710v1'
 DATE = '20200709v2'
 DATE = '20200717v1'
 DATE = '20200897v1'
+DATE = '20200818v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
