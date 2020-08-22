@@ -827,25 +827,25 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
 
 
 # Return top 20 values for: residual load (rls), wind/solar CFs (w/s_cfs), and
-# residual load values for peak 20 hours (pls)
-def get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap):
+# residual load values for peak X hours (pls)
+def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap):
     first = True
     rl_vects = []
     for year, df in dfs.items():
         df['RL'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         df_sort = df.sort_values(by=['RL'], ascending=False)
-        rls_tmp = df_sort.iloc[:20:]['RL'].values
+        rls_tmp = df_sort.iloc[:hours_per_year:]['RL'].values
         rl_vects.append(list(rls_tmp))
         if first:
             first = False
-            rls = df_sort.iloc[:20:]['RL'].values
-            w_cfs = df_sort.iloc[:20:]['wind'].values
-            s_cfs = df_sort.iloc[:20:]['solar'].values
+            rls = df_sort.iloc[:hours_per_year:]['RL'].values
+            w_cfs = df_sort.iloc[:hours_per_year:]['wind'].values
+            s_cfs = df_sort.iloc[:hours_per_year:]['solar'].values
             pls = df_sort.loc[ peak_indices[year], 'RL' ].values
         else:
-            rls = np.append(rls, df_sort.iloc[:20:]['RL'].values)
-            w_cfs = np.append(w_cfs, df_sort.iloc[:20:]['wind'].values)
-            s_cfs = np.append(s_cfs, df_sort.iloc[:20:]['solar'].values)
+            rls = np.append(rls, df_sort.iloc[:hours_per_year:]['RL'].values)
+            w_cfs = np.append(w_cfs, df_sort.iloc[:hours_per_year:]['wind'].values)
+            s_cfs = np.append(s_cfs, df_sort.iloc[:hours_per_year:]['solar'].values)
             pls = np.append(pls, df_sort.loc[ peak_indices[year], 'RL' ].values)
     stds = []
     mus = []
@@ -975,7 +975,7 @@ use_TMY = False
 test_ordering = True
 #test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
 make_scan = False
 
@@ -1096,7 +1096,8 @@ if test_ordering:
 
 
             # Get top 20 peak residual load hours for each combo
-            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus = get_top_20_per_year(dfs, peak_indices, wind_install_cap, solar_install_cap)
+            hours_per_year = 20
+            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [rls, w_cfs, s_cfs, pls, stds, mus]
 
 
