@@ -738,8 +738,8 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     #        verticalalignment='top', bbox=props)
 
     textstr1 = '\n'.join((
-        f'{st2} = {np.std(mus)*100:.3g}%',
-        f'{st3} = {np.mean(stds)*100:.3g}%',
+        f'{st2} = {np.mean(stds)*100:.3g}%',
+        f'{st3} = {np.std(mus)*100:.3g}%',
         ))
     textstr2 = '\n'.join((
         f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.3g}%',
@@ -975,7 +975,7 @@ use_TMY = False
 test_ordering = True
 #test_ordering = False
 make_plots = True
-#make_plots = False
+make_plots = False
 make_scan = True
 make_scan = False
 
