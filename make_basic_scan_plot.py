@@ -828,12 +828,17 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
 
 # Return top 20 values for: residual load (rls), wind/solar CFs (w/s_cfs), and
 # residual load values for peak X hours (pls)
-def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap):
+def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap, PRINT=False):
     first = True
     rl_vects = []
     for year, df in dfs.items():
         df['RL'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         df_sort = df.sort_values(by=['RL'], ascending=False)
+
+        if PRINT and year == 2018:
+            return df_sort.iloc[:20:].index.tolist()
+
+
         rls_tmp = df_sort.iloc[:hours_per_year:]['RL'].values
         rl_vects.append(list(rls_tmp))
         if first:
@@ -1084,6 +1089,7 @@ if test_ordering:
         mapper[str(round(solar_gen,2))] = OrderedDict()
     cnt = 0
     rl_cnt = 0
+    ofile = open(f'{region}_Results2.txt','w')
     for j, wind_install_cap in enumerate(wind_cap_steps):
         wind_gen = wind_gen_steps[j]
         print(f"Wind cap {wind_install_cap}, wind gen {wind_gen}")
@@ -1107,7 +1113,27 @@ if test_ordering:
             #if (i<31 and j==0) or (i==30 and j<51) or (i==0 and j==50):
             #if (j<26 and i==0) or (j==25 and i<26) or (j==0 and i==25):
             #if (i<21 and j==0) or (i==20 and j<21) or (i==0 and j==20):
-            if (i==0 and j==0) or (i==25 and j==0) or (i==0 and j==25) or (i==25 and j==25) or (i==20 and j==0) or (i==0 and j==20) or (i==20 and j==20):
+            if (i==0 and j==0) or (i==25 and j==0) or (i==0 and j==25) or (i==25 and j==25) or (i==50 and j==0) or (i==0 and j==50) or (i==50 and j==50):
+                vals = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap, True)
+                vals.sort()
+                print(vals)
+                cnts = []
+                prev = -1
+                length = 1
+                for val in vals:
+                    if prev == -1:
+                        prev = val
+                    elif val == prev + 1:
+                        length += 1
+                        prev = val
+                    else:
+                        cnts.append(length)
+                        length = 1
+                        prev = val
+                cnts.append(length)
+                txt2 = ','.join([str(v) for v in vals])
+                txt3 = ','.join([str(v) for v in cnts])
+                ofile.write(f"i,{i},j,{j},{txt2},,,{txt3}")
                 #if i%2!=0 or j%2!=0:
                 #    continue
                 rl_cnt += 1
@@ -1130,6 +1156,7 @@ if test_ordering:
 
             #    load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen], int_thresholds)
 
+    ofile.close()
 
     #print("Solar Wind max_range 100th_range")
     #for solar, info in mapper.items():
