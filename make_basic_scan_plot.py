@@ -249,14 +249,8 @@ def plot_peak_hours_vs_gen(region, plot_base, matrix, gen_steps, save_name):
 
 
     m2 = []
-    mx = -99
-    mn = 99
     for row in matrix:
-        to_local = [] # To CST
-        if np.max(row) > mx:
-            mx = np.max(row)
-        if np.min(row) < mn:
-            mn = np.min(row)
+        to_local = []
         for v in row:
             if v == 24:
                 loc = v - 24 - shift # 0 - 23 in stead of 1 - 24
@@ -294,7 +288,6 @@ def plot_peak_hours_vs_gen(region, plot_base, matrix, gen_steps, save_name):
             gen_labs.append(f"{int(v*100)}%")
         else:
             gen_labs.append('')
-    print(ax.get_xlim())
     plt.xticks(range(24), hour_labs, rotation=90)
     plt.yticks(range(len(gen_steps)), gen_labs)
     plt.xlabel(f"hour of day ({zone})")
@@ -780,7 +773,7 @@ def box_to_regression(rl_vects, years):
     return slope, intercept, r_value, p_value, std_err, new_rls_map
 
 
-def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
+def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0], **kwargs):
 
     #detrend_peak: slope, intercept, r_value, p_value, std_err, new_rls_map = box_to_regression(rl_vects, years)
     plt.close()
@@ -802,6 +795,8 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     axs[0].set_ylabel('peak residual load\n(% mean annual load)')
     axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
     axs[0].set_ylim(0.8, 2.)
+    if 'hourly' in kwargs:
+        axs[0].set_ylim(0.8, 2.2)
     #detrend_peak: axs[0].plot(np.array(years) - years[0] + 1, intercept + slope*np.array(years), 'r', label='fitted line')
     #axs[0].set_ylim(1, 2)
     for patch in bplot['boxes']:
@@ -812,8 +807,9 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
         stds.append(np.std(row))
         mus.append(np.mean(row))
 
-    axs[0].plot( np.linspace(0.5, len(rl_vects) + 0.5, 100 ), np.ones(100), 'k--', label='mean annual load')
-    axs[0].legend(loc='lower center')
+    if not 'hourly' in kwargs:
+        axs[0].plot( np.linspace(0.5, len(rl_vects) + 0.5, 100 ), np.ones(100), 'k--', label='mean annual load')
+        axs[0].legend(loc='lower center')
     
     #bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops)
     bplot2 = axs[1].boxplot(np.array(rl_vects).flatten(), whis=[5, 95], showfliers=True, patch_artist=True, medianprops=medianprops, meanline=True, showmeans=True, meanprops=meanprops)
@@ -823,7 +819,8 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     for patch in bplot2['boxes']:
         patch.set_facecolor('lightblue')
 
-    axs[1].plot( np.linspace(0.5, 1.5, 100 ), np.ones(100), 'k--', label='mean annual load')
+    if not 'hourly' in kwargs:
+        axs[1].plot( np.linspace(0.5, 1.5, 100 ), np.ones(100), 'k--', label='mean annual load')
 
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat')
@@ -850,9 +847,11 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
         f'{st} = {np.std(np.array(rl_vects).flatten())*100:.3g}%',
         ))
 
-    axs[0].text(5, 1.17, textstr1, fontsize=18,
+
+    plus = 0 if not 'hourly' in kwargs else 0.95
+    axs[0].text(5, 1.17+plus, textstr1, fontsize=18,
         verticalalignment='top', bbox=props)
-    axs[1].text(0.35, 1.17, textstr2, fontsize=18,
+    axs[1].text(0.35, 1.17+plus, textstr2, fontsize=18,
         verticalalignment='top', bbox=props)
 
 
@@ -929,7 +928,21 @@ def make_threshold_hist(vect, save_name, cnt, base, gens):
 
 
 
+def get_top_X_per_year_per_hour(hours_per_hour, dfs):
 
+    rl_vects_map = OrderedDict()
+    for hour in range(1, 25): # 1 - 24 labeling
+        rl_vects_map[hour] = []
+
+    for year, df in dfs.items():
+        df_sort = df.sort_values(by=['demand'], ascending=False)
+
+        for hour in range(1, 25): # 1 - 24 labeling
+            df_hr = df_sort[ df_sort['hour'] == hour ]
+            rls_tmp = df_hr.iloc[:hours_per_hour:]['demand'].values
+            rl_vects_map[hour].append(list(rls_tmp))
+
+    return rl_vects_map
 
 # Return top 20 values for: residual load (rls), wind/solar CFs (w/s_cfs), and
 # residual load values for peak X hours (pls)
@@ -1194,9 +1207,33 @@ if test_ordering:
 
 
 
+    # Get top 20 peak residual load hours for each hour of each year and check inter-annual variability
+    hours_per_hour = 20
+    rl_vects_map = get_top_X_per_year_per_hour(hours_per_hour, dfs)
+    # NYISO and PJM are Eastern & ERCOT is Central
+    if region in ['NYISO', 'PJM']:
+        shift = 5 # for EST
+        zone = 'EST'
+    if region == 'ERCOT':
+        shift = 6 # for CST
+        zone = 'CST'
+
+    for k, rl_vects in rl_vects_map.items():
+        if k == 24:
+            hr = k - 24 - shift # 0 - 23 in stead of 1 - 24
+        else:
+            hr = k - shift
+
+        if hr < 0:
+            hr += 24
+        rl_cnt = 0
+        wind_install_cap = 0
+        solar_install_cap = 0
+        plot_rl_box(rl_vects, years, f'{region}_hourly_var_{int(hr):02d}{zone}', wind_install_cap, solar_install_cap, rl_cnt, plot_base, **{'hourly': True})
+
+    # Check inter-annual variability of peak values by hour of day
     solar_by_hours = []
     s_gens = []
-    # Check inter-annual variability of peak values by hour of day
     for j, wind_install_cap in enumerate(wind_cap_steps):
         wind_gen = wind_gen_steps[j]
         for i, solar_install_cap in enumerate(solar_cap_steps):
@@ -1206,9 +1243,6 @@ if test_ordering:
             rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
             solar_by_hours.append(hours)
             s_gens.append(solar_gen)
-            # Get top 20 peak residual load hours for each combo
-            #hours_per_hour = 20
-            #vals_per_hour = get_top_X_per_year_per_hour(hours_per_hour, dfs, peak_indices, wind_install_cap, solar_install_cap)
             if i==25:
                 break
         plot_peak_hours_vs_gen(region, plot_base, solar_by_hours, s_gens, f'top_20_RL_mean')
