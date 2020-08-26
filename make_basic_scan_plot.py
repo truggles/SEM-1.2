@@ -237,6 +237,77 @@ def triple_hist(region, plot_base, peak_load_original, pls, rls, save_name, gens
                     'Peak residual load' : rls}.items():
             print(f"{k:21s} {round(np.std(vect),4)}, {round(np.percentile(vect, 75) - np.percentile(vect, 25),4)}, {round(np.percentile(vect, 97.5) - np.percentile(vect, 2.5),4)}")
 
+def plot_peak_hours_vs_gen(region, plot_base, matrix, gen_steps, save_name):
+
+    # NYISO and PJM are Eastern & ERCOT is Central
+    if region in ['NYISO', 'PJM']:
+        shift = 5 # for EST
+        zone = 'EST'
+    if region == 'ERCOT':
+        shift = 6 # for CST
+        zone = 'CST'
+
+
+    m2 = []
+    mx = -99
+    mn = 99
+    for row in matrix:
+        to_local = [] # To CST
+        if np.max(row) > mx:
+            mx = np.max(row)
+        if np.min(row) < mn:
+            mn = np.min(row)
+        for v in row:
+            if v == 24:
+                loc = v - 24 - shift # 0 - 23 in stead of 1 - 24
+                #loc = 0
+            else:
+                loc = v - shift
+                #loc = v
+
+            if loc < 0:
+                loc += 24
+            to_local.append(loc)
+        n, bins, patches = plt.hist(to_local, np.arange(-0.5, 23.6, 1))
+        m2.append(n)
+
+    plt.close()
+    matplotlib.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots()#figsize=(4.5, 4))
+
+    # Clip colormap before yellow high values so white
+    # contour text shows up.
+    cmapBig = matplotlib.cm.get_cmap('plasma', 512)
+    top = 0.85
+    cmapShort = matplotlib.colors.ListedColormap(cmapBig(np.linspace(0.0, top, int(512*top))))
+
+    im = ax.imshow(m2, interpolation='none', origin='lower', cmap=cmapShort, aspect='auto')
+
+    hour_labs, gen_labs = [], []
+    for h in range(24):
+        if h%3==0:
+            hour_labs.append(f'{int(h)}:00')
+        else:
+            hour_labs.append('')
+    for v in gen_steps:
+        if v*100%5==0:
+            gen_labs.append(f"{int(v*100)}%")
+        else:
+            gen_labs.append('')
+    print(ax.get_xlim())
+    plt.xticks(range(24), hour_labs, rotation=90)
+    plt.yticks(range(len(gen_steps)), gen_labs)
+    plt.xlabel(f"hour of day ({zone})")
+    plt.ylabel("solar generation\n(% mean annual load)")
+    cbar = ax.figure.colorbar(im)
+    cbar.ax.set_ylabel('counts')
+    plt.title(f"")
+    #plt.tight_layout()
+    plt.subplots_adjust(left=0.18, bottom=0.25, right=0.92, top=0.97)
+
+
+    plt.savefig(f"{plot_base}/{region}_{save_name}.{TYPE}")
+    plt.clf()
 
 def plot_matrix_thresholds(region, plot_base, matrix, solar_values, wind_values, save_name):
 
@@ -880,18 +951,20 @@ def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, sola
             rls = df_sort.iloc[:hours_per_year:]['RL'].values
             w_cfs = df_sort.iloc[:hours_per_year:]['wind'].values
             s_cfs = df_sort.iloc[:hours_per_year:]['solar'].values
+            hours = df_sort.iloc[:hours_per_year:]['hour'].values
             pls = df_sort.loc[ peak_indices[year], 'RL' ].values
         else:
             rls = np.append(rls, df_sort.iloc[:hours_per_year:]['RL'].values)
             w_cfs = np.append(w_cfs, df_sort.iloc[:hours_per_year:]['wind'].values)
             s_cfs = np.append(s_cfs, df_sort.iloc[:hours_per_year:]['solar'].values)
+            hours = np.append(hours, df_sort.iloc[:hours_per_year:]['hour'].values)
             pls = np.append(pls, df_sort.loc[ peak_indices[year], 'RL' ].values)
     stds = []
     mus = []
     for row in rl_vects:
         stds.append(np.std(row))
         mus.append(np.mean(row))
-    return rls, w_cfs, s_cfs, pls, rl_vects, stds, mus
+    return rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours
 
 
 
@@ -1119,6 +1192,32 @@ if test_ordering:
     print("Wind cap increments:", wind_cap_steps)
     print("Solar cap increments:", solar_cap_steps)
 
+
+
+    solar_by_hours = []
+    s_gens = []
+    # Check inter-annual variability of peak values by hour of day
+    for j, wind_install_cap in enumerate(wind_cap_steps):
+        wind_gen = wind_gen_steps[j]
+        for i, solar_install_cap in enumerate(solar_cap_steps):
+            solar_gen = solar_gen_steps[i]
+
+            hours_per_year = 20
+            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
+            solar_by_hours.append(hours)
+            s_gens.append(solar_gen)
+            # Get top 20 peak residual load hours for each combo
+            #hours_per_hour = 20
+            #vals_per_hour = get_top_X_per_year_per_hour(hours_per_hour, dfs, peak_indices, wind_install_cap, solar_install_cap)
+            if i==25:
+                break
+        plot_peak_hours_vs_gen(region, plot_base, solar_by_hours, s_gens, f'top_20_RL_mean')
+        print("Only doing wind == 0")
+        break
+    exit()
+
+
+
     mapper = OrderedDict()
     for i, solar_install_cap in enumerate(solar_cap_steps):
         solar_gen = solar_gen_steps[i]
@@ -1139,7 +1238,7 @@ if test_ordering:
 
             # Get top 20 peak residual load hours for each combo
             hours_per_year = 20
-            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
+            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [rls, w_cfs, s_cfs, pls, stds, mus]
 
 
