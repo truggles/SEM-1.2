@@ -674,7 +674,10 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     plt.close()
     y_max = 20
     if 'h2_only' in kwargs.keys():
-        y_max = 10
+        if 'ALT' in kwargs.keys():
+            y_max = 16
+        else:
+            y_max = 10
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
 
@@ -688,6 +691,13 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     ax.set_xlabel(kwargs['x_label'])
     
+    appA = ''
+    appB = ''
+    ep = 'electric power'
+    if 'ALT' in kwargs.keys():
+        appA = ' (perfect market cost)'
+        appB = '\n(perfect market cost)'
+        ep = 'power'
 
 
     # Electricity cost
@@ -697,7 +707,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     # $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
     lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
-    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab)
+    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab+appB)
     #for ff, cost in zip(df[var], df['fuel price ($/kWh)'] * conversion):
     #    print(ff, cost)
 
@@ -716,6 +726,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     v_chem *= conversion
     v_co2 *= conversion
 
+
     # Build stack
     lab = 'fixed cost: electrolysis plant' if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
     ax.fill_between(df[var], 0, f_elec, label=lab, color=colors[0])
@@ -724,7 +735,16 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
         ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant', color=colors[3])
         ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label='electric power', color=colors[5])
+
+
+    if 'ALT' in kwargs.keys():
+        tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+        avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
+        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', alpha=0.3, color=colors[5])
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label=r'H$_{2}$ production total'+' (mean cost)')
+        
+
+    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5])
     #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
     #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
     #ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
@@ -753,6 +773,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
     #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
+    if 'ALT' in kwargs.keys():
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
@@ -781,9 +803,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     ax.set_ylim(0, y_max)
     #plt.grid()
     if 'h2_only' not in kwargs.keys():
-        plt.legend(loc='upper left', ncol=2, framealpha = 1.0)
+        plt.legend(loc='upper right', ncol=2, framealpha = 1.0)
     else:
-        plt.legend(loc='upper left', ncol=1, framealpha = 1.0)
+        plt.legend(loc='upper right', ncol=1, framealpha = 1.0)
         plt.subplots_adjust(left=0.12, right=.85)
 
     # 2nd y-axis for $/kWh_e
@@ -792,8 +814,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     ax2.set_ylim(0, ax.get_ylim()[1] / kWh_to_GGE)
 
     #plt.tight_layout()
-    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
-    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    app2 = '_ALT' if 'ALT' in kwargs.keys() else ''
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.png')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 
@@ -1565,6 +1588,9 @@ if '__main__' in __name__:
         ### Fuel cost compare scatter and use to fill electricity costs in stacked
         kwargs['save_name'] = 'stackedCostPlot' + m['app']
         costs_plot(k, **kwargs)
+        kwargs['ALT'] = True
+        costs_plot(k, **kwargs)
+        del kwargs['ALT']
         kwargs['save_name'] = 'costPlot' + m['app']
         costs_plot_alt(k, **kwargs)
     
