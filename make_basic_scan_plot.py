@@ -678,8 +678,40 @@ def PDF_plots(dfs, save_name, wind_install_cap, solar_install_cap, cnt, base, ge
     plt.savefig(f"{base}/{save_name}_PDF_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
 
 
+def box_to_regression(rl_vects, years):
+
+    rl_vals = []
+    yrs = []
+    #Unpack rl_vects and years into 1D arrays
+    for group, yr in zip(rl_vects, years):
+        for item in group:
+            yrs.append(yr)
+            rl_vals.append(item)
+
+
+    slope, intercept, r_value, p_value, std_err = stats.linregress(yrs, rl_vals)
+    print("slope, intercept, r_value, p_value, std_err")
+    print(f"{slope}, {intercept}, {r_value}, {p_value}, {std_err}")
+
+    # Make calibrated new_rls
+    new_rls = np.array(rl_vals) - intercept - slope*np.array(yrs) + np.mean(rl_vals)
+    slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(yrs, new_rls)
+    #print("slope, intercept, r_value, p_value, std_err")
+    #print(f"{slope2}, {intercept2}, {r_value2}, {p_value2}, {std_err2}")
+    
+    new_rls_map = []
+    hrs = len(rl_vects[0])
+    for i, val in enumerate(new_rls):
+        if i%hrs==0:
+            new_rls_map.append([])
+        new_rls_map[-1].append(val)
+
+    return slope, intercept, r_value, p_value, std_err, new_rls_map
+
+
 def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap, cnt, base, gens=[0, 0]):
 
+    #detrend_peak: slope, intercept, r_value, p_value, std_err, new_rls_map = box_to_regression(rl_vects, years)
     plt.close()
     matplotlib.rcParams.update({'font.size': 16.5})
     fig, axs = plt.subplots(1, 2, sharey=True, figsize=(7.5,6),
@@ -699,6 +731,7 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     axs[0].set_ylabel('peak residual load\n(% mean annual load)')
     axs[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
     axs[0].set_ylim(0.8, 2.)
+    #detrend_peak: axs[0].plot(np.array(years) - years[0] + 1, intercept + slope*np.array(years), 'r', label='fitted line')
     #axs[0].set_ylim(1, 2)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightblue')
@@ -756,6 +789,7 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
     #plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.93)
     plt.subplots_adjust(left=0.18, bottom=0.13, right=0.97, top=0.96)
     plt.savefig(f"{base}/{save_name}_RL_box_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
+    #detrend_peak: return new_rls_map
 
     #n, bins, patches = ax.hist(peak_load_original, n_bins, range=[min_x, 2], alpha=0.5, label=f'peak load: $\mu$ = {np.mean(peak_load_original):.2f} $\sigma$ = {np.std(peak_load_original):.3f}')
 
@@ -993,6 +1027,7 @@ DATE = '20200709v2'
 DATE = '20200717v1'
 DATE = '20200897v1'
 DATE = '20200818v1'
+DATE = '20200825v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -1001,6 +1036,7 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 solar_max = 1.
 wind_max = 1.
 steps = 101
+#steps = 3
 #solar_max = .25
 #wind_max = .5
 #steps = 21
@@ -1140,6 +1176,8 @@ if test_ordering:
                 ##load_duration_curve_and_PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 #PDF_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 plot_rl_box(rl_vects, years, f'ordering_{region}', wind_install_cap, solar_install_cap, rl_cnt, plot_base, [wind_gen, solar_gen])
+                #detrend_peak: new_rls_map = plot_rl_box(rl_vects, years, f'ordering_{region}', wind_install_cap, solar_install_cap, rl_cnt, plot_base, [wind_gen, solar_gen])
+                #detrend_peak: plot_rl_box(new_rls_map, years, f'ordering_{region}_calib', wind_install_cap, solar_install_cap, rl_cnt, plot_base, [wind_gen, solar_gen])
                 ##plot_top_X_hours(dfs, 20, f'ordering_{region}', wind_install_cap, solar_install_cap, cnt, plot_base, [wind_gen, solar_gen])
                 #box_thresholds = [20,]
                 ##make_box_plots(dfs, f'ordering_{region}', wind_install_cap, solar_install_cap, box_thresholds, cnt, plot_base, [wind_gen, solar_gen])
