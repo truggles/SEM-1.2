@@ -1119,10 +1119,10 @@ def set_up_new_cfg(input_file, version, run, **settings):
     case_descrip = f'Run_{run:03}_fuelD'+str(round(settings['fuel_demand'],5))+'kWh'
     case_descrip += '_solarX'+str(round(settings['fixed_cost_solar'],4))
     case_descrip += '_windX'+str(round(settings['fixed_cost_wind'],4))
-    case_descrip += '_nukeX'+str(round(settings['fixed_cost_nuclear'],4))
+    case_descrip += '_ngccsX'+str(round(settings['fixed_cost_nat_gas_ccs'],4))
     case_descrip += '_battX'+str(round(settings['fixed_cost_storage'],4))
     case_descrip += '_electoX'+str(round(settings['fixed_cost_fuel_electrolyzer'],4))
-    case_descrip += '_elecEffX'+str(round(settings['efficiency_fuel_electrolyzer'],4))
+    #case_descrip += '_elecEffX'+str(round(settings['efficiency_fuel_electrolyzer'],4))
     settings['case_descrip'] = case_descrip
 
     # 1st Step
@@ -1192,6 +1192,10 @@ if '__main__' in __name__:
     job_num = 1
     full_year = False # default to run over April only
     h2_only = False # if h2_only is True, costs for CO2, H2 storage, and chem plant are set to 1e-9
+    fixed_solar = 1
+    fixed_wind = 1
+    fixed_electrolyzer = 1
+    fixed_natGasCCS = 1
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -1209,6 +1213,14 @@ if '__main__' in __name__:
             full_year = True
         if 'H2_ONLY' in arg:
             h2_only = True
+        if 'FIXED_SOLAR' in arg:
+            fixed_solar = float(arg.split('_')[-1])
+        if 'FIXED_WIND' in arg:
+            fixed_wind = float(arg.split('_')[-1])
+        if 'FIXED_ELECTROLYZER' in arg:
+            fixed_electrolyzer = float(arg.split('_')[-1])
+        if 'FIXED_NATGASCCS' in arg:
+            fixed_natGasCCS = float(arg.split('_')[-1])
 
     input_file = 'fuel_test_20200802_AllCases_EIAPrices.csv'
     #input_file = 'fuel_test_20200802_AllCases_EIAPrices_100PctReli.csv'
@@ -1246,12 +1258,12 @@ if '__main__' in __name__:
         'start_month' : 4,
         'end_month' : 4,
         'system_reliability' : -1, # Use 10 $/kWh
-        'fixed_cost_solar' : 1,
-        'fixed_cost_wind' : 1,
+        'fixed_cost_solar' : 1 * fixed_solar,
+        'fixed_cost_wind' : 1 * fixed_wind,
         'fixed_cost_nuclear' : 1,
         'fixed_cost_nat_gas_ccs' : -1,
         'fixed_cost_storage' : 1,
-        'fixed_cost_fuel_electrolyzer' : 1,
+        'fixed_cost_fuel_electrolyzer' : 1 * fixed_electrolyzer,
         'efficiency_fuel_electrolyzer' : 1,
         'fuel_demand' : 1, # equal fuel output as electric demand
         'fuel_value' : 0,
@@ -1288,18 +1300,18 @@ if '__main__' in __name__:
     #elif case == 'Case6_NuclearWindSolarStorage': # NatGas+CCS is off by default
     elif case == 'Case7_NatGasCCS':
         settings['fixed_cost_nuclear'] = -1
-        settings['fixed_cost_nat_gas_ccs'] = 1
+        settings['fixed_cost_nat_gas_ccs'] = 1 * fixed_natGasCCS
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_wind'] = -1
         settings['fixed_cost_storage'] = -1
     elif case == 'Case8_NatGasCCSStorage':
         settings['fixed_cost_nuclear'] = -1
-        settings['fixed_cost_nat_gas_ccs'] = 1
+        settings['fixed_cost_nat_gas_ccs'] = 1 * fixed_natGasCCS
         settings['fixed_cost_solar'] = -1
         settings['fixed_cost_wind'] = -1
     elif case == 'Case9_NatGasCCSWindSolarStorage':
         settings['fixed_cost_nuclear'] = -1
-        settings['fixed_cost_nat_gas_ccs'] = 1
+        settings['fixed_cost_nat_gas_ccs'] = 1 * fixed_natGasCCS
     else:
         print(f"Case {case} does not meet the defaults")
 
