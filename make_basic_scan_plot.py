@@ -844,20 +844,21 @@ def plot_rl_box(rl_vects, years, save_name, wind_install_cap, solar_install_cap,
         ))
     textstr2 = '\n'.join((
         f'{mt} = {np.mean(np.array(rl_vects).flatten())*100:.3g}%',
-        f'{st} = {np.std(np.array(rl_vects).flatten())*100:.3g}%',
+        #f'{st} = {np.std(np.array(rl_vects).flatten())*100:.3g}%',
         ))
 
 
     plus = 0 if not 'hourly' in kwargs else 0.95
-    axs[0].text(5, 1.17+plus, textstr1, fontsize=18,
+    axs[0].text(5, 1.25+plus, textstr1, fontsize=18,
         verticalalignment='top', bbox=props)
-    axs[1].text(0.35, 1.17+plus, textstr2, fontsize=18,
+    axs[1].text(0.35, 1.25+plus, textstr2, fontsize=18,
         verticalalignment='top', bbox=props)
 
-
-    #plt.suptitle(f"wind = {int(round(gens[0],4)*100)}%, solar = {int(round(gens[1],4)*100)}%")
+    f_wind = r'f$_{wind}$'
+    f_solar = r'f$_{solar}$'
+    plt.suptitle(f"{region}: {f_wind} = {int(round(gens[0],4)*100)}%, {f_solar} = {int(round(gens[1],4)*100)}%")
     #plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.93)
-    plt.subplots_adjust(left=0.18, bottom=0.13, right=0.97, top=0.96)
+    plt.subplots_adjust(left=0.18, bottom=0.13, right=0.97, top=0.90)
     plt.savefig(f"{base}/{save_name}_RL_box_cnt{cnt:05}_solarGen{str(round(gens[1],4)).replace('.','p')}_windGen{str(round(gens[0],4)).replace('.','p')}.{TYPE}")
     #detrend_peak: return new_rls_map
 
@@ -1114,6 +1115,7 @@ DATE = '20200717v1'
 DATE = '20200897v1'
 DATE = '20200818v1'
 DATE = '20200825v1'
+DATE = '20200826v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -1207,48 +1209,48 @@ if test_ordering:
 
 
 
-    # Get top 20 peak residual load hours for each hour of each year and check inter-annual variability
-    hours_per_hour = 20
-    rl_vects_map = get_top_X_per_year_per_hour(hours_per_hour, dfs)
-    # NYISO and PJM are Eastern & ERCOT is Central
-    if region in ['NYISO', 'PJM']:
-        shift = 5 # for EST
-        zone = 'EST'
-    if region == 'ERCOT':
-        shift = 6 # for CST
-        zone = 'CST'
+    ## Get top 20 peak residual load hours for each hour of each year and check inter-annual variability
+    #hours_per_hour = 20
+    #rl_vects_map = get_top_X_per_year_per_hour(hours_per_hour, dfs)
+    ## NYISO and PJM are Eastern & ERCOT is Central
+    #if region in ['NYISO', 'PJM']:
+    #    shift = 5 # for EST
+    #    zone = 'EST'
+    #if region == 'ERCOT':
+    #    shift = 6 # for CST
+    #    zone = 'CST'
 
-    for k, rl_vects in rl_vects_map.items():
-        if k == 24:
-            hr = k - 24 - shift # 0 - 23 in stead of 1 - 24
-        else:
-            hr = k - shift
+    #for k, rl_vects in rl_vects_map.items():
+    #    if k == 24:
+    #        hr = k - 24 - shift # 0 - 23 in stead of 1 - 24
+    #    else:
+    #        hr = k - shift
 
-        if hr < 0:
-            hr += 24
-        rl_cnt = 0
-        wind_install_cap = 0
-        solar_install_cap = 0
-        plot_rl_box(rl_vects, years, f'{region}_hourly_var_{int(hr):02d}{zone}', wind_install_cap, solar_install_cap, rl_cnt, plot_base, **{'hourly': True})
+    #    if hr < 0:
+    #        hr += 24
+    #    rl_cnt = 0
+    #    wind_install_cap = 0
+    #    solar_install_cap = 0
+    #    plot_rl_box(rl_vects, years, f'{region}_hourly_var_{int(hr):02d}{zone}', wind_install_cap, solar_install_cap, rl_cnt, plot_base, **{'hourly': True})
 
-    # Check inter-annual variability of peak values by hour of day
-    solar_by_hours = []
-    s_gens = []
-    for j, wind_install_cap in enumerate(wind_cap_steps):
-        wind_gen = wind_gen_steps[j]
-        for i, solar_install_cap in enumerate(solar_cap_steps):
-            solar_gen = solar_gen_steps[i]
+    ## Check inter-annual variability of peak values by hour of day
+    #solar_by_hours = []
+    #s_gens = []
+    #for j, wind_install_cap in enumerate(wind_cap_steps):
+    #    wind_gen = wind_gen_steps[j]
+    #    for i, solar_install_cap in enumerate(solar_cap_steps):
+    #        solar_gen = solar_gen_steps[i]
 
-            hours_per_year = 20
-            rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
-            solar_by_hours.append(hours)
-            s_gens.append(solar_gen)
-            if i==25:
-                break
-        plot_peak_hours_vs_gen(region, plot_base, solar_by_hours, s_gens, f'top_20_RL_mean')
-        print("Only doing wind == 0")
-        break
-    exit()
+    #        hours_per_year = 20
+    #        rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
+    #        solar_by_hours.append(hours)
+    #        s_gens.append(solar_gen)
+    #        if i==25:
+    #            break
+    #    plot_peak_hours_vs_gen(region, plot_base, solar_by_hours, s_gens, f'top_20_RL_mean')
+    #    print("Only doing wind == 0")
+    #    break
+    ##exit()
 
 
 
