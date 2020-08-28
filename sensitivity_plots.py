@@ -41,7 +41,7 @@ def color_list():
 
 # Poorly written, the args are all required and are below.
 #save_name, save_dir
-def costs_plot_alt(tgt_shift, var='fuel demand (kWh)', **kwargs):
+def costs_plot_alt_sensitivity(tgt_shift, var='fuel demand (kWh)', **kwargs):
     cases = {
             0 : 'Case7_NatGasCCS',
             1 : 'Case9_NatGasCCSWindSolarStorage',
@@ -108,6 +108,100 @@ def costs_plot_alt(tgt_shift, var='fuel demand (kWh)', **kwargs):
     axs[1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
     plt.subplots_adjust(top=.8, left=.1, bottom=.13, right=.95)
+
+
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
+
+
+
+def costs_plot_h2_sensitivity(tgt_shift, var='fuel demand (kWh)', **kwargs):
+
+    # Only for H2 cost plots
+    conversion = kWh_LHV_per_kg_H2 # Convert for main y-axis
+    conversion *= EFFICIENCY_FUEL_CHEM_CONVERSION # The cost is set based on liquid hydrocarbon
+    conversion_div_eff_electro = conversion / EFFICIENCY_FUEL_ELECTROLYZER # The cost is set based on liquid hydrocarbon
+    conversion_div_eff_electro = kWh_LHV_per_kg_H2 / EFFICIENCY_FUEL_ELECTROLYZER # The cost is set based on liquid hydrocarbon
+    #tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+    
+    cases = {
+            0 : 'Case7_NatGasCCS',
+            1 : 'Case9_NatGasCCSWindSolarStorage',
+            2 : 'Case5_WindSolarStorage',
+            }
+
+    dfs = kwargs['dfs']
+
+    colors = color_list()
+    plt.close()
+    y_max = 8
+    fig, axs = plt.subplots(ncols=3, nrows=1, figsize=(11,6), sharey=True)
+    
+
+    line_types = ['solid', (0, (1, 1)), (0, (2, 1)), (0, (3, 3)), (0, (5, 5)),
+            (0, (3, 1, 1, 1)),
+            (0, (3, 1, 1, 1, 1, 1)),
+            ]
+
+    for i in range(3):
+        axs[i].set_xlim(0.0, 1.0)
+        cnt = 0
+        for shift, df in dfs[cases[i]].items():
+            if shift != 'nominal' and tgt_shift not in shift:
+                continue
+            print(shift)
+            # CapEx electrolysis plant
+            f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
+            f_elec *= conversion
+            lab = 'fixed: electrolysis plant'
+            axs[i].plot(df[var], f_elec, linestyle=line_types[cnt], label=f'{lab}: {shift.replace("electrolyzer ","electro.")}', color=colors[0])
+            cnt += 1
+
+        cnt = 0
+        for shift, df in dfs[cases[i]].items():
+            if not (shift == 'nominal' or tgt_shift in shift):
+                continue
+            # perfect market power cost
+            #axs[i].plot(df[var], df['fuel price ($/kWh)'] * conversion, linestyle=line_types[cnt], label=f'flexible load: {shift}', color=colors[1])
+            f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
+            f_elec *= conversion
+            axs[i].plot(df[var], f_elec + df['fuel_load_cost'] * conversion_div_eff_electro, linestyle=line_types[cnt], label=r'H$_{2}$ tot. (perfect mkt.): '+f'{shift.replace("electrolyzer ","electro.")}', color=colors[1])
+            cnt += 1
+
+        cnt = 0
+        for shift, df in dfs[cases[i]].items():
+            if not (shift == 'nominal' or tgt_shift in shift):
+                continue
+            f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
+            f_elec *= conversion
+            avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
+            axs[i].plot(df[var], f_elec + avg_elec_cost * conversion_div_eff_electro, linestyle=line_types[cnt], label=r'H$_{2}$ tot. (mean): '+f'{shift.replace("electrolyzer ","electro.")}', color='black')
+            cnt += 1
+
+    axs[0].set_ylim(0, y_max)
+    axs[0].set_ylabel(r'cost (\$/kg$_{H2}$)')
+    axs[1].set_xlabel(kwargs['x_label'])
+
+    # 2nd y-axis for $/kWh_e
+    ax2s = [None, None, None]
+    for i in reversed(range(3)):
+        ax2s[i] = axs[i].twinx()  # instantiate a second axes that shares the same x-axis
+        ax2s[i].set_ylim(0, axs[i].get_ylim()[1] / kWh_to_GGE)
+        #ax2s[i].yaxis.set_ticks_position('right')
+        if i < 2:
+            ax2s[i].set_yticklabels([])
+        if i == 2:
+            ax2s[2].set_ylabel(r'cost (\$/kWh$_{LHV}$)')
+
+
+    horiz = 1.07
+    vert = 1
+    horiz = 0.4
+    vert = 1.3
+    axs[1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert), prop={'size': 12})
+    #plt.tight_layout()
+    plt.subplots_adjust(top=.8, left=.1, bottom=.13, right=.9)
 
 
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -264,9 +358,12 @@ if plot:
     #del kwargs['ALT']
 
     shifts = ['electrolyzer', 'wind', 'solar', 'natGas+CCS']
+    shifts = ['wind', ]
     for shift in shifts:
-        kwargs['save_name'] = f'costPlot_{shift}'
-        costs_plot_alt(shift, var, **kwargs)
+        kwargs['save_name'] = f'costPowerSensitivity_{shift}'
+        costs_plot_alt_sensitivity(shift, var, **kwargs)
+        kwargs['save_name'] = f'costH2Sensitivity_{shift}'
+        costs_plot_h2_sensitivity(shift, var, **kwargs)
 
 
 
