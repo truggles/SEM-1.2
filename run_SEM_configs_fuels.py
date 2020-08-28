@@ -675,9 +675,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     y_max = 20
     if 'h2_only' in kwargs.keys():
         if 'ALT' in kwargs.keys():
-            y_max = 16
+            y_max = 12
         else:
-            y_max = 10
+            y_max = 8
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     fig, ax = plt.subplots()
 
@@ -755,7 +755,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
         #    print(ff, cost, c2, c3)
         ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', hatch='////', alpha=0.2, color=colors[4])
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label=r'H$_{2}$ production total'+' (mean cost)')
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label=r'H$_{2}$ production total'+' (mean cost)')
         
 
     n = len(df.index)-1
@@ -780,7 +780,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
     if 'ALT' in kwargs.keys():
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label='_nolegend_')
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
