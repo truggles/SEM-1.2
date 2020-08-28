@@ -737,13 +737,6 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
 
 
-    if 'ALT' in kwargs.keys():
-        tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-        avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
-        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', alpha=0.3, color=colors[5])
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label=r'H$_{2}$ production total'+' (mean cost)')
-        
-
     ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5])
     #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
     #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
@@ -751,6 +744,13 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.fill_between(df[var], f_tot, f_tot+v_chem, label='var: chem plant')
     #ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$')
     #ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'], label='electric power')
+
+    if 'ALT' in kwargs.keys():
+        tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+        avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
+        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', hatch='////', alpha=0.2, color=colors[4])
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label=r'H$_{2}$ production total'+' (mean cost)')
+        
 
     n = len(df.index)-1
     print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
