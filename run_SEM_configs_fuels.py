@@ -683,7 +683,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     # The left y-axis will use $/GGE for electrofuel or $/kg for H2
     if 'h2_only' in kwargs.keys():
-        conversion = kWh_LHV_per_kg_H2
+        conversion = kWh_LHV_per_kg_H2 # Convert for main y-axis
+        conversion *= EFFICIENCY_FUEL_CHEM_CONVERSION # The cost is set based on liquid hydrocarbon
+                                                      # output, so must be scaled for H2 only
         ax.set_ylabel(r'cost (\$/kg$_{H2}$)')
     else:
         conversion = kWh_to_GGE
@@ -718,6 +720,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     f_tot = (f_elec+f_chem+f_store)
     v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
     v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
+    #for ff, cost, c2 in zip(df[var], f_elec * conversion, f_elec * EFFICIENCY_FUEL_CHEM_CONVERSION):
+    #    print(ff, cost, c2)
 
     f_elec *= conversion
     f_chem *= conversion
@@ -748,6 +752,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     if 'ALT' in kwargs.keys():
         tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
         avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
+        #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
+        #    print(ff, cost, c2, c3)
         ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', hatch='////', alpha=0.2, color=colors[4])
         ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, 'k--', label=r'H$_{2}$ production total'+' (mean cost)')
         
