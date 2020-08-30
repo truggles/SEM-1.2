@@ -41,7 +41,7 @@ def color_list():
 
 # Poorly written, the args are all required and are below.
 #save_name, save_dir
-def costs_plot_alt_sensitivity(tgt_shift, var='fuel demand (kWh)', **kwargs):
+def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     cases = {
             0 : 'Case7_NatGasCCS',
             1 : 'Case9_NatGasCCSWindSolarStorage',
@@ -52,14 +52,9 @@ def costs_plot_alt_sensitivity(tgt_shift, var='fuel demand (kWh)', **kwargs):
 
     colors = color_list()
     plt.close()
-    #if 'Case7' in kwargs['save_name']:
-    #    y_max = 0.08
-    #if 'Case5' in kwargs['save_name']:
-    #    y_max = 0.12
-    #if 'Case9' in kwargs['save_name']:
-    #    y_max = 0.08
     y_max = 0.12
-    fig, axs = plt.subplots(ncols=3, nrows=1, figsize=(11,6), sharey=True)
+    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.7*len(tgt_shifts)), sharey=True)
+    print(axs.shape)
 
     
 
@@ -68,46 +63,65 @@ def costs_plot_alt_sensitivity(tgt_shift, var='fuel demand (kWh)', **kwargs):
             (0, (3, 1, 1, 1, 1, 1)),
             ]
 
-    for i in range(3):
-        axs[i].set_xlim(0.0, 1.0)
-        axs[i].yaxis.set_ticks_position('both')
-        cnt = 0
-        for shift, df in dfs[cases[i]].items():
-            if shift != 'nominal' and tgt_shift not in shift:
-                continue
-            # Electricity cost
-            axs[i].plot(df[var], df['mean price ($/kWh)'], linestyle=line_types[cnt], label=f'electric load: {shift}', color=colors[0])
+    for j, tgt_shift in enumerate(tgt_shifts):
+        for i in range(3):
+            axs[j][i].set_xlim(0.0, 1.0)
+            axs[j][i].set_ylim(0, y_max)
+            axs[j][i].yaxis.set_ticks_position('both')
+            cnt = 0
+            axs[j][i].plot([], [], label=r'$\bf{electric\ load}$', color='white', linewidth=0)
+            for shift, df in dfs[cases[i]].items():
+                if shift != 'nominal' and tgt_shift not in shift:
+                    continue
+                # Electricity cost
+                axs[j][i].plot(df[var], df['mean price ($/kWh)'], linestyle=line_types[cnt], label=f'{shift}', color=colors[0])
+                cnt += 1
+
+            cnt = 0
+            axs[j][i].plot([], [], label=r'$\bf{flexible\ load}$', color='white', linewidth=0)
+            for shift, df in dfs[cases[i]].items():
+                if not (shift == 'nominal' or tgt_shift in shift):
+                    continue
+                tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+                # Add the cost of electric power to the fuel load
+                axs[j][i].plot(df[var], df['fuel_load_cost'], linestyle=line_types[cnt], label=f'{shift}', color=colors[1])
+                cnt += 1
+
+            cnt = 0
+            axs[j][i].plot([], [], label=r'$\bf{mean\ cost}$', color='white', linewidth=0)
+            for shift, df in dfs[cases[i]].items():
+                if not (shift == 'nominal' or tgt_shift in shift):
+                    continue
+                avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
+                axs[j][i].plot(df[var], avg_elec_cost, linestyle=line_types[cnt], label=f'{shift}', color='black')
+                cnt += 1
+
+
+    for j in range(len(tgt_shifts)):
+        axs[j][0].set_ylabel(r'cost (\$/kWh$_{e}$)')
+    axs[-1][1].set_xlabel(kwargs['x_label'])
+    alphas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
+    cnt = 0
+    font = {
+        #'family': 'serif',
+        #'color':  'darkred',
+        'weight': 'bold',
+        #'size': 16,
+        }
+    for j in range(len(tgt_shifts)):
+        for i in range(3):
+            axs[j][i].text(-0.11, 0.115, f'{alphas[cnt]})', fontdict=font)
             cnt += 1
 
-        cnt = 0
-        for shift, df in dfs[cases[i]].items():
-            if not (shift == 'nominal' or tgt_shift in shift):
-                continue
-            tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-            # Add the cost of electric power to the fuel load
-            axs[i].plot(df[var], df['fuel_load_cost'], linestyle=line_types[cnt], label=f'flexible load: {shift}', color=colors[1])
-            cnt += 1
-
-        cnt = 0
-        for shift, df in dfs[cases[i]].items():
-            if not (shift == 'nominal' or tgt_shift in shift):
-                continue
-            avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
-            axs[i].plot(df[var], avg_elec_cost, linestyle=line_types[cnt], label=f'mean cost: {shift}', color='black')
-            cnt += 1
-
-
-    axs[0].set_ylim(0, y_max)
-    axs[0].set_ylabel(r'cost (\$/kWh$_{e}$)')
-    axs[1].set_xlabel(kwargs['x_label'])
 
     horiz = 1.07
     vert = 1
     horiz = 0.4
-    vert = 1.3
-    axs[1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
+    vert = 1.3 if len(tgt_shifts) == 1 else 1.7
+    axs[0][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
-    plt.subplots_adjust(top=.8, left=.1, bottom=.13, right=.95)
+    t = 0.8 if len(tgt_shifts) == 1 else 0.87
+    plt.subplots_adjust(top=t, left=.1, bottom=.07, right=.95)
 
 
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -214,7 +228,7 @@ def prep_csv(case, f_name_base):
     fixed = 'natgas_ccs'
     if case == 'Case5_WindSolarStorage':
         fixed = 'nuclear'
-    df = pd.read_csv(f'results_sens/{f_name_base}.csv', index_col=False)
+    df = pd.read_csv(f'results_sens2/{f_name_base}.csv', index_col=False)
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -242,7 +256,7 @@ def prep_csv(case, f_name_base):
             df = df.drop([i,])
     df = df.reset_index()
 
-    df.to_csv(f'results_sens/{f_name_base}_tmp.csv', index=False)
+    df.to_csv(f'results_sens2/{f_name_base}_tmp.csv', index=False)
 
 
 
@@ -326,7 +340,7 @@ if plot:
         for shift, tag in info['shifts'].items():
             print(f"Shift: {shift}, tag {tag}")
             f_name_base = f"Results_fuel_test_{date}_{info['version']}{tag}_{case}_1_1"
-            df = pd.read_csv(f'results_sens/{f_name_base}_tmp.csv', index_col=False)
+            df = pd.read_csv(f'results_sens2/{f_name_base}_tmp.csv', index_col=False)
             df_map[case][shift] = df
 
 
@@ -358,12 +372,14 @@ if plot:
     #del kwargs['ALT']
 
     shifts = ['electrolyzer', 'wind', 'solar', 'natGas+CCS']
-    shifts = ['wind', ]
-    for shift in shifts:
-        kwargs['save_name'] = f'costPowerSensitivity_{shift}'
-        costs_plot_alt_sensitivity(shift, var, **kwargs)
-        kwargs['save_name'] = f'costH2Sensitivity_{shift}'
-        costs_plot_h2_sensitivity(shift, var, **kwargs)
+    kwargs['save_name'] = f'costPowerSensitivity_ALL'
+    costs_plot_alt_sensitivity(shifts, var, **kwargs)
+    #shifts = ['wind', ]
+    #for shift in shifts:
+    #    kwargs['save_name'] = f'costPowerSensitivity_{shift}'
+    #    costs_plot_alt_sensitivity(shift, var, **kwargs)
+    #    kwargs['save_name'] = f'costH2Sensitivity_{shift}'
+    #    #costs_plot_h2_sensitivity(shift, var, **kwargs)
 
 
 
