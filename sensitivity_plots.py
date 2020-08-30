@@ -54,7 +54,11 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     plt.close()
     y_max = 0.12
     fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.7*len(tgt_shifts)), sharey=True)
-    print(axs.shape)
+    if len(tgt_shifts) == 1:
+        axs_new = [[]]
+        for ax in axs:
+            axs_new[0].append(ax)
+        axs = axs_new
 
     
 
@@ -103,25 +107,25 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     alphas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
     cnt = 0
     font = {
-        #'family': 'serif',
-        #'color':  'darkred',
         'weight': 'bold',
-        #'size': 16,
         }
+    horiz = -0.11
+    vert = 0.115
+    vert = 0.11 if len(tgt_shifts) == 1 else 0.115
     for j in range(len(tgt_shifts)):
         for i in range(3):
-            axs[j][i].text(-0.11, 0.115, f'{alphas[cnt]})', fontdict=font)
+            axs[j][i].text(horiz, vert, f'{alphas[cnt]})', fontdict=font)
             cnt += 1
 
 
-    horiz = 1.07
-    vert = 1
     horiz = 0.4
-    vert = 1.3 if len(tgt_shifts) == 1 else 1.7
+    vert = 1.64 if len(tgt_shifts) == 1 else 1.7
     axs[0][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
-    t = 0.8 if len(tgt_shifts) == 1 else 0.87
-    plt.subplots_adjust(top=t, left=.1, bottom=.07, right=.95)
+
+    t = 0.68 if len(tgt_shifts) == 1 else 0.87
+    b = 0.15 if len(tgt_shifts) == 1 else 0.07
+    plt.subplots_adjust(top=t, left=.1, bottom=b, right=.95)
 
 
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -374,10 +378,10 @@ if plot:
     shifts = ['electrolyzer', 'wind', 'solar', 'natGas+CCS']
     kwargs['save_name'] = f'costPowerSensitivity_ALL'
     costs_plot_alt_sensitivity(shifts, var, **kwargs)
-    #shifts = ['wind', ]
-    #for shift in shifts:
-    #    kwargs['save_name'] = f'costPowerSensitivity_{shift}'
-    #    costs_plot_alt_sensitivity(shift, var, **kwargs)
+    shifts = ['wind', ]
+    for shift in shifts:
+        kwargs['save_name'] = f'costPowerSensitivity_{shift}'
+        costs_plot_alt_sensitivity([shift,], var, **kwargs)
     #    kwargs['save_name'] = f'costH2Sensitivity_{shift}'
     #    #costs_plot_h2_sensitivity(shift, var, **kwargs)
 
