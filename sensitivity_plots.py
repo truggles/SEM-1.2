@@ -112,10 +112,12 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     horiz = -0.11
     vert = 0.115
     vert = 0.11 if len(tgt_shifts) == 1 else 0.115
-    for j in range(len(tgt_shifts)):
+    for j, shift in enumerate(tgt_shifts):
         for i in range(3):
             axs[j][i].text(horiz, vert, f'{alphas[cnt]})', fontdict=font)
             cnt += 1
+            if i == 1:
+                axs[j][i].text(0.5, .1, f'{shift}', fontdict=font)
 
 
     horiz = 0.4
