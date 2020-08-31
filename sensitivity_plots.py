@@ -187,7 +187,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
             axs[j][i].set_ylim(0, y_max)
             axs[j][i].yaxis.set_ticks_position('both')
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{fixed cost:}$'+'\n'+r'$\bf{electrolysis\ plant}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{fixed\ cost:}$'+'\n'+r'$\bf{electrolysis\ plant}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if shift != 'nominal' and tgt_shift not in shift:
                     continue
