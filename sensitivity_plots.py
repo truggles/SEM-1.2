@@ -187,7 +187,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
             axs[j][i].set_ylim(0, y_max)
             axs[j][i].yaxis.set_ticks_position('both')
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{fixed\ cost:}$'+'\n'+r'$\bf{electrolysis\ plant}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{electrolysis\ plant}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if shift != 'nominal' and tgt_shift not in shift:
                     continue
@@ -322,18 +322,18 @@ f_map = {
             'version' : 'v2',
             'shifts' : {
                 'nominal' : '',
-                'electrolyzer 75%' : 'EL0.75',
-                'electrolyzer 50%' : 'EL0.5',
-                'natGas+CCS 75%' : 'NG0.75',
-                'natGas+CCS 50%' : 'NG0.5',
+                'electrolysis plant 75%' : 'EL0.75',
+                'electrolysis plant 50%' : 'EL0.5',
+                'dispatchable 75%' : 'NG0.75',
+                'dispatchable 50%' : 'NG0.5',
             },
         },
         'Case5_WindSolarStorage' : {
             'version' : 'v3',
             'shifts' : {
                 'nominal' : '',
-                'electrolyzer 75%' : 'EL0.75',
-                'electrolyzer 50%' : 'EL0.5',
+                'electrolysis plant 75%' : 'EL0.75',
+                'electrolysis plant 50%' : 'EL0.5',
                 'wind 75%' : 'WIND0.75',
                 'wind 50%' : 'WIND0.5',
                 'solar 75%' : 'SOL0.75',
@@ -344,14 +344,14 @@ f_map = {
             'version' : 'v4',
             'shifts' : {
                 'nominal' : '',
-                'electrolyzer 75%' : 'EL0.75',
-                'electrolyzer 50%' : 'EL0.5',
+                'electrolysis plant 75%' : 'EL0.75',
+                'electrolysis plant 50%' : 'EL0.5',
                 'wind 75%' : 'WIND0.75',
                 'wind 50%' : 'WIND0.5',
                 'solar 75%' : 'SOL0.75',
                 'solar 50%' : 'SOL0.5',
-                'natGas+CCS 75%' : 'NG0.75',
-                'natGas+CCS 50%' : 'NG0.5',
+                'dispatchable 75%' : 'NG0.75',
+                'dispatchable 50%' : 'NG0.5',
             },
         },
 }
@@ -420,7 +420,7 @@ if plot:
     #costs_plot(var, **kwargs)
     #del kwargs['ALT']
 
-    shifts = ['electrolyzer', 'natGas+CCS', 'wind', 'solar']
+    shifts = ['dispatchable', 'wind', 'solar', 'electrolysis plant']
     kwargs['save_name'] = f'costPowerSensitivity_ALL'
     costs_plot_alt_sensitivity(shifts, var, **kwargs)
     kwargs['save_name'] = f'costH2Sensitivity_ALL'
