@@ -711,7 +711,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab+appB)
     #for ff, cost in zip(df[var], df['fuel price ($/kWh)'] * conversion):
-    #    print(ff, cost)
+    #    print("tot", ff, cost)
+    #    break
 
     # Stacked components
     f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
@@ -734,6 +735,10 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     # Build stack
     lab = 'fixed cost: electrolysis plant' if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
     ax.fill_between(df[var], 0, f_elec, label=lab, color=colors[0])
+    #for ff, cost in zip(df[var], f_elec):
+    #    print("electrolysis", ff, cost)
+    #    break
+
     if 'h2_only' not in kwargs.keys():
         ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant', color=colors[1])
         ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
@@ -756,6 +761,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         #    print(ff, cost, c2, c3)
         ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', hatch='////', alpha=0.2, color=colors[4])
         ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label=r'H$_{2}$ production total'+' (mean cost)')
+        #for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
+        #    print("tot mean", ff, cost)
+        #    break
         
 
     n = len(df.index)-1
@@ -1593,7 +1601,7 @@ if '__main__' in __name__:
 
         ### Fuel cost compare scatter and use to fill electricity costs in stacked
         kwargs['save_name'] = 'stackedCostPlot' + m['app']
-        costs_plot(k, **kwargs)
+        #costs_plot(k, **kwargs)
         kwargs['ALT'] = True
         costs_plot(k, **kwargs)
         del kwargs['ALT']
