@@ -64,8 +64,8 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
 
     colors = color_list()
     plt.close()
-    y_max = 0.12
-    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.7*len(tgt_shifts)), sharey=True)
+    y_max = 0.13
+    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.3*len(tgt_shifts)), sharey=True)
     if len(tgt_shifts) == 1:
         axs_new = [[]]
         for ax in axs:
@@ -84,6 +84,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
             axs[j][i].set_xlim(0.0, 1.0)
             axs[j][i].set_ylim(0, y_max)
             axs[j][i].yaxis.set_ticks_position('both')
+            axs[j][i].yaxis.set_major_locator(matplotlib.ticker.FixedLocator([0.00, 0.025, 0.050, 0.075, 0.100]))
             cnt = 0
             axs[j][i].plot([], [], label=r'$\bf{electric\ load}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
@@ -124,21 +125,24 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     horiz = -0.11
     vert = 0.115
     vert = 0.11 if len(tgt_shifts) == 1 else 0.115
+    scenarios = ['Disp.', 'D+R+S', 'R+S']
     for j, shift in enumerate(tgt_shifts):
         for i in range(3):
             axs[j][i].text(horiz, vert, f'{alphas[cnt]})', fontdict=font)
             cnt += 1
-            if i == 1:
-                axs[j][i].text(0.5, y_max * (.1/.12), f'{shift}', fontdict=font, ha='center')
+            if i < 2:
+                axs[j][i].text(0.08, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='left', va='center')
+            else:
+                axs[j][i].text(0.95, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='right', va='center')
 
 
     horiz = 0.4
-    vert = 1.64 if len(tgt_shifts) == 1 else 1.7
-    axs[0][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
+    vert = 1.64 if len(tgt_shifts) == 1 else -.35
+    axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.68 if len(tgt_shifts) == 1 else 0.87
-    b = 0.15 if len(tgt_shifts) == 1 else 0.07
+    t = 0.68 if len(tgt_shifts) == 1 else 0.98
+    b = 0.15 if len(tgt_shifts) == 1 else 0.2
     plt.subplots_adjust(top=t, left=.1, bottom=b, right=.95)
 
 
@@ -168,7 +172,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     colors = color_list()
     plt.close()
     y_max = 8
-    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.7*len(tgt_shifts)), sharey=True)
+    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.3*len(tgt_shifts)), sharey=True)
     if len(tgt_shifts) == 1:
         axs_new = [[]]
         for ax in axs:
@@ -233,13 +237,16 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     #vert = 0.11 if len(tgt_shifts) == 1 else y_max * 0.95
     vert = y_max * 0.95
     h2 = -0.2
+    scenarios = ['Disp.', 'D+R+S', 'R+S']
     for j, shift in enumerate(tgt_shifts):
         for i in range(3):
             h = h2 if i == 0 else horiz
             axs[j][i].text(h, vert, f'{alphas[cnt]})', fontdict=font)
             cnt += 1
-            if i == 1:
-                axs[j][i].text(0.5, y_max * (.1/.12), f'{shift}', fontdict=font, ha='center')
+            if i < 2:
+                axs[j][i].text(0.08, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='left', va='center')
+            else:
+                axs[j][i].text(0.95, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='right', va='center')
 
 
 
@@ -256,12 +263,12 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
                 ax2s[j][2].set_ylabel(r'cost (\$/kWh$_{LHV}$)')
 
     horiz = 0.4
-    vert = 1.96 if len(tgt_shifts) == 1 else 1.85
-    axs[0][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
+    vert = 1.96 if len(tgt_shifts) == 1 else -0.3
+    axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.59 if len(tgt_shifts) == 1 else 0.855
-    b = 0.15 if len(tgt_shifts) == 1 else 0.07
+    t = 0.59 if len(tgt_shifts) == 1 else 0.98
+    b = 0.15 if len(tgt_shifts) == 1 else 0.2
     plt.subplots_adjust(top=t, left=.08, bottom=b, right=.9)
 
 
@@ -425,11 +432,11 @@ if plot:
     costs_plot_alt_sensitivity(shifts, var, **kwargs)
     kwargs['save_name'] = f'costH2Sensitivity_ALL'
     costs_plot_h2_sensitivity(shifts, var, **kwargs)
-    for shift in shifts:
-        kwargs['save_name'] = f'costPowerSensitivity_{shift}'
-        costs_plot_alt_sensitivity([shift,], var, **kwargs)
-        kwargs['save_name'] = f'costH2Sensitivity_{shift}'
-        costs_plot_h2_sensitivity([shift,], var, **kwargs)
+    #for shift in shifts:
+    #    kwargs['save_name'] = f'costPowerSensitivity_{shift}'
+    #    costs_plot_alt_sensitivity([shift,], var, **kwargs)
+    #    kwargs['save_name'] = f'costH2Sensitivity_{shift}'
+    #    costs_plot_h2_sensitivity([shift,], var, **kwargs)
 
 
 
