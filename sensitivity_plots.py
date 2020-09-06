@@ -65,7 +65,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     colors = color_list()
     plt.close()
     y_max = 0.13
-    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.3*len(tgt_shifts)), sharey=True)
+    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.*len(tgt_shifts)), sharey=True)
     if len(tgt_shifts) == 1:
         axs_new = [[]]
         for ax in axs:
@@ -141,8 +141,8 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.68 if len(tgt_shifts) == 1 else 0.98
-    b = 0.15 if len(tgt_shifts) == 1 else 0.2
+    t = 0.68 if len(tgt_shifts) == 1 else 0.99
+    b = 0.15 if len(tgt_shifts) == 1 else 0.23
     plt.subplots_adjust(top=t, left=.1, bottom=b, right=.95)
 
 
@@ -172,7 +172,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     colors = color_list()
     plt.close()
     y_max = 8
-    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.3*len(tgt_shifts)), sharey=True)
+    fig, axs = plt.subplots(ncols=3, nrows=len(tgt_shifts), figsize=(9,1+2.*len(tgt_shifts)), sharey=True)
     if len(tgt_shifts) == 1:
         axs_new = [[]]
         for ax in axs:
@@ -263,12 +263,12 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
                 ax2s[j][2].set_ylabel(r'cost (\$/kWh$_{LHV}$)')
 
     horiz = 0.4
-    vert = 1.96 if len(tgt_shifts) == 1 else -0.3
+    vert = 1.96 if len(tgt_shifts) == 1 else -0.33
     axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.59 if len(tgt_shifts) == 1 else 0.98
-    b = 0.15 if len(tgt_shifts) == 1 else 0.2
+    t = 0.59 if len(tgt_shifts) == 1 else 0.99
+    b = 0.15 if len(tgt_shifts) == 1 else 0.23
     plt.subplots_adjust(top=t, left=.08, bottom=b, right=.9)
 
 
