@@ -519,11 +519,11 @@ def stacked_plot(**kwargs):
             tot += kwargs['fuel_load']*(1. - kwargs['electro_renew_frac'])
             #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
             #tot += kwargs['battery_losses']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailment - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailed - renew')
             tot += kwargs['renewable_curt']
             #for ff, y in zip(kwargs['x_vals'], tot):
             #    print(ff, y)
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'curtailment - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
             tot += kwargs['nuclear_curt']
             #for ff, y in zip(kwargs['x_vals'], tot):
             #    print(ff, y)
@@ -536,7 +536,7 @@ def stacked_plot(**kwargs):
             else:
                 y_max = 9999
             #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, color=colors[-1], alpha=0.2)
-            ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
+            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
             #ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
     
 
@@ -547,9 +547,9 @@ def stacked_plot(**kwargs):
             tot += kwargs['fuel_load']
             #ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['battery_losses'], color='blue', linewidth=0, label=f'battery losses')
             #tot += kwargs['battery_losses']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailment - renew')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['renewable_curt'], color=colors[5], linewidth=0, label=f'curtailed - renew')
             tot += kwargs['renewable_curt']
-            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'curtailment - dispatch')
+            ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['nuclear_curt'], color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
             tot += kwargs['nuclear_curt']
 
     else:
@@ -565,7 +565,7 @@ def stacked_plot(**kwargs):
             ax.fill_between(kwargs['x_vals'], tot, tot+kwargs['solar'], color=colors[0], linewidth=0, label=f'solar {kwargs["legend_app"]}')
             tot += kwargs['solar']
         if 'stackedGenerationElecNorm' in kwargs["save_name"]:
-            ax.plot(kwargs['x_vals'], tot, 'k-', label='total generation')
+            ax.plot(kwargs['x_vals'], tot, 'k-', label='total available gen.')
             ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])), 'k--', label='electric load')
             ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])) / (1. - kwargs['x_vals']), 'k:', label='electric +\nflexible load')
             #for x, y in zip(kwargs['x_vals'], tot):
@@ -579,7 +579,7 @@ def stacked_plot(**kwargs):
             else:
                 y_max = 9999
             #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, color=colors[-1], alpha=0.2)
-            ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
+            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
             #ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
 
 
@@ -779,7 +779,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     # Highlight transition region
     #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
-    ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
+    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
 
 
     # To print the estimated MEM electricity cost per point
@@ -861,8 +861,11 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
     # Highlight transition region
     #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
-    ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
+    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
     ax.plot(df[var], df['mean price ($/kWh)'], label='_nolegend_', color=colors[0])
+    #for ff, cost in zip(df[var], df['mean price ($/kWh)']):
+    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
+    #        print('firm', ff, cost)
 
     ## $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
@@ -873,12 +876,14 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
     ax.plot(df[var], df['fuel_load_cost'], label=r'power to flexible load', color=colors[1])
     #for ff, cost in zip(df[var], df['fuel_load_cost']):
-    #    print(ff, cost)
+    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
+    #        print('flex', ff, cost)
 
     avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
     ax.plot(df[var], avg_elec_cost, 'k--', label=r'mean system power', linewidth=2)
     #for ff, cost in zip(df[var], avg_elec_cost):
-    #    print(ff, cost)
+    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
+    #        print('mean', ff, cost)
 
 
     # Add vertical bars deliniating 3 regions:
@@ -1627,7 +1632,7 @@ if '__main__' in __name__:
         kwargs['nuclear'] = df[f'dispatch {fixed} (kW)'] + df[f'curtailment {fixed} (kW)']
         kwargs['wind'] = df['dispatch wind (kW)'] + df['curtailment wind (kW)']
         kwargs['solar'] = df['dispatch solar (kW)'] + df['curtailment solar (kW)']
-        kwargs['y_label'] = 'total generation (kW) / electric load (kWh)'
+        kwargs['y_label'] = 'total available generation (kW) /\nfirm electric load (kW)'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 5]
         stacked_plot(**kwargs)
@@ -1664,7 +1669,7 @@ if '__main__' in __name__:
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
         kwargs['elec_load'] = 1. / tot_load
-        kwargs['y_label'] = 'total generation (kW) / total load (kW)'
+        kwargs['y_label'] = 'total available generation (kW) / total load (kW)'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 3]
         if 'Case1' in kwargs['save_dir']:
@@ -1677,7 +1682,7 @@ if '__main__' in __name__:
         kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)']) / tot_load
         kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)'] / tot_load
         kwargs['elec_load'] = 1. / tot_load
-        kwargs['y_label'] = 'total generation (kW) / total load (kW)'
+        kwargs['y_label'] = 'total available generation (kW) / total load (kW)'
         kwargs['legend_app'] = ''
         kwargs['ylim'] = [0, 3]
         kwargs['ALT'] = True
@@ -1693,7 +1698,7 @@ if '__main__' in __name__:
         #kwargs['battery_losses'] = (df['dispatch to storage (kW)'] - df['dispatch from storage (kW)'])
         #kwargs['fuel_load'] = df['dispatch to fuel h2 storage (kW)']
         #kwargs['elec_load'] = np.ones(len(kwargs['x_vals']))
-        #kwargs['y_label'] = 'total generation (kW) / electric load (kWh)'
+        #kwargs['y_label'] = 'total available generation (kW) / firm electric load (kW)'
         #kwargs['legend_app'] = ''
         #kwargs['ylim'] = [0, 6]
         #kwargs['ALT'] = True
