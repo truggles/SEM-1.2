@@ -566,8 +566,8 @@ def stacked_plot(**kwargs):
             tot += kwargs['solar']
         if 'stackedGenerationElecNorm' in kwargs["save_name"]:
             ax.plot(kwargs['x_vals'], tot, 'k-', label='total available gen.')
-            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])), 'k--', label='electric load')
-            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])) / (1. - kwargs['x_vals']), 'k:', label='electric +\nflexible load')
+            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])), 'k--', label='firm electric load')
+            ax.plot(kwargs['x_vals'], np.ones(len(kwargs['x_vals'])) / (1. - kwargs['x_vals']), 'k:', label='firm electric +\nflexible load')
             #for x, y in zip(kwargs['x_vals'], tot):
             #    print(x, y)
 
