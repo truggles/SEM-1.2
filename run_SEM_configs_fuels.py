@@ -697,8 +697,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     appB = ''
     ep = 'electric power'
     if 'ALT' in kwargs.keys():
-        appA = ' (perfect market cost)'
-        appB = '\n(perfect market cost)'
+        appA = ' (marginal cost)'
+        appB = appA #'\n(marginal cost)'
         ep = 'power'
 
 
@@ -759,8 +759,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
         #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
         #    print(ff, cost, c2, c3)
-        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (mean cost)', hatch='////', alpha=0.2, color=colors[4])
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label=r'H$_{2}$ production total'+' (mean cost)')
+        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.2, color=colors[4])
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label=r'H$_{2}$ production total'+' (system-wide cost)')
         #for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
         #    print("tot mean", ff, cost)
         #    break
@@ -857,7 +857,7 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
     # Electricity cost
     #ax.scatter(df[var], df['mean price ($/kWh)'], label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
-    ax.plot(df[var], df['mean price ($/kWh)'], label=r'power to electric load', color=colors[0])
+    ax.plot(df[var], df['mean price ($/kWh)'], label=r'marginal cost: firm electric load', color=colors[0])
 
     # Highlight transition region
     #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
@@ -874,13 +874,13 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
     tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
     # Add the cost of electric power to the fuel load
     #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
-    ax.plot(df[var], df['fuel_load_cost'], label=r'power to flexible load', color=colors[1])
+    ax.plot(df[var], df['fuel_load_cost'], label=r'marginal cost: flexible load', color=colors[1])
     #for ff, cost in zip(df[var], df['fuel_load_cost']):
     #    if round(ff, 2) == 0 or round(ff, 2) == 1:
     #        print('flex', ff, cost)
 
     avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
-    ax.plot(df[var], avg_elec_cost, 'k--', label=r'mean system power', linewidth=2)
+    ax.plot(df[var], avg_elec_cost, 'k--', label=r'system-wide cost', linewidth=2)
     #for ff, cost in zip(df[var], avg_elec_cost):
     #    if round(ff, 2) == 0 or round(ff, 2) == 1:
     #        print('mean', ff, cost)
