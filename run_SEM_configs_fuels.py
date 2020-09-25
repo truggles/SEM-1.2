@@ -679,7 +679,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         else:
             y_max = 8
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(dpi=400)
 
     # The left y-axis will use $/GGE for electrofuel or $/kg for H2
     if 'h2_only' in kwargs.keys():
@@ -829,6 +829,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     #plt.tight_layout()
     app2 = '_ALT' if 'ALT' in kwargs.keys() else ''
+    ax.set_rasterized(True)
+    ax2.set_rasterized(True)
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -1572,7 +1574,7 @@ if '__main__' in __name__:
         #    },
         'fuel load / total load' : {
             'x_label' : 'flexible load (kW) / total load (kW)',
-            'app' : '_fuelLoadDivTotalLoad',
+            'app' : '',
             'x_lim' : [0., 1.],
             'x_type' : 'linear',
             },

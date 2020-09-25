@@ -86,7 +86,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
             axs[j][i].yaxis.set_ticks_position('both')
             axs[j][i].yaxis.set_major_locator(matplotlib.ticker.FixedLocator([0.00, 0.025, 0.050, 0.075, 0.100]))
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{electric\ load}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{firm\ electric\ load}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if shift != 'nominal' and tgt_shift not in shift:
                     continue
@@ -105,7 +105,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
                 cnt += 1
 
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{mean\ cost}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{system-wide}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if not (shift == 'nominal' or tgt_shift in shift):
                     continue
@@ -147,7 +147,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
 
 
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
-    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 
@@ -275,7 +275,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
 
 
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
-    #fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
+    fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
 
 
