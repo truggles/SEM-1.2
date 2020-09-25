@@ -746,7 +746,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='var: CO$_{2}$', color=colors[4])
 
 
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5])
+    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=.8, hatch='\\\\')
     #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
     #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
     #ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
@@ -759,8 +759,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
         #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
         #    print(ff, cost, c2, c3)
-        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.2, color=colors[4])
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label=r'H$_{2}$ production total'+' (system-wide cost)')
+        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.3, color=colors[4])
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label=r'H$_{2}$ production total'+' (system-wide cost)')
         #for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
         #    print("tot mean", ff, cost)
         #    break
@@ -788,7 +788,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
     if 'ALT' in kwargs.keys():
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='gray', linestyle='--', label='_nolegend_')
+        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
