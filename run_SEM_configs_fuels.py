@@ -368,7 +368,9 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     ax.set_xlim(kwargs['stacked_min'], kwargs['stacked_max'])
 
     #plt.tight_layout()
-    plt.grid()
+    if not 'systemCFsEF' in save:
+        plt.grid()
+
     if 'systemCFsEF' in save:
         plt.legend(ncol=2, loc='upper left', framealpha = 1.0)
     elif 'systemCFs' in save:
@@ -1776,7 +1778,7 @@ if '__main__' in __name__:
                     df['dispatch from fuel h2 storage (kW)'].values*EFFICIENCY_FUEL_CHEM_CONVERSION/df['capacity fuel chem plant (kW)'].values,
                     df['fuel h2 storage (kWh)'].values/df['capacity fuel h2 storage (kWh)'].values,
                     ], # y values 
-                ['electrolyzer', 'chem plant', 'h2 storage',], # labels
+                ['electrolysis facility', 'chem plant', 'h2 storage',], # labels
                 'systemCFsEF' + m['app'], False, ylims, **kwargs)
 
 
