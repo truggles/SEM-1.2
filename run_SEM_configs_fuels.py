@@ -305,7 +305,7 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
             #ax.scatter([], [])
             ax.plot([], [])
             continue
-        if 'h2_only' in kwargs.keys() and (label == 'chem plant' or label == 'h2 storage'):
+        if 'h2_only' in kwargs.keys() and (label == 'chemical plant' or 'storage' in label):
             ax.plot([], [])
             continue
 
@@ -372,7 +372,9 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
         plt.grid()
 
     if 'systemCFsEF' in save:
-        plt.legend(ncol=2, loc='upper left', framealpha = 1.0)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
+        ax.set_ylabel(ax.get_ylabel(), labelpad=-2)
+        plt.legend(ncol=2, loc='lower left', framealpha = 1.0)
     elif 'systemCFs' in save:
         plt.legend(ncol=3, loc='upper left', framealpha = 1.0)
     elif 'systemCosts' in save or 'powerSystemCosts' in save:
@@ -1757,7 +1759,7 @@ if '__main__' in __name__:
 
 
         ## Fuel system capacity factor ratios
-        ylims = [0.0, 1.4]
+        ylims = [0.0, 1.]
 
         kwargs['df'] = df
 

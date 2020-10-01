@@ -126,15 +126,17 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     horiz = -0.08
     vert = 0.115
     vert = 0.11 if len(tgt_shifts) == 1 else 0.115
-    scenarios = ['Disp.', 'D+R+S', 'R+S']
     for j, shift in enumerate(tgt_shifts):
         for i in range(3):
             axs[j][i].text(horiz, vert, f'{alphas[cnt]}', fontdict=font)
             cnt += 1
             if i < 2:
-                axs[j][i].text(0.08, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='left', va='center')
+                axs[j][i].text(0.08, y_max * (.107/.12), f'$\Delta$ {shift}', ha='left', va='center')
             else:
-                axs[j][i].text(0.95, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='right', va='center')
+                axs[j][i].text(0.95, y_max * (.107/.12), f'$\Delta$ {shift}', ha='right', va='center')
+    axs[0][0].set_title("Dispatch")
+    axs[0][1].set_title("Dispatch+Renew+Storage")
+    axs[0][2].set_title("Renew+Storage")
 
 
     horiz = 0.4
@@ -142,7 +144,7 @@ def costs_plot_alt_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.68 if len(tgt_shifts) == 1 else 0.99
+    t = 0.68 if len(tgt_shifts) == 1 else 0.96
     b = 0.15 if len(tgt_shifts) == 1 else 0.23
     plt.subplots_adjust(top=t, left=.1, bottom=b, right=.95)
 
@@ -205,7 +207,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
                 cnt += 1
 
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{H2\ Total}$'+'\n'+r'$\bf{(perfect\ mkt.)}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{hydrogen\ total}$'+'\n'+r'$\bf{(marginal\ cost)}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if not (shift == 'nominal' or tgt_shift in shift):
                     continue
@@ -217,7 +219,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
                 cnt += 1
 
             cnt = 0
-            axs[j][i].plot([], [], label=r'$\bf{H2\ Total}$'+'\n'+r'$\bf{(mean\ cost)}$', color='white', linewidth=0)
+            axs[j][i].plot([], [], label=r'$\bf{hydrogen\ total}$'+'\n'+r'$\bf{(system-wide\ cost)}$', color='white', linewidth=0)
             for shift, df in dfs[cases[i]].items():
                 if not (shift == 'nominal' or tgt_shift in shift):
                     continue
@@ -240,16 +242,18 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     #vert = 0.11 if len(tgt_shifts) == 1 else y_max * 0.95
     vert = y_max * 0.9
     h2 = -0.2
-    scenarios = ['Disp.', 'D+R+S', 'R+S']
     for j, shift in enumerate(tgt_shifts):
         for i in range(3):
             h = h2 if i == 0 else horiz
             axs[j][i].text(horiz, vert, f'{alphas[cnt]}', fontdict=font)
             cnt += 1
             if i < 2:
-                axs[j][i].text(0.08, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='left', va='center')
+                axs[j][i].text(0.08, y_max * (.107/.12), f'$\Delta$ {shift}', ha='left', va='center')
             else:
-                axs[j][i].text(0.95, y_max * (.10/.12), f'{shift} shift\n{scenarios[i]}', ha='right', va='center')
+                axs[j][i].text(0.95, y_max * (.107/.12), f'$\Delta$ {shift}', ha='right', va='center')
+    axs[0][0].set_title("Dispatch")
+    axs[0][1].set_title("Dispatch+Renew+Storage")
+    axs[0][2].set_title("Renew+Storage")
 
 
 
@@ -270,7 +274,7 @@ def costs_plot_h2_sensitivity(tgt_shifts, var='fuel demand (kWh)', **kwargs):
     axs[-1][1].legend(ncol=3, loc='upper center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     #plt.tight_layout()
 
-    t = 0.59 if len(tgt_shifts) == 1 else 0.99
+    t = 0.59 if len(tgt_shifts) == 1 else 0.96
     b = 0.15 if len(tgt_shifts) == 1 else 0.23
     plt.subplots_adjust(top=t, left=.08, bottom=b, right=.9)
 
