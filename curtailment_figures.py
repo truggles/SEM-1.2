@@ -44,8 +44,7 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     print("Plot {} using x,y = {},{}".format(save, kwargs['x_label'],kwargs['y_label']))
 
     plt.close()
-    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
-    fig, ax = plt.subplots()
+    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
     ax.set_xlabel(kwargs['x_label'])
     ax.set_ylabel(kwargs['y_label'])
 
@@ -116,8 +115,7 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
 def stacked_plot(**kwargs):
 
     plt.close()
-    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
-    fig, ax = plt.subplots()
+    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
     ax.set_xlabel(kwargs['x_label'])
     ax.set_ylabel(kwargs['y_label'])
 
@@ -148,9 +146,6 @@ def stacked_plot(**kwargs):
                 y_max = kwargs['ylim'][1]
             else:
                 y_max = 9999
-            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, color=colors[-1], alpha=0.2)
-            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
-            #ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
     
 
         else:
@@ -188,9 +183,6 @@ def stacked_plot(**kwargs):
                 y_max = kwargs['ylim'][1]
             else:
                 y_max = 9999
-            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, color=colors[-1], alpha=0.2)
-            #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, kwargs['x_var']], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
-            #ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to electric load', lw=fblw)
 
 
 
@@ -237,26 +229,23 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     y_max = 30
     if 'h2_only' in kwargs.keys():
         if 'ALT' in kwargs.keys():
-            y_max = 12
+            y_max = 8
         else:
             y_max = 8
-    matplotlib.rcParams["figure.figsize"] = (7.5, 4)
-    if not 'h2_only' in kwargs.keys():
-        matplotlib.rcParams["figure.figsize"] = (7.5, 5)
-    fig, axs = plt.subplots(ncols=3, sharedy=True, dpi=400)
+    #if not 'h2_only' in kwargs.keys():
+    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
 
     # The left y-axis will use $/GGE for electrofuel or $/kg for H2
     if 'h2_only' in kwargs.keys():
         conversion = kWh_LHV_per_kg_H2 # Convert for main y-axis
         conversion *= EFFICIENCY_FUEL_CHEM_CONVERSION # The cost is set based on liquid hydrocarbon
                                                       # output, so must be scaled for H2 only
-        ax.set_ylabel(r'cost (\$/kg$_{H2}$)')
+        axs[0].set_ylabel(r'cost (\$/kg$_{H2}$)')
     else:
         conversion = kWh_to_GGE
-        ax.set_ylabel(r'cost (\$/GGE)')
+        axs[0].set_ylabel(r'cost (\$/GGE)')
+    axs[1].set_xlabel(kwargs['x_label'])
 
-    ax.set_xlabel(kwargs['x_label'])
-    
     appA = ''
     appB = ''
     ep = 'electric power'
@@ -265,122 +254,82 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         appB = appA #'\n(marginal cost)'
         ep = 'power'
 
+    axs2s = []
+    for i, c in enumerate(cases):
 
-    # Electricity cost
-    #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
-    #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='power to electric\n'+r'load (\$/kWh$_{e}$)')
+        axs[i].set_title(names[c], **{'fontsize':12.5})
 
-    # $/GGE fuel line use Dual Value
-    #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel production total'
-    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab+appB)
-    for ff, cost in zip(df[var], df['fuel price ($/kWh)'] * conversion):
-        if round(ff,2) == 0.50:
-            print("tot", ff, cost)
-    #    break
+        # $/GGE fuel line use Dual Value
+        lab = r'H$_{2}$ total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
+        axs[i].plot(dfs[c][var], dfs[c]['fuel price ($/kWh)'] * conversion, 'k-', label=lab+appB)
 
-    # Stacked components
-    f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] / df['fuel demand (kWh)']
-    f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
-    f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
-    f_tot = (f_elec+f_chem+f_store)
-    v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
-    v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
-    #for ff, cost, c2 in zip(df[var], f_elec * conversion, f_elec * EFFICIENCY_FUEL_CHEM_CONVERSION):
-    #    print(ff, cost, c2)
+        # Stacked components
+        f_elec = dfs[c]['fixed cost fuel electrolyzer ($/kW/h)'] * dfs[c]['capacity fuel electrolyzer (kW)'] / dfs[c]['fuel demand (kWh)']
+        f_chem = dfs[c]['fixed cost fuel chem plant ($/kW/h)'] * dfs[c]['capacity fuel chem plant (kW)'] / dfs[c]['fuel demand (kWh)']
+        f_store = dfs[c]['fixed cost fuel h2 storage ($/kWh/h)'] * dfs[c]['capacity fuel h2 storage (kWh)'] / dfs[c]['fuel demand (kWh)']
+        f_tot = (f_elec+f_chem+f_store)
+        v_chem = dfs[c]['var cost fuel chem plant ($/kW/h)'] * dfs[c]['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / dfs[c]['fuel demand (kWh)']
+        v_co2 = dfs[c]['var cost fuel co2 ($/kW/h)'] * dfs[c]['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / dfs[c]['fuel demand (kWh)']
 
-    f_elec *= conversion
-    f_chem *= conversion
-    f_store *= conversion
-    f_tot *= conversion
-    v_chem *= conversion
-    v_co2 *= conversion
-
-
-    # Build stack
-    lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
-    ax.fill_between(df[var], 0, f_elec, label=lab, color=colors[0])
-    for ff, cost in zip(df[var], f_elec):
-        if round(ff,2) == 0.50:
-            print("electrolysis", ff, cost)
-    #    break
-
-    if 'h2_only' not in kwargs.keys():
-        ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed cost: chemical plant', color=colors[1])
-        ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
-        ax.fill_between(df[var], f_tot, f_tot+v_chem, label='variable cost: chemical plant', color=colors[3])
-        ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost: CO$_{2}$ feedstock', color=colors[4])
-
-
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=.8, hatch='\\\\')
-
-    if 'ALT' in kwargs.keys():
-        tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-        avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
-        #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
-        #    print(ff, cost, c2, c3)
-        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.3, color=colors[4])
-        lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel production total'
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
-        for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
-            if round(ff,2) == 0.50:
-                print("tot mean", ff, cost)
-        #    break
-        
-
-    n = len(df.index)-1
-    print(f" --- Stacked cost plot for fractional fuel demand = {round(df.loc[1, 'fuel demand (kWh)'],4)}           {round(df.loc[n, 'fuel demand (kWh)'],4)}:")
-    print(f" ----- fixed cost electrolyzer          {round(f_elec[1],6)}         {round(f_elec[n],6)}")
-    print(f" ----- fixed cost chem                  {round(f_chem[1],6)}         {round(f_chem[n],6)}")
-    print(f" ----- fixed cost storage               {round(f_store[1],6)}         {round(f_store[n],6)}")
-    print(f" ----- variable chem                    {round(v_chem[1],6)}         {round(v_chem[n],6)}")
-    print(f" ----- variable CO2                     {round(v_co2[1],6)}          {round(v_co2[n],6)}")
-    print(f" ----- variable electrolyzer            {round(df.loc[1, 'fuel price ($/kWh)']-(f_tot[1]+v_chem[1]+v_co2[1]),6)}             {round(df.loc[n, 'fuel price ($/kWh)']-(f_tot[n]+v_chem[n]+v_co2[n]),6)}")
-    print(f" ----- TOTAL:                           {round(df.loc[1, 'fuel price ($/kWh)'],6)}           {round(df.loc[n, 'fuel price ($/kWh)'],6)}")
-    print(f" ----- mean cost electricity            {round(df.loc[1, 'mean price ($/kWh)'],6)}           {round(df.loc[n, 'mean price ($/kWh)'],6)}")
-
-    # Highlight transition region
-    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
-    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
-
-
-    # To print the estimated MEM electricity cost per point
-    #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='_nolegend_')
-    #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
-    #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
-    ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
-    if 'ALT' in kwargs.keys():
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label='_nolegend_')
+        f_elec *= conversion
+        f_chem *= conversion
+        f_store *= conversion
+        f_tot *= conversion
+        v_chem *= conversion
+        v_co2 *= conversion
 
 
 
-    plt.xscale(kwargs['x_type'], nonposx='clip')
-    if kwargs['x_type'] == 'log':
-        ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(myLogFormat))
+        if 'h2_only' not in kwargs.keys():
+            axs[i].fill_between(dfs[c][var], f_elec, f_elec+f_chem, label='fixed cost: chemical plant', color=colors[1])
+            axs[i].fill_between(dfs[c][var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
+            axs[i].fill_between(dfs[c][var], f_tot, f_tot+v_chem, label='variable cost: chemical plant', color=colors[3])
+            axs[i].fill_between(dfs[c][var], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost: CO$_{2}$ feedstock', color=colors[4])
 
-    if var == 'fuel demand (kWh)' or var == 'dispatch to fuel h2 storage (kW)':
-        ax.set_xlim(df.loc[1, var], df.loc[len(df.index)-1, var])
-    else:
+
+        axs[i].fill_between(dfs[c][var], f_tot+v_chem+v_co2, dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, edgecolor=colors[5], facecolor='none', hatch='\\\\')
+
+        if 'ALT' in kwargs.keys():
+            tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+            avg_elec_cost = (dfs[c]['mean price ($/kWh)'] * (1. - dfs[c][var]) + dfs[c]['fuel_load_cost'] * dfs[c][var]) / tot_eff_fuel_process
+            axs[i].fill_between(dfs[c][var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', facecolor='none', edgecolor=colors[4])
+            lab = r'H$_{2}$ total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
+            axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
+            
+
+        axs[i].plot(dfs[c][var], dfs[c]['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
+        if 'ALT' in kwargs.keys():
+            axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label='_nolegend_')
+
+        # Build stack
+        lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
+        axs[i].fill_between(dfs[c][var], 0, f_elec, label=lab, color=colors[0], alpha=.5)
+
         plt.xscale('linear')
-        ax.set_xlim(0.0, 1.0)
+        axs[i].set_xlim(0.0, 1.0)
 
-    ax.set_ylim(0, y_max)
-    #plt.grid()
-    if 'h2_only' not in kwargs.keys():
-        plt.legend(loc='upper right', ncol=1, framealpha = 1.0)
-    else:
-        plt.legend(loc='upper right', ncol=1, framealpha = 1.0)
-        plt.subplots_adjust(left=0.12, right=.85)
+        axs[i].set_ylim(0, y_max)
 
-    # 2nd y-axis for $/kWh_e
-    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2.set_ylabel(r'cost (\$/kWh$_{LHV}$)')
-    ax2.set_ylim(0, ax.get_ylim()[1] / kWh_to_GGE)
+        # 2nd y-axis for $/kWh_e
+        ax2 = axs[i].twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.set_ylim(0, axs[i].get_ylim()[1] / kWh_to_GGE)
+        if i < 2:
+            ax2.set_yticklabels([])
+        if i == 2:
+            ax2.set_ylabel(r'cost (\$/kWh$_{LHV}$)')
 
-    #plt.tight_layout()
+        axs2s.append(ax2)
+
+    for i in range(3):
+        axs[i].xaxis.set_major_locator(matplotlib.ticker.FixedLocator([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]))
+
+    #if 'h2_only' not in kwargs.keys():
+    #    axs[0].legend(loc='upper left', ncol=2, framealpha = 1.0)
+    #else:
+    #    axs[0].legend(loc='upper left', ncol=2, framealpha = 1.0)
+
+    plt.subplots_adjust(top=.9, left=.07, bottom=.17, right=.91)
     app2 = '_ALT' if 'ALT' in kwargs.keys() else ''
-    ax.set_rasterized(True)
-    ax2.set_rasterized(True)
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -390,68 +339,41 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 #save_name, save_dir
 def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
-    df = kwargs['df']
+    dfs = kwargs['dfs']
 
     colors = color_list()
     plt.close()
-    #y_max = 0.7
-    y_max = 0.15
-    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
-    fig, ax = plt.subplots()
+    y_max = 0.125
+    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
 
-    ax.set_xlabel(kwargs['x_label'])
-    
-    #ax.set_ylabel(r'cost (\$/kWh$_{LHV}$ or \$/kWh$_{e}$)')
-    ax.set_ylabel(r'cost (\$/kWh$_{e}$)')
+    axs[0].set_ylabel(r'cost (\$/kWh$_{e}$)')
+    axs[1].set_xlabel(kwargs['x_label'])
 
+    for i, c in enumerate(cases):
 
-    # Electricity cost
-    #ax.scatter(df[var], df['mean price ($/kWh)'], label=r'electricity cost (\$/kWh$_{e}$)', marker='v')
-    ax.plot(df[var], df['mean price ($/kWh)'], label=r'marginal cost: firm electric load', color=colors[0])
+        axs[i].set_title(names[c], **{'fontsize':12.5})
 
-    # Highlight transition region
-    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, color=colors[-1], alpha=0.15)
-    #ax.fill_between(df.loc[ff_1_idx:ff_2_idx, var], 0, y_max, facecolor='none', edgecolor='gray', hatch='....', linewidth=0, alpha=0.5)
-    ax.plot(df[var], df['mean price ($/kWh)'], label='_nolegend_', color=colors[0])
-    #for ff, cost in zip(df[var], df['mean price ($/kWh)']):
-    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
-    #        print('firm', ff, cost)
+        # Electricity cost
+        axs[i].plot(dfs[c][var], dfs[c]['mean price ($/kWh)'], label=r'marginal cost: firm electric load', color=colors[0])
 
-    ## $/GGE fuel line use Dual Value
-    #ax.scatter(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    #ax.plot(df[var], df['fuel price ($/kWh)'], label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
+        axs[i].plot(dfs[c][var], dfs[c]['mean price ($/kWh)'], label='_nolegend_', color=colors[0])
 
-    tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-    # Add the cost of electric power to the fuel load
-    #ax.scatter(df[var], (df['fuel price ($/kWh)'] - f_tot) * tot_eff_fuel_process, label=r'fuel load electricity cost (\$/kWh$_{e}$)', marker='o')
-    ax.plot(df[var], df['fuel_load_cost'], label=r'marginal cost: flexible load', color=colors[1])
-    #for ff, cost in zip(df[var], df['fuel_load_cost']):
-    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
-    #        print('flex', ff, cost)
+        tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+        axs[i].plot(dfs[c][var], dfs[c]['fuel_load_cost'], label=r'marginal cost: flexible load', color=colors[1])
 
-    avg_elec_cost = df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]
-    ax.plot(df[var], avg_elec_cost, 'k--', label=r'system-wide cost', linewidth=2)
-    #for ff, cost in zip(df[var], avg_elec_cost):
-    #    if round(ff, 2) == 0 or round(ff, 2) == 1:
-    #        print('mean', ff, cost)
+        avg_elec_cost = dfs[c]['mean price ($/kWh)'] * (1. - dfs[c][var]) + dfs[c]['fuel_load_cost'] * dfs[c][var]
+        axs[i].plot(dfs[c][var], avg_elec_cost, 'k--', label=r'system-wide cost', linewidth=2)
 
 
 
-    plt.xscale(kwargs['x_type'], nonposx='clip')
-
-    if var == 'fuel demand (kWh)' or var == 'dispatch to fuel h2 storage (kW)':
-        ax.set_xlim(df.loc[1, var], df.loc[len(df.index)-1, var])
-    else:
         plt.xscale('linear')
-        ax.set_xlim(0.0, 1.0)
+        axs[i].set_xlim(0.0, 1.0)
 
-    ax.set_ylim(0, y_max)
-    ax.yaxis.set_ticks_position('both')
-    #plt.grid()
-    plt.legend(loc='upper left', framealpha = 1.0)
+        axs[i].set_ylim(0, y_max)
+        axs[i].yaxis.set_ticks_position('both')
+        #plt.legend(loc='upper left', framealpha = 1.0)
 
-
-    #plt.tight_layout()
+    plt.subplots_adjust(top=.9, left=.11, bottom=.17, right=.94)
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -539,6 +461,11 @@ if '__main__' in __name__:
         "Case9_NatGasCCSWindSolarStorage",
         "Case5_WindSolarStorage",
     ]
+    names  = {
+        "Case7_NatGasCCS" : "Dispatch",
+        "Case9_NatGasCCSWindSolarStorage" : "Dispatch+Renew+Storage",
+        "Case5_WindSolarStorage" : "Renew+Storage",
+    }
 
     axs = []
 
@@ -644,10 +571,10 @@ if '__main__' in __name__:
     #costs_plot(k, **kwargs)
     kwargs['ALT'] = True
     costs_plot(k, **kwargs)
-    exit()
     del kwargs['ALT']
     kwargs['save_name'] = 'costPlot' + m['app']
     costs_plot_alt(k, **kwargs)
+    exit()
     
 
 
