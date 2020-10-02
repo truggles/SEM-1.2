@@ -222,7 +222,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         else:
             y_max = 8
     #if not 'h2_only' in kwargs.keys():
-    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
+    fig, axs = plt.subplots(figsize=(9, 3*(1. - .13)), ncols=3, sharey=True)
 
     # The left y-axis will use $/GGE for electrofuel or $/kg for H2
     if 'h2_only' in kwargs.keys():
@@ -317,10 +317,11 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #    axs[0].legend(loc='upper left', ncol=2, framealpha = 1.0)
 
     #plt.subplots_adjust(top=.9, left=.07, bottom=.17, right=.91)
-    plt.subplots_adjust(top=.89, left=.11, bottom=.17, right=.91)
+    plt.subplots_adjust(top=.89, left=.11, bottom=.04, right=.91)
     app2 = '_ALT' if 'ALT' in kwargs.keys() else ''
     for i in range(3):
         axs[i].xaxis.set_major_locator(matplotlib.ticker.FixedLocator([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]))
+        axs[i].set_xticklabels([])
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -335,7 +336,7 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
     colors = color_list()
     plt.close()
     y_max = 0.125
-    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
+    fig, axs = plt.subplots(figsize=(9, 3*(1. - .13)), ncols=3, sharey=True)
 
     axs[0].set_ylabel(r'cost (\$/kWh$_{e}$)')
     #axs[1].set_xlabel(kwargs['x_label'])
@@ -367,7 +368,8 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
     for i in range(3):
         axs[i].xaxis.set_major_locator(matplotlib.ticker.FixedLocator([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]))
-    plt.subplots_adjust(top=.89, left=.11, bottom=.17, right=.91)
+        axs[i].set_xticklabels([])
+    plt.subplots_adjust(top=.89, left=.11, bottom=.04, right=.91)
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
