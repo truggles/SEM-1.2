@@ -9,6 +9,9 @@ def add_detailed_results(df_name, files, fixed = 'nuclear', storage_eff = 0.9):
 
     df = pd.read_csv(df_name, index_col=False)
     dem_renews, dem_fixes, electro_renews, electro_fixes = [], [], [], []
+    annuals = []
+    by_hours = [ [] for i in range(24) ]
+    by_months = [ [] for i in range(12) ]
 
     for idx in df.index:
         run = df.loc[idx, 'case name']
@@ -19,11 +22,18 @@ def add_detailed_results(df_name, files, fixed = 'nuclear', storage_eff = 0.9):
 
             #print(run, end=' ')
             print(run)
-            dem_renew, dem_fix, electro_renew, electro_fix = get_single_file_details(f_name, fixed, storage_eff)
+            dem_renew, dem_fix, electro_renew, electro_fix, annual, by_month, by_hour = get_single_file_details(f_name, fixed, storage_eff)
             dem_renews.append(dem_renew)
             dem_fixes.append(dem_fix)
             electro_renews.append(electro_renew)
             electro_fixes.append(electro_fix)
+            annuals.append(annual)
+
+            for i in range(24):
+                by_hours[i].append( by_hour[i] )
+            for i in range(12):
+                by_months[i].append( by_month[i] )
+
             break
 
     df['dem_renew'] = dem_renews
@@ -33,18 +43,69 @@ def add_detailed_results(df_name, files, fixed = 'nuclear', storage_eff = 0.9):
     df['electro_fix'] = electro_fixes
     df['electro_renew_frac'] = df['electro_renew'] / (df['electro_renew'] + df['electro_fix'])
 
+    # Electrolyzer capacity factors
+    df['electro_cf_annual'] = annuals
+    for i in range(24):
+        df[f'electro_cf_hour_{i}'] = by_hours[i]
+    for i in range(12):
+        df[f'electro_cf_month_{i}'] = by_months[i]
+
     df.to_csv(df_name.replace('.csv', '_app.csv'), index=False)
 
 
 
 
+def get_CFs_by_time(df):
+
+    # pull out electrolyzer CF by hour and by month
+    by_hour = []
+    by_month = []
+
+    # By hour we can use mod 24
+    max_val = df['dispatch to fuel h2 storage (kW)'].max()
+    if max_val == 0:
+        max_val = np.nan
+    for i in range(24):
+        idxs = (df['time (hr)'] - i) % 24 == 0
+        by_hour.append( df.loc[idxs, 'dispatch to fuel h2 storage (kW)'].mean()/max_val )
+        num_vals = idxs.sum()
+        #print(i, num_vals)
+    #print(by_hour)
+
+    days_per_month = [
+            31, # Jan
+            28,
+            31,
+            30,
+            31,
+            30,
+            31, # July
+            31,
+            30,
+            31,
+            30,
+            31
+    ]
+
+    prev = 0
+    for i in range(12):
+        idxs = (df['time (hr)'] >= prev * 24) & (df['time (hr)'] < (prev + days_per_month[i]) * 24)
+        by_month.append( df.loc[idxs, 'dispatch to fuel h2 storage (kW)'].mean()/max_val )
+        num_vals = idxs.sum()
+        #print(i, num_vals)
+        prev += days_per_month[i]
+    #print(by_month)
+        
+    annual = df['dispatch to fuel h2 storage (kW)'].mean()/max_val
+
+    return annual, by_month, by_hour
 
 
 
 
 def get_single_file_details(f_name, fixed, storage_eff):
 
-    df = pd.read_csv(f_name)
+    df = pd.read_csv(f_name, dtype={'time (hr)': np.int64})
     
     stored_energy = 0.
     stored_frac_renew = 0.
@@ -132,9 +193,14 @@ def get_single_file_details(f_name, fixed, storage_eff):
     #
     #print(f"Remainder {remainder}")
 
+    
+
+    annual, by_month, by_hour = get_CFs_by_time(df)
+
+
     # Return normalized versions
     l = len(df.index)
-    return dem_renew/l, dem_fix/l, electro_renew/l, electro_fix/l
+    return dem_renew/l, dem_fix/l, electro_renew/l, electro_fix/l, annual, by_month, by_hour
 
 
 

@@ -39,6 +39,60 @@ def color_list():
 
 
 
+def electro_cf_by_X(save, **kwargs):
+
+    if 'by_month' in save:
+        n = 12
+        key = 'month'
+    elif 'by_hour' in save:
+        n = 24
+        key = 'hour'
+    else:
+        print("\nFix your naming for electro_cf_by_X !!!")
+        exit()
+
+    plt.close()
+    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
+
+    ims = []
+    for i, c in enumerate(cases):
+
+        #ary = []
+        #for idx in dfs[c].index:
+        #    ary.append([])
+        #    for i in range(n):
+        #        ary[-1].
+        cols = []
+        for j in range(n):
+            cols.append(f'electro_cf_{key}_{j}')
+        m = dfs[c][cols]
+
+    
+        im = axs[i].imshow(m.T, aspect='auto', interpolation='none', origin='lower', vmax=1, vmin=0)
+        ims.append(im)
+        
+        axs[i].set_title(names[c], **{'fontsize':12.5})
+
+
+    cbar = axs[2].figure.colorbar(ims[2])
+    cbar.ax.set_ylabel(f"electrolysis facility\ncapacity factor")
+
+    if key == 'month':
+        axs[0].set_yticklabels(('', 'Jan','Mar','May',
+                'July','Sept','Nov'))
+    if key == 'hour':
+        axs[0].set_ylabel('hour of day (UTC)')
+    
+    axs[1].set_xlabel(kwargs['x_label'])
+    for i in range(3):
+        axs[i].xaxis.set_major_locator(matplotlib.ticker.FixedLocator([0, 20, 40, 60, 80, 100]))
+        axs[i].set_xticklabels(['0.0', '0.2', '0.4', '0.6', '0.8', '1.0'])
+
+
+    plt.subplots_adjust(top=.89, left=.11, bottom=.17, right=.91)
+    fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
+    fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
+
 def simple_plot(save, logY=False, ylims=[-1,-1], **kwargs):
 
     plt.close()
@@ -498,7 +552,7 @@ if '__main__' in __name__:
         print(f"\nPlotting using {fixed} as the dispatchable tech\n")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
-        df = pd.read_csv('results/Results_{}_app.csv'.format(global_name), index_col=False)
+        df = pd.read_csv('resultsX/Results_{}_app.csv'.format(global_name), index_col=False)
         df = df.sort_values('fuel demand (kWh)', axis=0)
         df = df.reset_index()
         df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -509,7 +563,7 @@ if '__main__' in __name__:
         df['fuel load / total load'] = df['dispatch to fuel h2 storage (kW)'] / (
                 df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
                 )
-        df.to_csv('results/Results_{}_tmp.csv'.format(global_name))
+        df.to_csv('resultsX/Results_{}_tmp.csv'.format(global_name))
         for i in range(len(df.index)):
             if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
                 print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
@@ -608,4 +662,7 @@ if '__main__' in __name__:
     simple_plot('systemCFsEF' + m['app'],
             False, ylims, **kwargs)
         
-
+    electro_cf_by_X('systemCFsEF_by_month' + m['app'],
+            **kwargs)
+    electro_cf_by_X('systemCFsEF_by_hour' + m['app'],
+            **kwargs)

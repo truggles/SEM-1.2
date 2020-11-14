@@ -267,8 +267,8 @@ def get_results(files, global_name):
                     results[info['case name'].values[0]][i] > -10e-10:
                 results[info['case name'].values[0]][i] = 0.
 
-    print('Writing results to "results/Results_{}.csv"'.format(global_name))
-    ofile = open('results/Results_{}.csv'.format(global_name), 'w')
+    print('Writing results to "resultsX/Results_{}.csv"'.format(global_name))
+    ofile = open('resultsX/Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
     ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity natgas_ccs (kW),dispatch natgas_ccs (kW),curtailment natgas_ccs (kW),fixed cost natgas_ccs ($/kW/h),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
     for key in keys:
@@ -1462,7 +1462,7 @@ if '__main__' in __name__:
         results_search2 = 'Output_Data/fuel_test_{}_{}*/fuel_test_{}_{}'.format(date, version, date, version)
         print(f"For detailed results from profiles checking {base+'/'+results_search2}")
         files = get_output_file_names(base+'/'+results_search2)
-        df_name = 'results/Results_{}.csv'.format(global_name)
+        df_name = 'resultsX/Results_{}.csv'.format(global_name)
         fixed = 'natgas_ccs'
         add_detailed_results(df_name, files, fixed)
 
@@ -1476,7 +1476,7 @@ if '__main__' in __name__:
     print(f"\nPlotting using {fixed} as the dispatchable tech\n")
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FormatStrFormatter
-    df = pd.read_csv('results/Results_{}_app.csv'.format(global_name), index_col=False)
+    df = pd.read_csv('resultsX/Results_{}_app.csv'.format(global_name), index_col=False)
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -1487,7 +1487,7 @@ if '__main__' in __name__:
     df['fuel load / total load'] = df['dispatch to fuel h2 storage (kW)'] / (
             df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
             )
-    df.to_csv('results/Results_{}_tmp.csv'.format(global_name))
+    df.to_csv('resultsX/Results_{}_tmp.csv'.format(global_name))
     for i in range(len(df.index)):
         if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
             print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
