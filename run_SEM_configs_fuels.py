@@ -99,6 +99,7 @@ def set_case_info(cfg, **settings):
     fixed_cost_fuel_h2_storage_position = -999
     var_cost_fuel_chem_plant_position = -999
     var_cost_fuel_co2_position = -999
+    capacity_PGP_power_position = -999
     for i, line in enumerate(cfg):
 
         if line[0] == 'GLOBAL_NAME':
@@ -123,6 +124,7 @@ def set_case_info(cfg, **settings):
             fixed_cost_fuel_h2_storage_position = line.index('FIXED_COST_FUEL_H2_STORAGE')
             var_cost_fuel_chem_plant_position = line.index('VAR_COST_FUEL_CHEM_PLANT')
             var_cost_fuel_co2_position = line.index('VAR_COST_FUEL_CO2')
+            capacity_PGP_power_position = line.index('CAPACITY_FUEL_POWER')
 
             print(" --- demand pos: {}, value pos {}, fuel_demand {}x, do_demand_constraint {}, start/end month {}-{}".format(
                     fuel_demand_position, fuel_value_position, settings['fuel_demand'], settings['do_demand_constraint'], 
@@ -145,6 +147,7 @@ def set_case_info(cfg, **settings):
             line[fixed_cost_fuel_h2_storage_position] = settings['fixed_cost_fuel_h2_storage']
             line[var_cost_fuel_chem_plant_position] = settings['var_cost_fuel_chem_plant']
             line[var_cost_fuel_co2_position] = settings['var_cost_fuel_co2']
+            line[capacity_PGP_power_position] = settings['capacity_PGP_power']
 
             line[fuel_value_position] = settings['fuel_value']
             line[fuel_demand_position] = settings['fuel_demand']
@@ -1250,6 +1253,7 @@ if '__main__' in __name__:
     fixed_wind = 1
     fixed_electrolyzer = 1
     fixed_natGasCCS = 1
+    include_PGP = False
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -1275,8 +1279,10 @@ if '__main__' in __name__:
             fixed_electrolyzer = float(arg.split('_')[-1])
         if 'FIXED_NATGASCCS' in arg:
             fixed_natGasCCS = float(arg.split('_')[-1])
+        if 'INCLUDE_PGP' in arg:
+            include_PGP = True
 
-    input_file = 'fuel_test_20200802_AllCases_EIAPrices.csv'
+    input_file = 'fuel_test_20201115_AllCases_EIAPrices.csv'
     #input_file = 'fuel_test_20200802_AllCases_EIAPrices_100PctReli.csv'
     if 'Case0' in case:
         input_file = 'fuel_test_20200302_Case0_NuclearFlatDemand.csv'
@@ -1293,6 +1299,7 @@ if '__main__' in __name__:
     print(f'Input File:                    {input_file}')
     print(f'Demand multiplication factor:  {round(multiplication_factor,3)}')
     print(f'H2_ONLY:                       {h2_only}')
+    print(f'INCLUDE_PGP:                   {include_PGP}')
     print(f'Number of jobs:                {n_jobs}')
     print(f'Job number:                    {job_num}')
     print(f'\n - RUN_SEM =          {run_sem}')
@@ -1325,10 +1332,14 @@ if '__main__' in __name__:
         'fixed_cost_fuel_h2_storage' : 1,
         'var_cost_fuel_chem_plant' : 1,
         'var_cost_fuel_co2' : 1,
+        'capacity_PGP_power' : 0, # fix to zero as default
     }
     if full_year:
         settings['start_month'] = 1
         settings['end_month'] = 12
+
+    if include_PGP:
+        settings['capacity_PGP_power'] = -1 # This will optimize the values
 
     # Adjust included techs based on desired case:
     if case == 'Case0_NuclearFlatDemand':

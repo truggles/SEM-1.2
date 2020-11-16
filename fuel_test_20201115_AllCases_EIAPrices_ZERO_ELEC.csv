@@ -63,7 +63,7 @@ BEGIN_ALL_CASES_DATA,"""BEGIN_ALL_CASES_DATA"" is a keyword that must be in the 
 NUMERICS_COST_SCALING,1.00E+12,,"Scaling value for costs to increase accuracy of optimizer results. Ideally, should have no implication for final results.",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 NUMERICS_DEMAND_SCALING,1.00E+12,,"Scaling value for demand to increase accuracy of optimizer results. Ideally, should have no implication for final results.",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-DEMAND_FILE,US_demand_unnormalized.csv,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+DEMAND_FILE,US_demand_zero.csv,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 NORMALIZE_DEMAND_TO_ONE,TRUE,,Normalize demand to 1.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 START_YEAR,2017,,"When these values are entered for cases below, they are not scaled but entered as they should be used.",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
