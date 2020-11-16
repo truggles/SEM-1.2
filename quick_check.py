@@ -22,4 +22,7 @@ for m in missing:
     out += f"{m+1} "
 out = out.strip()
 out += "; do"
-print(out)
+if len(missing) > 0:
+    print(out)
+else:
+    print("All good")
