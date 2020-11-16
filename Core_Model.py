@@ -120,6 +120,7 @@ def core_model (global_dic, case_dic):
     fixed_cost_nuclear = case_dic['FIXED_COST_NUCLEAR']*numerics_cost_scaling
     fixed_cost_fuel_electrolyzer = case_dic['FIXED_COST_FUEL_ELECTROLYZER']*numerics_cost_scaling
     fixed_cost_fuel_chem_plant = case_dic['FIXED_COST_FUEL_CHEM_PLANT']*numerics_cost_scaling
+    fixed_cost_fuel_power = case_dic['FIXED_COST_FUEL_POWER']*numerics_cost_scaling
     fixed_cost_fuel_h2_storage = case_dic['FIXED_COST_FUEL_H2_STORAGE']*numerics_cost_scaling
     fixed_cost_storage = case_dic['FIXED_COST_STORAGE']*numerics_cost_scaling
     fixed_cost_storage2 = case_dic['FIXED_COST_STORAGE2']*numerics_cost_scaling
@@ -152,6 +153,7 @@ def core_model (global_dic, case_dic):
 
     efficiency_fuel_electrolyzer = case_dic['EFFICIENCY_FUEL_ELECTROLYZER']
     efficiency_fuel_chem_conversion = case_dic['EFFICIENCY_FUEL_CHEM_CONVERSION']
+    efficiency_fuel_power_conversion = case_dic['EFFICIENCY_FUEL_POWER_CONVERSION']
     decay_rate_fuel_h2_storage = case_dic['DECAY_RATE_FUEL_H2_STORAGE']
     fuel_value = case_dic['FUEL_VALUE']*numerics_cost_scaling
     fuel_demand = case_dic['FUEL_DEMAND']*numerics_demand_scaling
@@ -369,6 +371,15 @@ def core_model (global_dic, case_dic):
         else:
             capacity_fuel_chem_plant = case_dic['CAPACITY_FUEL_CHEM_PLANT'] * numerics_demand_scaling
 
+        # Can re-power the electricity system PGP-style
+        if(case_dic['CAPACITY_FUEL_POWER']<0):
+            capacity_fuel_power = cvx.Variable(1)
+            constraints += [
+                capacity_fuel_power >= 0
+                ]
+        else:
+            capacity_fuel_power = case_dic['CAPACITY_FUEL_POWER'] * numerics_demand_scaling
+
         if(case_dic['CAPACITY_FUEL_H2_STORAGE']<0):
             capacity_fuel_h2_storage = cvx.Variable(1)
             constraints += [
@@ -378,13 +389,20 @@ def core_model (global_dic, case_dic):
             capacity_fuel_h2_storage = case_dic['CAPACITY_FUEL_H2_STORAGE'] * numerics_demand_scaling
 
         dispatch_to_fuel_h2_storage = cvx.Variable(num_time_periods)
-        dispatch_from_fuel_h2_storage = cvx.Variable(num_time_periods)
+        dispatch_from_fuel_h2_storage_tot = cvx.Variable(num_time_periods)
+        dispatch_from_fuel_h2_storage_chem = cvx.Variable(num_time_periods)
+        dispatch_from_fuel_h2_storage_power = cvx.Variable(num_time_periods)
         fuel_h2_storage = cvx.Variable(num_time_periods)
+
         constraints += [
                 dispatch_to_fuel_h2_storage >= 0,
                 dispatch_to_fuel_h2_storage <= capacity_fuel_electrolyzer / efficiency_fuel_electrolyzer,
-                dispatch_from_fuel_h2_storage >= 0,
-                dispatch_from_fuel_h2_storage <= capacity_fuel_chem_plant / efficiency_fuel_chem_conversion,
+                dispatch_from_fuel_h2_storage_tot >= 0,
+                dispatch_from_fuel_h2_storage_chem >= 0,
+                dispatch_from_fuel_h2_storage_power >= 0,
+                dispatch_from_fuel_h2_storage_tot == dispatch_from_fuel_h2_storage_chem + dispatch_from_fuel_h2_storage_power,
+                dispatch_from_fuel_h2_storage_chem <= capacity_fuel_chem_plant / efficiency_fuel_chem_conversion,
+                dispatch_from_fuel_h2_storage_power <= capacity_fuel_power / efficiency_fuel_power_conversion,
                 fuel_h2_storage >= 0,
                 fuel_h2_storage <= capacity_fuel_h2_storage 
                 ]
@@ -393,18 +411,20 @@ def core_model (global_dic, case_dic):
         fcn2min += \
             capacity_fuel_electrolyzer * fixed_cost_fuel_electrolyzer +  \
             capacity_fuel_chem_plant * fixed_cost_fuel_chem_plant +  \
+            capacity_fuel_power * fixed_cost_fuel_power +  \
             capacity_fuel_h2_storage * fixed_cost_fuel_h2_storage +  \
             cvx.sum(dispatch_to_fuel_h2_storage * efficiency_fuel_electrolyzer * var_cost_fuel_electrolyzer)/num_time_periods + \
-            cvx.sum(dispatch_from_fuel_h2_storage * efficiency_fuel_chem_conversion * (var_cost_fuel_chem_plant + var_cost_fuel_co2))/num_time_periods
+            cvx.sum(dispatch_from_fuel_h2_storage_chem * efficiency_fuel_chem_conversion * (var_cost_fuel_chem_plant + var_cost_fuel_co2))/num_time_periods
+            # Assume PGP like "capacity_fuel_power" has zero var cost
 
         # The following negative is from the cost function because we are "selling" it into the fuels market
         # at a fixed price
         if fuel_value > 0:
-            fcn2min -= cvx.sum(dispatch_from_fuel_h2_storage)/num_time_periods * efficiency_fuel_chem_conversion * fuel_value 
+            fcn2min -= cvx.sum(dispatch_from_fuel_h2_storage_chem)/num_time_periods * efficiency_fuel_chem_conversion * fuel_value 
 
         if fuel_demand > 0:
             constraints += [
-                    cvx.sum(dispatch_from_fuel_h2_storage) * efficiency_fuel_chem_conversion / num_time_periods == fuel_demand
+                    cvx.sum(dispatch_from_fuel_h2_storage_chem) * efficiency_fuel_chem_conversion / num_time_periods == fuel_demand
                 ]
 
         idx_fuel_constraint = len(constraints)-1
@@ -414,7 +434,7 @@ def core_model (global_dic, case_dic):
             constraints += [
                     fuel_h2_storage[(i+1) % num_time_periods] == fuel_h2_storage[i]
                     + efficiency_fuel_electrolyzer * dispatch_to_fuel_h2_storage[i]
-                    - dispatch_from_fuel_h2_storage[i] - fuel_h2_storage[i]*decay_rate_fuel_h2_storage
+                    - dispatch_from_fuel_h2_storage_tot[i] - fuel_h2_storage[i]*decay_rate_fuel_h2_storage
                     ]
 
         #print ('done with FUEL')
@@ -423,9 +443,12 @@ def core_model (global_dic, case_dic):
     else:
         capacity_fuel_electrolyzer = 0
         capacity_fuel_chem_plant = 0
+        capacity_fuel_power = 0
         capacity_fuel_h2_storage = 0
         dispatch_to_fuel_h2_storage = np.zeros(num_time_periods)
-        dispatch_from_fuel_h2_storage = np.zeros(num_time_periods)
+        dispatch_from_fuel_h2_storage_tot = np.zeros(num_time_periods)
+        dispatch_from_fuel_h2_storage_chem = np.zeros(num_time_periods)
+        dispatch_from_fuel_h2_storage_power = np.zeros(num_time_periods)
         fuel_h2_storage = np.zeros(num_time_periods)
 
 #%%-------------------- storage ------------------------------------------
@@ -678,6 +701,7 @@ def core_model (global_dic, case_dic):
             + dispatch_from_pgp_storage
             + dispatch_from_csp
             + dispatch_unmet_demand
+            + dispatch_from_fuel_h2_storage_power / efficiency_fuel_power_conversion # dispatch_from_fuel_h2_storage_power is quantity of kWh leaving storage into fuel cell
             == demand_series + dispatch_to_storage + dispatch_to_storage2 + \
                     dispatch_to_pgp_storage + dispatch_to_fuel_h2_storage
             ]
@@ -784,7 +808,9 @@ def core_model (global_dic, case_dic):
         result['ENERGY_CSP_STORAGE'] = -1 * np.ones(demand_series.size)
 
         result['DISPATCH_TO_FUEL_H2_STORAGE'] = -1 * np.ones(demand_series.size)
-        result['DISPATCH_FROM_FUEL_H2_STORAGE'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_FROM_FUEL_H2_STORAGE_TOT'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_FROM_FUEL_H2_STORAGE_CHEM'] = -1 * np.ones(demand_series.size)
+        result['DISPATCH_FROM_FUEL_H2_STORAGE_POWER'] = -1 * np.ones(demand_series.size)
         result['FUEL_H2_STORAGE'] = -1 * np.ones(demand_series.size)
         
         result['DISPATCH_UNMET_DEMAND'] = -1 * np.ones(demand_series.size)
@@ -910,20 +936,29 @@ def core_model (global_dic, case_dic):
                 result['CAPACITY_FUEL_CHEM_PLANT'] = np.asscalar(capacity_fuel_chem_plant.value)/numerics_demand_scaling
             else:
                 result['CAPACITY_FUEL_CHEM_PLANT'] = case_dic['CAPACITY_FUEL_CHEM_PLANT']
+            if case_dic['CAPACITY_FUEL_POWER'] < 0:
+                result['CAPACITY_FUEL_POWER'] = np.asscalar(capacity_fuel_power.value)/numerics_demand_scaling
+            else:
+                result['CAPACITY_FUEL_POWER'] = case_dic['CAPACITY_FUEL_POWER']
             if case_dic['CAPACITY_FUEL_H2_STORAGE'] < 0:
                 result['CAPACITY_FUEL_H2_STORAGE'] = np.asscalar(capacity_fuel_h2_storage.value)/numerics_demand_scaling
             else:
                 result['CAPACITY_FUEL_H2_STORAGE'] = case_dic['CAPACITY_FUEL_H2_STORAGE']
             result['DISPATCH_TO_FUEL_H2_STORAGE'] = np.array(dispatch_to_fuel_h2_storage.value).flatten()/numerics_demand_scaling
-            result['DISPATCH_FROM_FUEL_H2_STORAGE'] = np.array(dispatch_from_fuel_h2_storage.value).flatten()/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_TOT'] = np.array(dispatch_from_fuel_h2_storage_tot.value).flatten()/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_CHEM'] = np.array(dispatch_from_fuel_h2_storage_chem.value).flatten()/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_POWER'] = np.array(dispatch_from_fuel_h2_storage_power.value).flatten()/numerics_demand_scaling
             result['FUEL_H2_STORAGE'] = np.array(fuel_h2_storage.value).flatten()/numerics_demand_scaling
             #result['CURTAILMENT_FUEL'] = result['CAPACITY_FUEL'] * np.ones(num_time_periods) - result['DISPATCH_TO_FUEL']
         else:
             result['CAPACITY_FUEL_ELECTROLYZER'] = capacity_fuel_electrolyzer/numerics_demand_scaling
             result['CAPACITY_FUEL_CHEM_PLANT'] = capacity_fuel_chem_plant/numerics_demand_scaling
+            result['CAPACITY_FUEL_POWER'] = capacity_fuel_power/numerics_demand_scaling
             result['CAPACITY_FUEL_H2_STORAGE'] = capacity_fuel_h2_storage/numerics_demand_scaling
             result['DISPATCH_TO_FUEL_H2_STORAGE'] = dispatch_to_fuel_h2_storage/numerics_demand_scaling
-            result['DISPATCH_FROM_FUEL_H2_STORAGE'] = dispatch_from_fuel_h2_storage/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_TOT'] = dispatch_from_fuel_h2_storage_tot/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_CHEM'] = dispatch_from_fuel_h2_storage_chem/numerics_demand_scaling
+            result['DISPATCH_FROM_FUEL_H2_STORAGE_POWER'] = dispatch_from_fuel_h2_storage_power/numerics_demand_scaling
             result['FUEL_H2_STORAGE'] = fuel_h2_storage/numerics_demand_scaling
             #result['CURTAILMENT_FUEL'] = (capacity_fuel-dispatch_to_fuel)/numerics_demand_scaling
 
