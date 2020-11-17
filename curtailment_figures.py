@@ -55,6 +55,7 @@ def electro_cf_by_X(save, **kwargs):
     fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
 
     ims = []
+    css = []
     for i, c in enumerate(cases):
 
         #ary = []
@@ -70,6 +71,14 @@ def electro_cf_by_X(save, **kwargs):
     
         im = axs[i].imshow(m.T, aspect='auto', interpolation='none', origin='lower', vmax=1, vmin=0)
         ims.append(im)
+
+        n_levels = np.arange(0,1,.1)
+        c_fmt = '%1.1f'
+
+        cs = axs[i].contour(m.T, n_levels, colors='k', linewidths=1)
+        css.append(cs)
+        # inline labels
+        axs[i].clabel(cs, inline=1, fontsize=12, fmt=c_fmt)
         
         axs[i].set_title(names[c], **{'fontsize':12.5})
 
