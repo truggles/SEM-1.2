@@ -107,8 +107,8 @@ def get_single_file_details(f_name, fixed, storage_eff):
 
     df = pd.read_csv(f_name, dtype={'time (hr)': np.int64})
     
-    stored_energy = 0.
-    stored_frac_renew = 0.
+    #stored_energy = 0.
+    #stored_frac_renew = 0.
     electro_renew = 0.
     electro_fix = 0.
     dem_renew = 0.
@@ -137,19 +137,24 @@ def get_single_file_details(f_name, fixed, storage_eff):
             disp_renew = df.loc[idx, 'dispatch solar (kW)']
         disp_fix = df.loc[idx, f'dispatch {fixed} (kW)']
     
-        # From storage content
-        # Only calculate if energy coming from storage
-        if df.loc[idx, 'dispatch from storage (kW)'] > 0.:
-            stored_renew = stored_energy * stored_frac_renew
-            stored_fix = stored_energy * (1. - stored_frac_renew)
-            renew_out = df.loc[idx, 'dispatch from storage (kW)'] * stored_frac_renew
-            fix_out = df.loc[idx, 'dispatch from storage (kW)'] * (1. - stored_frac_renew)
-            stored_renew -= renew_out
-            stored_fix -= fix_out
-            disp_renew += renew_out
-            disp_fix += fix_out
-            stored_energy = stored_renew + stored_fix
-            stored_frac_renew = stored_renew / stored_energy
+        ## From storage content
+        ## Only calculate if energy coming from storage
+        #if df.loc[idx, 'dispatch from storage (kW)'] > 0.:
+        #    stored_renew = stored_energy * stored_frac_renew
+        #    stored_fix = stored_energy * (1. - stored_frac_renew)
+        #    renew_out = df.loc[idx, 'dispatch from storage (kW)'] * stored_frac_renew
+        #    fix_out = df.loc[idx, 'dispatch from storage (kW)'] * (1. - stored_frac_renew)
+        #    stored_renew -= renew_out
+        #    stored_fix -= fix_out
+        #    disp_renew += renew_out
+        #    disp_fix += fix_out
+        #    stored_energy = stored_renew + stored_fix
+
+        #    # Default to stored_frac_renew == 0.0
+        #    if stored_renew == 0.0 and stored_energy == 0.0:
+        #        stored_frac_renew = 0.0
+        #    else:
+        #        stored_frac_renew = stored_renew / max(stored_energy, stored_renew)
     
         disp_tot = disp_renew + disp_fix
         if disp_tot == 0.:
@@ -159,17 +164,17 @@ def get_single_file_details(f_name, fixed, storage_eff):
 
     
         
-        # Dispatch to Y
-        # To storage content
-        # Only calculate if energy going into storage
-        if df.loc[idx, 'dispatch to storage (kW)'] > 0.:
-            stored_renew = stored_energy * stored_frac_renew
-            stored_fix = stored_energy * (1. - stored_frac_renew)
-            stored_renew += df.loc[idx, 'dispatch to storage (kW)'] * storage_eff * disp_frac_renew
-            stored_fix += df.loc[idx, 'dispatch to storage (kW)'] * storage_eff * (1. - disp_frac_renew)
-            stored_energy = stored_renew + stored_fix
-            stored_frac_renew = stored_renew / stored_energy
-            disp_tot -= df.loc[idx, 'dispatch to storage (kW)']
+        ## Dispatch to Y
+        ## To storage content
+        ## Only calculate if energy going into storage
+        #if df.loc[idx, 'dispatch to storage (kW)'] > 0.:
+        #    stored_renew = stored_energy * stored_frac_renew
+        #    stored_fix = stored_energy * (1. - stored_frac_renew)
+        #    stored_renew += df.loc[idx, 'dispatch to storage (kW)'] * storage_eff * disp_frac_renew
+        #    stored_fix += df.loc[idx, 'dispatch to storage (kW)'] * storage_eff * (1. - disp_frac_renew)
+        #    stored_energy = stored_renew + stored_fix
+        #    stored_frac_renew = stored_renew / max(stored_energy, stored_renew)
+        #    disp_tot -= df.loc[idx, 'dispatch to storage (kW)']
     
         # To demand
         to_demand = df.loc[idx, 'demand (kW)'] - df.loc[idx, 'dispatch unmet demand (kW)']
