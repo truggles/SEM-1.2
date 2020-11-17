@@ -1266,6 +1266,7 @@ if '__main__' in __name__:
     fixed_electrolyzer = 1
     fixed_natGasCCS = 1
     include_PGP = False
+    full_reliability = False
     for arg in sys.argv:
         if 'date' in arg:
             date = arg.split('_')[1]
@@ -1293,6 +1294,8 @@ if '__main__' in __name__:
             fixed_natGasCCS = float(arg.split('_')[-1])
         if 'INCLUDE_PGP' in arg:
             include_PGP = True
+        if 'FULL_RELIABILITY' in arg:
+            full_reliability = True
 
     input_file = 'fuel_test_20201115_AllCases_EIAPrices.csv'
     #input_file = 'fuel_test_20200802_AllCases_EIAPrices_100PctReli.csv'
@@ -1312,6 +1315,7 @@ if '__main__' in __name__:
     print(f'Demand multiplication factor:  {round(multiplication_factor,3)}')
     print(f'H2_ONLY:                       {h2_only}')
     print(f'INCLUDE_PGP:                   {include_PGP}')
+    print(f'FULL_RELIABILITY:              {full_reliability}')
     print(f'Number of jobs:                {n_jobs}')
     print(f'Job number:                    {job_num}')
     print(f'\n - RUN_SEM =          {run_sem}')
@@ -1352,6 +1356,10 @@ if '__main__' in __name__:
 
     if include_PGP:
         settings['capacity_PGP_power'] = -1 # This will optimize the values
+
+    if full_reliability:
+        settings['system_reliability'] = 1 # 100% reliability
+
 
     # Adjust included techs based on desired case:
     if case == 'Case0_NuclearFlatDemand':
