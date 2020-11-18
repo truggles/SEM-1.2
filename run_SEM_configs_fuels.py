@@ -1403,9 +1403,10 @@ if '__main__' in __name__:
     # if h2_only is True, costs for CO2, H2 storage, and chem plant are set to 1e-9
     if h2_only:
         settings['fixed_cost_fuel_chem_plant'] = 1e-9
-        settings['fixed_cost_fuel_h2_storage'] = 1e-9
         settings['var_cost_fuel_chem_plant'] = 1e-9
         settings['var_cost_fuel_co2'] = 1e-9
+        if not include_PGP:
+            settings['fixed_cost_fuel_h2_storage'] = 1e-9
 
     vre_start = 0.1
     vre_end = 1.5
