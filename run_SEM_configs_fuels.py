@@ -220,6 +220,10 @@ def get_results(files, global_name):
                 info['dispatch from fuel h2 storage (kW)'].values[0]
             info['dispatch from fuel h2 storage chem plant (kW)'] = 0.
             info['dispatch from fuel h2 storage power (kW)'] = 0.
+        if not hasattr(info, 'fixed cost fuel power ($/kW/h)'):
+            info['fixed cost fuel power ($/kW/h)'] = 0.
+            info['efficiency fuel power conversion'] = 0.
+            info['capacity fuel power (kW)'] = 0.
 
         #print(info)
         keys.append(info['case name'].values[0])
@@ -272,6 +276,9 @@ def get_results(files, global_name):
                        float(info['fixed cost storage ($/kWh/h)'].values[0]),
                        float(info['fixed cost fuel electrolyzer ($/kW/h)'].values[0]),
                        float(info['efficiency fuel electrolyzer'].values[0]),
+                       float(info['fixed cost fuel power ($/kW/h)'].values[0]),
+                       float(info['efficiency fuel power conversion'].values[0]),
+                       float(info['capacity fuel power (kW)'].values[0]),
         ]
 
         # Set ~zero values to zero
@@ -285,7 +292,7 @@ def get_results(files, global_name):
     print('Writing results to "resultsX/Results_{}.csv"'.format(global_name))
     ofile = open('resultsX/Results_{}.csv'.format(global_name), 'w')
     keys = sorted(keys)
-    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity natgas_ccs (kW),dispatch natgas_ccs (kW),curtailment natgas_ccs (kW),fixed cost natgas_ccs ($/kW/h),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch from fuel h2 storage tot (kW),dispatch from fuel h2 storage chem plant (kW),dispatch from fuel h2 storage power (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer\n')
+    ofile.write('case name,problem status,fuel cost ($/GGE),fuel demand (kWh),mean demand (kW),system cost ($/kW/h),capacity nuclear (kW),capacity natgas_ccs (kW),dispatch natgas_ccs (kW),curtailment natgas_ccs (kW),fixed cost natgas_ccs ($/kW/h),capacity solar (kW),capacity wind (kW),capacity storage (kWh),capacity fuel electrolyzer (kW),capacity fuel chem plant (kW),capacity fuel h2 storage (kWh),dispatch to fuel h2 storage (kW),dispatch from fuel h2 storage (kW),dispatch from fuel h2 storage tot (kW),dispatch from fuel h2 storage chem plant (kW),dispatch from fuel h2 storage power (kW),dispatch unmet demand (kW),dispatch nuclear (kW),dispatch wind (kW),dispatch solar (kW),dispatch to storage (kW),dispatch from storage (kW),energy storage (kWh),curtailment nuclear (kW),curtailment wind (kW),curtailment solar (kW),fixed cost fuel electrolyzer ($/kW/h),fixed cost fuel chem plant ($/kW/h),fixed cost fuel h2 storage ($/kWh/h),var cost fuel electrolyzer ($/kW/h),var cost fuel chem plant ($/kW/h),var cost fuel co2 ($/kW/h),fuel h2 storage (kWh),fuel price ($/kWh),mean price ($/kWh),max price ($/kWh),system reliability,fixed cost wind ($/kW/h),fixed cost solar ($/kW/h),fixed cost nuclear ($/kW/h),fixed cost storage ($/kWh/h),fixed cost fuel electrolyzer ($/kW/h),efficiency fuel electrolyzer,fixed cost fuel power ($/kW/h),efficiency fuel power conversion,capacity fuel power (kW)\n')
     for key in keys:
         to_print = ''
         for info in results[key]:
