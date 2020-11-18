@@ -149,7 +149,7 @@ CHARGING_EFFICIENCY_CSP_STORAGE,1,,Assume that all costs are in units of per kWh
 FIXED_COST_FUEL_ELECTROLYZER,0.034609,($/h)/kW,"See electrolyzer + compressor calculation in ""Electricity_system_and_electrofuel_costs_EIA_and_Lazard_and_Konig.xlsx""",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 FIXED_COST_FUEL_COMPRESSOR,0.00E+00,($/h)/kW (added to Electrolyzer b/c same scaling),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 FIXED_COST_FUEL_CHEM_PLANT,1.76E-02,($/h)/kW,All Fuels details see: https://github.com/truggles/SEM-1.2/blob/fb647ddfbc28d07b326d2e3c031ab7fb8d3e48fb/analytic_fuels.py,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-FIXED_COST_FUEL_POWER,6.31E-02,($/h)/kW,"Dowling et al 2020, Table 1",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+FIXED_COST_FUEL_POWER,0.05846393323,($/h)/kW,"Table 6-4 in https://www.epa.gov/sites/production/files/2015-07/documents/catalog_of_chp_technologies.pdf with 8% inflation adjustment to bring from 2014 to 2019 cost basis",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 FIXED_COST_FUEL_H2_STORAGE,3.73E-06,$/kWh,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 VAR_COST_FUEL_ELECTROLYZER,0.00E+00,$/kWh,"*Small, but non-zero value",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 VAR_COST_FUEL_CHEM_PLANT,7.47E-02,$/kWh,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
