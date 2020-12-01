@@ -181,6 +181,9 @@ def stacked_plot(**kwargs):
             renewable_curt = (dfs[c]['curtailment wind (kW)'] + dfs[c]['curtailment solar (kW)']) / tot_load
             #fuel_load = dfs[c]['dispatch to fuel h2 storage (kW)'] / tot_load
             fuel_load = dfs[c]['dispatch from fuel h2 storage chem plant (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER / tot_load
+            pgp_power = EFFICIENCY_FUEL_POWER * dfs[c]['dispatch from fuel h2 storage power (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER / tot_load
+            pgp_losses = pgp_power / (EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_POWER)
+            #pgp_power_curt = dfs[c]['capacity fuel power (kW)'] / tot_load - pgp_power
             elec_load = 1. / tot_load
             dem_renew_frac = dfs[c]['dem_renew_frac']
             electro_renew_frac = dfs[c]['electro_renew_frac']
@@ -194,6 +197,8 @@ def stacked_plot(**kwargs):
                 tot += elec_load*dem_renew_frac
                 axs[i].fill_between(x_vals, tot, tot+elec_load*(1. - dem_renew_frac), color=colors[0], linewidth=0, alpha=0.5, label=f'power to electric load - dispatch')
                 tot += elec_load*(1. - dem_renew_frac)
+                axs[i].fill_between(x_vals, tot, tot+pgp_losses, color='gray', linewidth=0, alpha=1, label=f'pgp losses')
+                tot += pgp_losses
                 axs[i].fill_between(x_vals, tot, tot+fuel_load*electro_renew_frac, color=colors[1], linewidth=0, label=f'power to flexible load - renew')
                 tot += fuel_load*electro_renew_frac
                 axs[i].fill_between(x_vals, tot, tot+fuel_load*(1. - electro_renew_frac), color=colors[1], linewidth=0, alpha=0.5, label=f'power to flexible load - dispatch')
@@ -202,6 +207,13 @@ def stacked_plot(**kwargs):
                 tot += renewable_curt
                 axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
                 tot += nuclear_curt
+                #axs[i].fill_between(x_vals, tot, tot+pgp_power_curt, color=colors[4], linewidth=0, alpha=1, label=f'pgp power_curt')
+                #tot += pgp_power_curt
+                #if i == 2:
+                #    print(i, c, "Tot avail gen / tot load")
+                #    for ff, v in zip(x_vals, tot):
+                #        print(ff, v)
+                #        break
 
                 if 'ylim' in kwargs.keys():
                     y_max = kwargs['ylim'][1]
@@ -431,6 +443,11 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
         # Marginal flexible load electricity cost
         axs[i].plot(dfs[c][var], dfs[c]['fuel_load_cost'], label=r'marginal cost: flexible load', color=colors[1])
+        #if i == 2:
+        #    print(i, c, "marginal cost: flexible load")
+        #    for ff, v in zip(dfs[c][var], dfs[c]['fuel_load_cost']):
+        #        print(ff, v)
+        #        break
 
         #if i == 2:
         #    print(i, c)
@@ -439,6 +456,11 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
         # System-wide electricity cost
         axs[i].plot(dfs[c][var], dfs[c]['avg_elec_cost'], 'k--', label=r'system-wide cost', linewidth=2)
+        #if i == 2:
+        #    print(i, c, "system-wide costs")
+        #    for ff, v in zip(dfs[c][var], dfs[c]['avg_elec_cost']):
+        #        print(ff, v)
+        #        break
 
 
 
@@ -532,8 +554,9 @@ if '__main__' in __name__:
     # Efficiencies so I don't have to pull them from the cfgs for the moment, FIXME
     EFFICIENCY_FUEL_ELECTROLYZER=0.607 # Updated 4 March 2020 based on new values
     EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
+    EFFICIENCY_FUEL_POWER=0.70
 
-    save_dir = f'./plots_{date}_{version1}_NEW_pgpTest/'
+    save_dir = f'./plots_{date}_{version1}_NEW_pgpTestX/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
