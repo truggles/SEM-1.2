@@ -701,7 +701,7 @@ def core_model (global_dic, case_dic):
             + dispatch_from_pgp_storage
             + dispatch_from_csp
             + dispatch_unmet_demand
-            + dispatch_from_fuel_h2_storage_power / efficiency_fuel_power_conversion # dispatch_from_fuel_h2_storage_power is quantity of kWh leaving storage into fuel cell
+            + dispatch_from_fuel_h2_storage_power * efficiency_fuel_power_conversion # dispatch_from_fuel_h2_storage_power is quantity of kWh leaving storage into fuel cell
             == demand_series + dispatch_to_storage + dispatch_to_storage2 + \
                     dispatch_to_pgp_storage + dispatch_to_fuel_h2_storage
             ]
