@@ -181,9 +181,11 @@ def stacked_plot(**kwargs):
             renewable_curt = (dfs[c]['curtailment wind (kW)'] + dfs[c]['curtailment solar (kW)']) / tot_load
             #fuel_load = dfs[c]['dispatch to fuel h2 storage (kW)'] / tot_load
             fuel_load = dfs[c]['dispatch from fuel h2 storage chem plant (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER / tot_load
-            pgp_power = EFFICIENCY_FUEL_POWER * dfs[c]['dispatch from fuel h2 storage power (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER / tot_load
-            pgp_losses = pgp_power / (EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_POWER)
-            #pgp_power_curt = dfs[c]['capacity fuel power (kW)'] / tot_load - pgp_power
+            #pgp_power_output = EFFICIENCY_FUEL_POWER * dfs[c]['dispatch from fuel h2 storage power (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER / tot_load
+            pgp_power_output = EFFICIENCY_FUEL_POWER * dfs[c]['dispatch from fuel h2 storage power (kW)'] / tot_load
+            pgp_input = pgp_power_output / (EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_POWER)
+            pgp_losses = pgp_input - pgp_power_output
+            #pgp_power_output_curt = dfs[c]['capacity fuel power (kW)'] / tot_load - pgp_power_output
             elec_load = 1. / tot_load
             dem_renew_frac = dfs[c]['dem_renew_frac']
             electro_renew_frac = dfs[c]['electro_renew_frac']
@@ -207,8 +209,23 @@ def stacked_plot(**kwargs):
                 tot += renewable_curt
                 axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
                 tot += nuclear_curt
-                #axs[i].fill_between(x_vals, tot, tot+pgp_power_curt, color=colors[4], linewidth=0, alpha=1, label=f'pgp power_curt')
-                #tot += pgp_power_curt
+                #axs[i].fill_between(x_vals, tot, tot+pgp_power_output_curt, color=colors[4], linewidth=0, alpha=1, label=f'pgp power_curt')
+                #tot += pgp_power_output_curt
+                #if i == 2:
+                #    print(i, c, "pgp_losses")
+                #    for ff, v in zip(x_vals, pgp_losses):
+                #        print(ff, v)
+                #        break
+                #if i == 2:
+                #    print(i, c, "pgp_input")
+                #    for ff, v in zip(x_vals, pgp_input):
+                #        print(ff, v)
+                #        break
+                #if i == 2:
+                #    print(i, c, "pgp_power_output")
+                #    for ff, v in zip(x_vals, pgp_power_output):
+                #        print(ff, v)
+                #        break
                 #if i == 2:
                 #    print(i, c, "Tot avail gen / tot load")
                 #    for ff, v in zip(x_vals, tot):
