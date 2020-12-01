@@ -331,6 +331,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         #f_elec *= conversion
         f_chem *= conversion
         f_store *= conversion * (dfs[c]['dispatch from fuel h2 storage chem plant (kW)'] / dfs[c]['dispatch from fuel h2 storage tot (kW)'])
+        f_store = np.zeros(len(dfs[c]['fixed cost fuel h2 storage ($/kWh/h)']))
         f_tot = (f_elec+f_chem+f_store)
         #f_store *= conversion
         #f_tot *= conversion
@@ -610,7 +611,8 @@ if '__main__' in __name__:
         f_elec = df['fixed cost fuel electrolyzer ($/kW/h)'] * df['capacity fuel electrolyzer (kW)'] * (df['dispatch from fuel h2 storage chem plant (kW)'] / df['dispatch from fuel h2 storage tot (kW)']) / df['fuel demand (kWh)']
         f_chem = df['fixed cost fuel chem plant ($/kW/h)'] * df['capacity fuel chem plant (kW)'] / df['fuel demand (kWh)']
         #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] / df['fuel demand (kWh)']
-        f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] * (df['dispatch from fuel h2 storage chem plant (kW)'] / df['dispatch from fuel h2 storage tot (kW)']) / df['fuel demand (kWh)']
+        #f_store = df['fixed cost fuel h2 storage ($/kWh/h)'] * df['capacity fuel h2 storage (kWh)'] * (df['dispatch from fuel h2 storage chem plant (kW)'] / df['dispatch from fuel h2 storage tot (kW)']) / df['fuel demand (kWh)']
+        f_store = np.zeros(len(df['fixed cost fuel h2 storage ($/kWh/h)']))
         #v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
         v_chem = df['var cost fuel chem plant ($/kW/h)'] * df['dispatch from fuel h2 storage chem plant (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
         #v_co2 = df['var cost fuel co2 ($/kW/h)'] * df['dispatch from fuel h2 storage (kW)'] * EFFICIENCY_FUEL_CHEM_CONVERSION / df['fuel demand (kWh)']
