@@ -71,6 +71,7 @@ def plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, tech
 
     plt.tight_layout()
     horiz = -1.1 if case != 'Case6_NuclearWindSolarStorage' else -1.1
+    horiz = -1.2 # AGU
     vert = 2
     handles, labels = plt.gca().get_legend_handles_labels()
     if len(handles) > 9:
@@ -128,6 +129,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
 
     #plt.tight_layout()
     horiz = -3.65
+    horiz = -3.85
     vert = 1.35
     if "Case5" in case or "Case6" in case:
         vert = 1.45
@@ -232,6 +234,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     fblw = 0.25
     if days < 7:
         fblw = .75
+    fblw2 = 1.5
 
     bottom = np.zeros(len(xs))
     if 'solar' in techs:
@@ -241,16 +244,16 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         ax.fill_between(xs, bottom, bottom + dfs['dispatch wind (kW)'], color='blue', alpha=0.2, label='power from wind', lw=fblw)
         bottom += dfs['dispatch wind (kW)'].values
     if disp in techs:
-        ax.fill_between(xs, bottom, bottom + dfs[f'dispatch {disp} (kW)'], color='tan', alpha=0.5, label='power from dispatch', lw=fblw)
+        ax.fill_between(xs, bottom, bottom + dfs[f'dispatch {disp} (kW)'], color='tan', alpha=0.5, label='power from natural gas', lw=fblw)
         bottom += dfs[f'dispatch {disp} (kW)'].values
     if 'storage' in techs:
         ax.fill_between(xs, bottom, bottom + dfs['dispatch from storage (kW)'], color='magenta', alpha=0.2, label='power from storage', lw=fblw)
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='black', hatch='/////', label='power to firm electric load', lw=fblw)
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='dimgray', hatch='/////', label='power to firm electric load', lw=fblw2)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
-    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='green', hatch='xxxxx', label='power to flexible load', lw=fblw)
+    ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxx', label='power to flexible load', lw=fblw2)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
@@ -259,7 +262,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw, label='firm electric load')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw2, label='firm electric load')
 
     bottom3 = np.zeros(len(xs))
     lab = 'cap.'
@@ -279,8 +282,8 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         if 'solar' in techs or 'wind' in techs:
             lab += ' + disp.'
         else:
-            lab = 'capacity dispatch'
-        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_disp, 'r-', linewidth=fblw, label=lab)
+            lab = 'natural gas capacity'
+        ax.plot(xs, bottom3 + np.ones(len(xs))*cap_disp, 'b-', linewidth=fblw2, label=lab)
 
     if set_max == -1:
         set_max = ax.get_ylim()[1]
@@ -328,7 +331,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots8'
+    save_dir = 'out_plots10'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
@@ -338,6 +341,7 @@ if '__main__' in __name__:
     date = '20200725_v5'
     date = '20200803_v2'
     date = '20200805_v2'
+    #date = '20201116_v5fullReli'
     base = 'Output_Data/'
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
@@ -364,18 +368,6 @@ if '__main__' in __name__:
             #'10.20862',
     ]
     tgt_fuel_dems_select = [
-            ##'0.012',   # 40 cases
-            #'0.02489',   # 40 cases
-            ##'0.05161',   # 40 cases
-            #'0.07432',   # 40 cases
-            ##'0.10702',   # 40 cases
-            #'0.2219',   # 40 cases
-            ##'0.31954',   # 40 cases
-            ##'1.14497',   # 40 cases
-            ##'10.20862',   # 40 cases
-            #'0.02593', # 75 cases
-            #'0.07398', # 75 cases
-            #'0.23221', # 75 cases 
             '0.02179', # new FF w/ 103 cases 
             '0.07305', # new FF w/ 103 cases 
             #'0.13799',
