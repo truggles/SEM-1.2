@@ -479,6 +479,10 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
         #        print(ff, v)
         #        break
 
+        #tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+        #tot_load = 1. + dfs[c]['fuel demand (kWh)'] / (tot_eff_fuel_process)
+        #alt_sys_wide = (dfs[c]['system cost ($/kW/h)'] - dfs[c]['capacity fuel electrolyzer (kW)'] * dfs[c]['fixed cost fuel electrolyzer ($/kW/h)']  * (dfs[c]['dispatch from fuel h2 storage chem plant (kW)'] / dfs[c]['dispatch from fuel h2 storage tot (kW)'])) / tot_load
+        #axs[i].plot(dfs[c][var], alt_sys_wide, 'r:', label=r'system-wide cost', linewidth=2)
 
 
         plt.xscale('linear')
@@ -573,7 +577,7 @@ if '__main__' in __name__:
     EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
     EFFICIENCY_FUEL_POWER=0.70
 
-    save_dir = f'./plots_{date}_{version1}_NEW_pgpTestX/'
+    save_dir = f'./plots_{date}_{version1}_NEW_pgpTestXx/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 

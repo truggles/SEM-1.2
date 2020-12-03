@@ -200,6 +200,11 @@ def stacked_plot(**kwargs):
                 tot += renewable_curt
                 axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
                 tot += nuclear_curt
+                #if i == 2:
+                #    print(i, c, "Tot avail gen / tot load")
+                #    for ff, v in zip(x_vals, tot):
+                #        print(ff, v)
+                #        break
 
                 if 'ylim' in kwargs.keys():
                     y_max = kwargs['ylim'][1]
@@ -416,9 +421,25 @@ def costs_plot_alt(var='fuel demand (kWh)', **kwargs):
 
         tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
         axs[i].plot(dfs[c][var], dfs[c]['fuel_load_cost'], label=r'marginal cost: flexible load', color=colors[1])
+        #if i == 2:
+        #    print(i, c, "marginal cost: flexible load")
+        #    for ff, v in zip(dfs[c][var], dfs[c]['fuel_load_cost']):
+        #        print(ff, v)
+        #        break
 
         avg_elec_cost = dfs[c]['mean price ($/kWh)'] * (1. - dfs[c][var]) + dfs[c]['fuel_load_cost'] * dfs[c][var]
         axs[i].plot(dfs[c][var], avg_elec_cost, 'k--', label=r'system-wide cost', linewidth=2)
+        
+        #tot_load = 1. + dfs[c]['fuel demand (kWh)'] / (tot_eff_fuel_process)
+        #alt_sys_wide = (dfs[c]['system cost ($/kW/h)'] - dfs[c]['capacity fuel electrolyzer (kW)'] * dfs[c]['fixed cost fuel electrolyzer ($/kW/h)']) / tot_load
+        #axs[i].plot(dfs[c][var], alt_sys_wide, 'r:', label=r'system-wide cost', linewidth=2)
+
+
+        #if i == 2:
+        #    print(i, c, "system-wide costs")
+        #    for ff, v in zip(dfs[c][var], avg_elec_cost):
+        #        print(ff, v)
+        #        break
 
 
 
@@ -510,7 +531,7 @@ if '__main__' in __name__:
     EFFICIENCY_FUEL_ELECTROLYZER=0.607 # Updated 4 March 2020 based on new values
     EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
 
-    save_dir = f'./plots_{date}_{version1}_NEW/'
+    save_dir = f'./plots_{date}_{version1}_NEWxx/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
