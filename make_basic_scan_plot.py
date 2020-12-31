@@ -967,7 +967,7 @@ def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, sola
         df_sort = df.sort_values(by=['RL'], ascending=False)
 
         if PRINT and year == 2017:
-            return df_sort.iloc[:20:].index.tolist()
+            return df_sort.iloc[:hours_per_year:].index.tolist()
 
 
         rls_tmp = df_sort.iloc[:hours_per_year:]['RL'].values
@@ -1097,7 +1097,19 @@ print(f"Input arg list {sys.argv}")
 if len(sys.argv) > 1:
     region = sys.argv[1]
 
+if len(sys.argv) > 2:
+    HOURS_PER_YEAR = int(sys.argv[2])
+else:
+    HOURS_PER_YEAR = 20
+
+if len(sys.argv) > 3:
+    TEST_SENSITIVITY = True
+else:
+    TEST_SENSITIVITY = False
+
 print(f"Region: {region}")
+print(f"Peak Hours: {HOURS_PER_YEAR}")
+print(f"Test Sensitivity: {TEST_SENSITIVITY}")
 
 im = return_file_info_map(region)
 demand, wind, solar = get_dem_wind_solar(im)
@@ -1137,6 +1149,10 @@ int_thresholds = [0.9997, 0.999, 0.9999]
 solar_max = 1.
 wind_max = 1.
 steps = 101
+if TEST_SENSITIVITY:
+    solar_max = 0.25
+    wind_max = 0.25
+    steps = 26
 #steps = 3
 #solar_max = .25
 #wind_max = .5
@@ -1148,11 +1164,11 @@ print("Wind gen increments:", wind_gen_steps)
 print("Solar gen increments:", solar_gen_steps)
 
 #plot_base = f'plots_new_Jan28x_{region}' # Used 81 steps solar=1 wind=2
-plot_base = f'plots_{DATE}_{steps}x{steps}_{region}'
+plot_base = f'plots/plots_{DATE}_{steps}x{steps}_{region}_hrs{HOURS_PER_YEAR}'
 if not os.path.exists(plot_base):
     os.makedirs(plot_base)
 
-pkl_file = f'pkl_{DATE}_{steps}x{steps}_{region}'
+pkl_file = f'pkls/pkl_{DATE}_{steps}x{steps}_{region}_hrs{HOURS_PER_YEAR}'
 
 if test_ordering:
     dfs = OrderedDict()
@@ -1254,7 +1270,7 @@ if test_ordering:
     #    for i, solar_install_cap in enumerate(solar_cap_steps):
     #        solar_gen = solar_gen_steps[i]
 
-    #        hours_per_year = 20
+    #        hours_per_year = HOURS_PER_YEAR
     #        rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
     #        solar_by_hours.append(hours)
     #        s_gens.append(solar_gen)
@@ -1286,7 +1302,7 @@ if test_ordering:
 
 
             # Get top 20 peak residual load hours for each combo
-            hours_per_year = 20
+            hours_per_year = HOURS_PER_YEAR
             rls, w_cfs, s_cfs, pls, rl_vects, stds, mus, hours = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap)
             mapper[str(round(solar_gen,2))][str(round(wind_gen,2))] = [rls, w_cfs, s_cfs, pls, stds, mus]
 
