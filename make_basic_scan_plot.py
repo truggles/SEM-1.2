@@ -74,6 +74,12 @@ def return_file_info_map(region):
             'wind': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_wind.csv', 0, 'w_cfs', 'year'],
             'solar': ['Input_Data/ReliabilityPaper/20200624v4_PJM_2018_mthd3_1990-2019_solar.csv', 0, 's_cfs', 'year'],
             'years' : [y for y in range(2006, 2020)],
+        },
+        'FR': { # New files Dec 2020
+            'demand': ['Input_Data/ReliabilityPaper/FR_demand_unnormalized.csv', 0, 'demand (MW)', 'year'],
+            'wind': ['Input_Data/ReliabilityPaper/20201230v3_FR_mthd3_1980-2019_wind.csv', 0, 'w_cfs', 'year'],
+            'solar': ['Input_Data/ReliabilityPaper/20201230v3_FR_mthd3_1980-2019_solar.csv', 0, 's_cfs', 'year'],
+            'years' : [y for y in range(2008, 2018)],
         }
     }
     return info_map[region]
@@ -246,6 +252,9 @@ def plot_peak_hours_vs_gen(region, plot_base, matrix, gen_steps, save_name):
     if region == 'ERCOT':
         shift = 6 # for CST
         zone = 'CST'
+    if region == 'FR':
+        shift = 0 # for UTC
+        zone = 'UTC'
 
 
     m2 = []
@@ -476,6 +485,9 @@ def plot_top_X_hours(dfs, top_X, save_name, wind_install_cap, solar_install_cap,
     if 'PJM' in base:
         adj = -5
         nm = 'EST'
+    if 'FR' in base:
+        adj = 0
+        nm = 'UTC'
     if 'CONUS' in base:
         adj = -6
         nm = 'CST'
@@ -954,7 +966,7 @@ def get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, sola
         df['RL'] = df['demand'] - df['solar'] * solar_install_cap - df['wind'] * wind_install_cap
         df_sort = df.sort_values(by=['RL'], ascending=False)
 
-        if PRINT and year == 2018:
+        if PRINT and year == 2017:
             return df_sort.iloc[:20:].index.tolist()
 
 
@@ -1101,7 +1113,7 @@ use_TMY = False
 test_ordering = True
 #test_ordering = False
 make_plots = True
-make_plots = False
+#make_plots = False
 make_scan = True
 make_scan = False
 
@@ -1116,6 +1128,7 @@ DATE = '20200897v1'
 DATE = '20200818v1'
 DATE = '20200825v1'
 DATE = '20200826v1'
+DATE = '20201230v1'
 
 thresholds = [1,]
 int_thresholds = [0.9997, 0.999, 0.9999]
@@ -1287,7 +1300,7 @@ if test_ordering:
             if (i==0 and j==0) or (i==25 and j==0) or (i==0 and j==25) or (i==25 and j==25) or (i==50 and j==0) or (i==0 and j==50) or (i==50 and j==50):
                 vals = get_top_X_per_year(hours_per_year, dfs, peak_indices, wind_install_cap, solar_install_cap, True)
                 vals.sort()
-                print(vals)
+                print(i, j, vals)
                 cnts = []
                 prev = -1
                 length = 1
