@@ -379,7 +379,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         fuel_costs = np.where(f_tot+v_chem+v_co2 < dfs[c]['fuel price ($/kWh)'] * conversion, f_tot+v_chem+v_co2, dfs[c]['fuel price ($/kWh)'] * conversion)
         axs[i].fill_between(dfs[c][var], 
                 fuel_costs, 
-                dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=0.7)
+                dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=0.7, linewidth=0)
 
         #if 'ALT' in kwargs.keys():
         #    tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
@@ -399,7 +399,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
             # Add storage to the electrolysis facility cost and cap that cost at the full cost
             lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
             top = np.where(f_elec+f_store > dfs[c]['fuel price ($/kWh)'] * conversion, dfs[c]['fuel price ($/kWh)'] * conversion, f_elec+f_store)
-            axs[i].fill_between(dfs[c][var], 0, top, label=lab, color=colors[1], alpha=0.7)
+            axs[i].fill_between(dfs[c][var], 0, top, label=lab, color=colors[1], alpha=0.7, linewidth=0)
         else:
             lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
             axs[i].fill_between(dfs[c][var], 0, f_elec, label=lab, color=colors[2])

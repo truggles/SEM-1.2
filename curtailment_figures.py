@@ -345,7 +345,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
             axs[i].fill_between(dfs[c][var], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost: CO$_{2}$ feedstock', color=colors[4])
 
 
-        axs[i].fill_between(dfs[c][var], f_tot+v_chem+v_co2, dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=0.7)
+        axs[i].fill_between(dfs[c][var], f_tot+v_chem+v_co2, dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=0.7, linewidth=0)
 
         #if 'ALT' in kwargs.keys():
         #    tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
@@ -361,7 +361,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
         # Build stack
         lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
-        axs[i].fill_between(dfs[c][var], 0, f_elec, label=lab, color=colors[1], alpha=0.7)
+        axs[i].fill_between(dfs[c][var], 0, f_elec, label=lab, color=colors[1], alpha=0.7, linewidth=0)
 
         plt.xscale('linear')
         axs[i].set_xlim(0.0, 1.0)
