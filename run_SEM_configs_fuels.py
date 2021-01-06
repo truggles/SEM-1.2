@@ -308,7 +308,8 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     print("Plot {} using x,y = {},{}".format(save, kwargs['x_label'],kwargs['y_label']))
 
     plt.close()
-    matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
+    #matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
+    matplotlib.rcParams["figure.figsize"] = (6.4*.7, 6.8*.7)
     fig, ax = plt.subplots()
     ax.set_xlabel(kwargs['x_label'])
     ax.set_ylabel(kwargs['y_label'])
@@ -396,7 +397,8 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
     if 'systemCFsEF' in save:
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
         ax.set_ylabel(ax.get_ylabel(), labelpad=-2)
-        plt.legend(ncol=2, loc='lower left', framealpha = 1.0)
+        if 'Case7' in kwargs['save_dir']:
+            plt.legend(ncol=1, loc='lower right', framealpha = 1.0)
     elif 'systemCFs' in save:
         plt.legend(ncol=3, loc='upper left', framealpha = 1.0)
     elif 'systemCosts' in save or 'powerSystemCosts' in save:
@@ -406,6 +408,7 @@ def simple_plot(x, ys, labels, save, logY=False, ylims=[-1,-1], **kwargs):
             plt.legend(loc='upper right', framealpha = 1.0)
     else:
         plt.legend(loc='upper left', framealpha = 1.0)
+    plt.subplots_adjust(left=0.17, right=.95)
     fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
     fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
 
@@ -698,7 +701,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     colors = color_list()
     plt.close()
-    y_max = 30
+    y_max = 22.5
     if 'h2_only' in kwargs.keys():
         if 'ALT' in kwargs.keys():
             y_max = 12
@@ -706,7 +709,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
             y_max = 8
     matplotlib.rcParams["figure.figsize"] = (6.4, 4.8)
     if not 'h2_only' in kwargs.keys():
-        matplotlib.rcParams["figure.figsize"] = (6.4, 6.8)
+        matplotlib.rcParams["figure.figsize"] = (6.4*.7, 6.8*.7)
     fig, ax = plt.subplots(dpi=400)
 
     # The left y-axis will use $/GGE for electrofuel or $/kg for H2
@@ -725,9 +728,9 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     appB = ''
     ep = 'electric power'
     if 'ALT' in kwargs.keys():
-        appA = ' (marginal cost)'
+        appA = '' # (marginal cost)'
         appB = appA #'\n(marginal cost)'
-        ep = 'power'
+        ep = 'electricity'
 
 
     # Electricity cost
@@ -736,7 +739,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
     # $/GGE fuel line use Dual Value
     #ax.scatter(df[var], df['fuel price ($/kWh)'], color='black', label='total electrofuel\n'+r'cost (\$/kWh$_{LHV}$)')
-    lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel production total'
+    lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label=lab+appB)
     for ff, cost in zip(df[var], df['fuel price ($/kWh)'] * conversion):
         if round(ff,2) == 0.50:
@@ -762,7 +765,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
 
 
     # Build stack
-    lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
+    lab = 'fixed: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
     ax.fill_between(df[var], 0, f_elec, label=lab, color=colors[0])
     for ff, cost in zip(df[var], f_elec):
         if round(ff,2) == 0.50:
@@ -770,13 +773,13 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #    break
 
     if 'h2_only' not in kwargs.keys():
-        ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed cost: chemical plant', color=colors[1])
-        ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed cost: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
-        ax.fill_between(df[var], f_tot, f_tot+v_chem, label='variable cost: chemical plant', color=colors[3])
-        ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable cost: CO$_{2}$ feedstock', color=colors[4])
+        ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chemical plant', color=colors[1])
+        ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color=colors[2]) # fixed cost storage set at 2.72E-7
+        ax.fill_between(df[var], f_tot, f_tot+v_chem, label='variable: chemical plant', color=colors[3])
+        ax.fill_between(df[var], f_tot+v_chem, f_tot+v_chem+v_co2, label='variable: CO$_{2}$ feedstock', color=colors[4])
 
 
-    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=.8, hatch='\\\\')
+    ax.fill_between(df[var], f_tot+v_chem+v_co2, df['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5])
     #ax.fill_between(df[var], 0, f_elec, label='fixed: electrolyzer +\ncompressor')
     #ax.fill_between(df[var], f_elec, f_elec+f_chem, label='fixed: chem plant')
     #ax.fill_between(df[var], f_elec+f_chem, f_elec+f_chem+f_store, label='fixed: storage', color='black') # fixed cost storage set at 2.72E-7
@@ -789,13 +792,13 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         avg_elec_cost = (df['mean price ($/kWh)'] * (1. - df[var]) + df['fuel_load_cost'] * df[var]) / tot_eff_fuel_process
         #for ff, cost, c2, c3 in zip(df[var], avg_elec_cost * conversion, avg_elec_cost * EFFICIENCY_FUEL_CHEM_CONVERSION, avg_elec_cost * tot_eff_fuel_process):
         #    print(ff, cost, c2, c3)
-        ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.3, color=colors[4])
-        lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel production total'
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
-        for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
-            if round(ff,2) == 0.50:
-                print("tot mean", ff, cost)
-        #    break
+        #ax.fill_between(df[var], f_tot+v_chem+v_co2, f_tot+v_chem+v_co2 + avg_elec_cost * conversion, label='power (system-wide cost)', hatch='////', alpha=0.3, color=colors[4])
+        #lab = r'H$_{2}$ production total' if 'h2_only' in kwargs.keys() else 'electrofuel production total'
+        #ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
+        #for ff, cost in zip(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion):
+        #    if round(ff,2) == 0.50:
+        #        print("tot mean", ff, cost)
+        ##    break
         
 
     n = len(df.index)-1
@@ -819,8 +822,8 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     #ax.scatter(df[var], df['mean price ($/kWh)'], color='black', label='_nolegend_', marker='v')
     #ax.plot(df[var], df['mean price ($/kWh)'], 'k--', label='_nolegend_')
     ax.plot(df[var], df['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
-    if 'ALT' in kwargs.keys():
-        ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label='_nolegend_')
+    #if 'ALT' in kwargs.keys():
+    #    ax.plot(df[var], f_tot+v_chem+v_co2 + avg_elec_cost * conversion, color='black', linestyle='--', label='_nolegend_')
 
     # Add vertical bars deliniating 3 regions:
     # 1) cheapest fuel cost --> +5%
@@ -863,6 +866,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     app2 = '_ALT' if 'ALT' in kwargs.keys() else ''
     ax.set_rasterized(True)
     ax2.set_rasterized(True)
+    plt.subplots_adjust(left=0.17, right=.85)
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.png')
     fig.savefig(f'{kwargs["save_dir"]}{kwargs["save_name"]}{app2}.pdf')
     print(f'{kwargs["save_dir"]}{kwargs["save_name"]}.png')
@@ -1311,8 +1315,8 @@ if '__main__' in __name__:
     version = f'{version}_{case}'
     global_name = 'fuel_test_{}_{}_{}_{}'.format(date, version, n_jobs, job_num)
     path = 'Output_Data/{}/'.format(global_name)
-    results = path+'results/'
-    results_search = 'Output_Data/fuel_test_{}_{}*/results/'.format(date, version)
+    results = path+'resultsX/'
+    results_search = 'Output_Data/fuel_test_{}_{}*/resultsX/'.format(date, version)
 
     # Print settings:
     print(f'\nGlobal name                    {global_name}')
@@ -1532,7 +1536,7 @@ if '__main__' in __name__:
             print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
             df = df.drop([i,])
 
-    save_dir = f'./plots_{date}_{version}/'
+    save_dir = f'./plots_{date}_{version}_XXX/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
