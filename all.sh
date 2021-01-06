@@ -15,13 +15,6 @@ ARGS="make_results_file"
 ARGS="make_plots"
 
 
-        #"Case0_NuclearFlatDemand" \
-        #"Case1_Nuclear" \
-        #"Case2_NuclearStorage" \
-        #"Case3_WindStorage" \
-        #"Case4_SolarStorage" \
-        #"Case6_NuclearWindSolarStorage" \
-        #"Case8_NatGasCCSStorage" \
 
 
 #Date="20200805" # NatGas+CCS H2_ONLY
@@ -35,19 +28,22 @@ ARGS="make_plots"
 #    ./curtailment_figures.py "date_$Date" $CASE "version_$version" $ARGS H2_ONLY
 #done
 
-##Date="20200805" # NatGas+CCS
-##version="v5"
-##ARGS="make_plots"
-##for CASE in \
-##        "Case5_WindSolarStorage" \
-##        "Case7_NatGasCCS" \
-##        "Case9_NatGasCCSWindSolarStorage" \
-##        ; do
-##    #./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS
-##    ./curtailment_figures.py "date_$Date" $CASE "version_$version" $ARGS
-##done
-#
-#
+#######################################################################
+#### Used for final results figures for systems making electrofuels ###
+#######################################################################
+#Date="20200805" # NatGas+CCS
+#version="v5"
+#ARGS="make_plots"
+#for CASE in \
+#        "Case5_WindSolarStorage" \
+#        "Case7_NatGasCCS" \
+#        "Case9_NatGasCCSWindSolarStorage" \
+#        ; do
+#    ./run_SEM_configs_fuels.py "date_$Date" $CASE "version_$version" $ARGS
+#    #./curtailment_figures.py "date_$Date" $CASE "version_$version" $ARGS
+#done
+
+
 ##Date="20200805" # NatGas+CCS H2_ONLY
 ##version="v2"
 ##./curtailment_figures.py "date_$Date" "Case_ALL" "version_$version" $ARGS H2_ONLY
@@ -85,4 +81,4 @@ version="v8pgp"
 
 Date="20200805" # NatGas+CCS H2_ONLY
 version="v2"
-./curtailment_figures.py "date_$Date" "Case_ALL" "version_$version" $ARGS H2_ONLY
+#./curtailment_figures.py "date_$Date" "Case_ALL" "version_$version" $ARGS H2_ONLY

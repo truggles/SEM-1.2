@@ -312,7 +312,7 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
     y_max = 30
     if 'h2_only' in kwargs.keys():
         if 'ALT' in kwargs.keys():
-            y_max = 8
+            y_max = 6
         else:
             y_max = 8
     #if not 'h2_only' in kwargs.keys():
@@ -379,27 +379,27 @@ def costs_plot(var='fuel demand (kWh)', **kwargs):
         fuel_costs = np.where(f_tot+v_chem+v_co2 < dfs[c]['fuel price ($/kWh)'] * conversion, f_tot+v_chem+v_co2, dfs[c]['fuel price ($/kWh)'] * conversion)
         axs[i].fill_between(dfs[c][var], 
                 fuel_costs, 
-                dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, edgecolor=colors[4], facecolor='none', hatch='\\\\\\\\\\\\')
+                dfs[c]['fuel price ($/kWh)'] * conversion, label=f'{ep}'+appA, color=colors[5], alpha=0.7)
 
-        if 'ALT' in kwargs.keys():
-            tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
-            axs[i].fill_between(dfs[c][var],
-                    fuel_costs, 
-                    f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, label='power (system-wide cost)', hatch='//', facecolor='none', edgecolor=colors[5])
-            lab = r'H$_{2}$ total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
-            axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
+        #if 'ALT' in kwargs.keys():
+        #    tot_eff_fuel_process = EFFICIENCY_FUEL_ELECTROLYZER * EFFICIENCY_FUEL_CHEM_CONVERSION
+        #    axs[i].fill_between(dfs[c][var],
+        #            fuel_costs, 
+        #            f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, label='power (system-wide cost)', hatch='//', facecolor='none', edgecolor=colors[5])
+        #    lab = r'H$_{2}$ total' if 'h2_only' in kwargs.keys() else 'electrofuel total'
+        #    axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, color='black', linestyle='--', label=lab+' (system-wide cost)')
             
 
         axs[i].plot(dfs[c][var], dfs[c]['fuel price ($/kWh)'] * conversion, 'k-', label='_nolegend_')
-        if 'ALT' in kwargs.keys():
-            axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, color='black', linestyle='--', label='_nolegend_')
+        #if 'ALT' in kwargs.keys():
+        #    axs[i].plot(dfs[c][var], f_tot+v_chem+v_co2 + (dfs[c]['avg_elec_cost']/tot_eff_fuel_process) * conversion, color='black', linestyle='--', label='_nolegend_')
 
         # Build stack
         if include_PGP and 'ALT' in kwargs.keys():
             # Add storage to the electrolysis facility cost and cap that cost at the full cost
             lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
             top = np.where(f_elec+f_store > dfs[c]['fuel price ($/kWh)'] * conversion, dfs[c]['fuel price ($/kWh)'] * conversion, f_elec+f_store)
-            axs[i].fill_between(dfs[c][var], 0, top, label=lab, color=colors[2])
+            axs[i].fill_between(dfs[c][var], 0, top, label=lab, color=colors[1], alpha=0.7)
         else:
             lab = 'fixed cost: electrolysis plant' # if 'h2_only' in kwargs.keys() else 'fixed: electrolysis\nplant'
             axs[i].fill_between(dfs[c][var], 0, f_elec, label=lab, color=colors[2])
@@ -577,7 +577,7 @@ if '__main__' in __name__:
     EFFICIENCY_FUEL_CHEM_CONVERSION=0.682
     EFFICIENCY_FUEL_POWER=0.70
 
-    save_dir = f'./plots_{date}_{version1}_NEW_pgpTestXx/'
+    save_dir = f'./plots_{date}_{version1}_pgpTest_XXX/'
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
