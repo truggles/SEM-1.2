@@ -663,7 +663,7 @@ if '__main__' in __name__:
 
 
     kwargs['save_name'] = 'stackedGenerationElecNorm' + m['app']
-    kwargs['y_label'] = 'total available generation (kW) /\nfirm electric load (kW)'
+    kwargs['y_label'] = 'total available generation (kW) /\nfirm load (kW)'
     kwargs['legend_app'] = ''
     kwargs['ylim'] = [0, 5]
     stacked_plot(**kwargs)

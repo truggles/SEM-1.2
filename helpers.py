@@ -91,6 +91,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     full_file_name = glob(f_name)
     assert(len(full_file_name) == 1)
     df = pd.read_csv(full_file_name[0])
+    print(full_file_name[0])
 
     # Find the idx to center to time series upon
     #center_idx = find_centering_hour_idx(df, case)
@@ -117,7 +118,7 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
         #print(this_file)
         if j == 0:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1) )
-            axs[-1].set_ylabel('power\n(% annual mean firm electric load)')
+            axs[-1].set_ylabel('power\n(% annual mean firm load)')
             axs[-1].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1, decimals=0))
         else:
             axs.append( plt.subplot(1, len(tgt_fuel_dems), j+1, sharey=axs[0]) )
@@ -205,6 +206,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     full_file_name = glob(out_file_name)
     assert(len(full_file_name) == 1), f"\n\nYour file list is: {full_file_name}"
     df = pd.read_csv(full_file_name[0])
+    print(full_file_name[0])
 
     print_flexible_CFs(df)
 
@@ -251,18 +253,18 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
         bottom += dfs['dispatch from storage (kW)'].values
 
     bottom2 = np.zeros(len(xs))
-    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='dimgray', hatch='/////', label='power to firm electric load', lw=fblw2)
+    ax.fill_between(xs, 0., dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='dimgray', hatch='/////', label='power to firm load', lw=fblw2)
     bottom2 += dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)']
     ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to fuel h2 storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxx', label='power to flexible load', lw=fblw2)
     bottom2 += dfs['dispatch to fuel h2 storage (kW)']
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet firm electric load', lw=fblw)
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet firm load', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
-    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw2, label='firm electric load')
+    ax.plot(xs, dfs['demand (kW)'], 'k-', linewidth=fblw2, label='firm load')
 
     bottom3 = np.zeros(len(xs))
     lab = 'cap.'
@@ -331,7 +333,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
 if '__main__' in __name__:
 
     save_dir = 'out_plots'
-    save_dir = 'out_plots10'
+    save_dir = 'out_plots11'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(save_dir+'/pdf')
@@ -343,6 +345,7 @@ if '__main__' in __name__:
     date = '20200805_v2'
     #date = '20201116_v5fullReli'
     base = 'Output_Data/'
+    base = 'resultsX/' # For committed files
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
             #"Case1_Nuclear" : [['nuclear',], 2, 2],
@@ -382,7 +385,8 @@ if '__main__' in __name__:
         #for idx, dem in enumerate(reversed(possible_dem_vals)):
         #    if str(dem) not in tgt_fuel_dems:
         #        continue
-        out_file_dir = f'{base}fuel_test_{date}_{case}*/'
+        #out_file_dir = f'{base}fuel_test_{date}_{case}*/'
+        out_file_dir = f'{base}fuel_test_{date}_{case}/' # For committed files
         out_file_name = f'fuel_test_{date}_{case}_*Run_*_fuelDXXXkWh_*.csv'
         #plot_peak_demand_grid(out_file_dir, out_file_name, tgt_fuel_dems, case, info[0], save_dir, info[1], True)
         plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems_select, case, info[0], save_dir, info[2])
