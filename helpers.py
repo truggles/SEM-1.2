@@ -92,6 +92,13 @@ def plot_peak_demand_select(out_file_dir, out_file_name, tgt_fuel_dems, case, te
     assert(len(full_file_name) == 1)
     df = pd.read_csv(full_file_name[0])
     print(full_file_name[0])
+    print(f"Max demand: { np.max( df['demand (kW)'] ) }")
+    print(f"Mean demand: { np.mean( df['demand (kW)'].mean() ) }")
+    print( f"Number of hours with unmet demand: {np.where( df['dispatch unmet demand (kW)'] > 0., 1, 0 ).sum()}")
+    print( f"Max hourly unmet demand: { np.max( df['dispatch unmet demand (kW)'] ) }")
+    print( f"Max hourly unmet demand frac of peak val: { np.max( df['dispatch unmet demand (kW)'] )/np.max( df['demand (kW)'] ) }")
+    print( f"Sum unmet demand: { np.sum( df['dispatch unmet demand (kW)'] ) }")
+    print( f"Unmet demand fraction: { np.sum( df['dispatch unmet demand (kW)'] )/len(df.index) }")
 
     # Find the idx to center to time series upon
     #center_idx = find_centering_hour_idx(df, case)
@@ -206,7 +213,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     full_file_name = glob(out_file_name)
     assert(len(full_file_name) == 1), f"\n\nYour file list is: {full_file_name}"
     df = pd.read_csv(full_file_name[0])
-    print(full_file_name[0])
+    #print(full_file_name[0])
 
     print_flexible_CFs(df)
 
@@ -260,7 +267,7 @@ def plot_peak_demand_system(ax, dem, center_idx, out_file_name, techs, save_dir,
     if 'storage' in techs:
         ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch to storage (kW)'], facecolor='none', edgecolor='magenta', hatch='xxxxx', label='power to storage', lw=fblw)
         bottom2 += dfs['dispatch to storage (kW)']
-    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='unmet firm load', lw=fblw)
+    ax.fill_between(xs, dfs['demand (kW)'] - dfs['dispatch unmet demand (kW)'], dfs['demand (kW)'], color='red', alpha=0.8, label='demand response reductions', lw=fblw)
     #ax.fill_between(xs, bottom2, bottom2 + dfs['dispatch unmet demand (kW)'], facecolor='none', edgecolor='red', hatch='|||||', label='Unmet demand')
 
 
@@ -344,7 +351,7 @@ if '__main__' in __name__:
     date = '20200803_v2'
     date = '20200805_v2'
     #date = '20201116_v5fullReli'
-    base = 'Output_Data/'
+    #base = 'Output_Data/'
     base = 'resultsX/' # For committed files
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
@@ -352,9 +359,10 @@ if '__main__' in __name__:
             #"Case2_NuclearStorage" : [['nuclear','storage'], 2, 2],
             #"Case3_WindStorage" : [['wind', 'storage'], 6, 5],
             #"Case4_SolarStorage" : [['solar', 'storage'], 5, 8],
-            #"Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 3, 3.5],
+            "Case5_WindSolarStorage" : [['wind', 'solar', 'storage'], 3, 3.5],
             #"Case6_NuclearWindSolarStorage" : [['nuclear', 'wind', 'solar', 'storage'], 3, 2.5],
             "Case7_NatGasCCS" : [['natgas_ccs',], 2, 2],
+            "Case9_NatGasCCSWindSolarStorage" : [['natgas_ccs',], 2, 2],
     }
 
     #possible_dem_vals = get_fuel_demands(0.01, 10, 1.2) # start, end, steps
