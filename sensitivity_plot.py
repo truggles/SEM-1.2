@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
+import matplotlib
 
 
 DATE = '20201230v1'
@@ -91,21 +92,106 @@ df = pd.read_csv('Sensitivity_summary.csv')
 multi = df.set_index(['region', 'solar', 'wind']).sort_index()
 
 
-for region in regions:
-    fig, ax = plt.subplots()
+#for region in regions:
+#    fig, ax = plt.subplots()
+#    
+#    for solar in solar_vals:
+#        for wind in wind_vals:
+#            ax.plot(multi.loc[(region, solar, wind)]['hours'], multi.loc[(region, solar, wind)]['inter'], label=f'{region} s{solar}:w{wind}')
+#
+#    ax.set_ylim(0, ax.get_ylim()[1])
+#    plt.legend()
+#    plt.savefig(f'plotsX/{region}.png')
+#
+#for region in regions:
+#    scale = 4.5
+#    fig, ax = plt.subplots(figsize=(1*scale,1*scale))
+#    plt.axhline(0, color='black')
+#    
+#    for solar in solar_vals:
+#        for wind in wind_vals:
+#            if solar == 0 and wind == 0:
+#                continue
+#            s = int(solar*100)
+#            w = int(wind*100)
+#            #ax.plot(multi.loc[(region, solar, wind)]['hours'].values, (multi.loc[(region, 0, 0)]['inter'].values - multi.loc[(region, solar, wind)]['inter'].values), label=f'(0% wind, 0% solars) - ({solar}% solar, {wind}% wind)')
+#            ax.plot(multi.loc[(region, solar, wind)]['hours'].values, (multi.loc[(region, 0, 0)]['inter'].values - multi.loc[(region, solar, wind)]['inter'].values), label=f'load - RL({s}% solar, {w}% wind)')
+#    ax.set_ylim(-3, 4)
+#    ax.set_xlim(0, 200)
+#    ax.set_ylabel(r"$\Delta$ inter-annual variability"+"\n(% mean annual load)")
+#    ax.tick_params(axis='y', right=True, left=True)
+#    ylim = ax.get_ylim()
+#    ax.plot(np.ones(100)*10, np.linspace(ylim[0], ylim[1],100), label="selected threshold")
+#    #ax.plot(np.ones(100)*20, np.linspace(ylim[0], ylim[1],100))
+#    #ax.set_ylim(0, ax.get_ylim()[1])
+#    plt.title(region)
+#    plt.legend()
+#    plt.subplots_adjust(left=0.2, bottom=0.15, right=0.95, top=0.9)
+#    plt.savefig(f'plotsX/{region}_diff.png')
+
+
+
+
+
+
+
+fig, axs = plt.subplots(figsize=(8, 6), ncols=4, nrows=2, sharex=True)
+for i, region in enumerate(regions):
+
+    y_max = 10.5
+    y_min = 0
+    axs[0][i].axhline(0, color='gray', linewidth=1)
+    for wind in wind_vals:
+        for solar in solar_vals:
+            s = int(solar*100)
+            w = int(wind*100)
+            if solar == 0 and wind == 0:
+                lab = 'Load'
+                axs[0][i].plot(multi.loc[(region, solar, wind)]['hours'].values, multi.loc[(region, solar, wind)]['inter'].values, '-k', label=lab)
+            else:
+                lab = f'RL({w}% wind, {s}% solar)'
+                axs[0][i].plot(multi.loc[(region, solar, wind)]['hours'].values, multi.loc[(region, solar, wind)]['inter'].values, label=lab)
+            axs[0][i].set_xlabel("peak hours")
+    axs[0][i].set_xlim(0, 200)
+    if region == 'ERCOT':
+        axs[0][i].set_ylabel(r"inter-annual variability"+"\n(% mean annual load)")
+    axs[0][i].set_ylim(y_min, y_max)
+    axs[0][i].tick_params(axis='y', right=True, left=True)
+    axs[0][i].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
+    if region != 'ERCOT':
+        axs[0][i].set(yticklabels=[])
+    axs[0][i].plot(np.ones(100)*10, np.linspace(y_min, y_max, 100), '--r', label="threshold = 10 hours")
+    axs[0][i].set_title(region)
+    if region == 'FR':
+        horiz = .7
+        vert = 0.25
+        axs[0][i].legend(loc='center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
     
-    for solar in solar_vals:
-        for wind in wind_vals:
-            ax.plot(multi.loc[(region, solar, wind)]['hours'], multi.loc[(region, solar, wind)]['inter'], label=f'{region} s{solar}:w{wind}')
-
-    ax.set_ylim(0, ax.get_ylim()[1])
-    plt.legend()
-    plt.savefig(f'plotsX/{region}.png')
-
-
-
-
-
-
-
+    y_max = 4
+    y_min = -4
+    axs[1][i].axhline(0, color='gray', linewidth=1)
+    for wind in wind_vals:
+        for solar in solar_vals:
+            if solar == 0 and wind == 0:
+                continue
+            s = int(solar*100)
+            w = int(wind*100)
+            axs[1][i].plot(multi.loc[(region, solar, wind)]['hours'].values, (multi.loc[(region, 0, 0)]['inter'].values - multi.loc[(region, solar, wind)]['inter'].values), label=f'Load - RL({w}% wind, {s}% solar)')
+            axs[1][i].set_xlabel("peak hours")
+    axs[1][i].set_xlim(0, 200)
+    if region == 'ERCOT':
+        axs[1][i].set_ylabel(r"$\Delta$ inter-annual variability"+"\n(% mean annual load)")
+    axs[1][i].set_ylim(y_min, y_max)
+    axs[1][i].tick_params(axis='y', right=True, left=True)
+    axs[1][i].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=100, decimals=0))
+    if region != 'ERCOT':
+        axs[1][i].set(yticklabels=[])
+    axs[1][i].plot(np.ones(100)*10, np.linspace(y_min, y_max, 100), '--r', label="threshold = 10 hours")
+    #plt.title(region)
+    if region == 'FR':
+        horiz = 0.4
+        vert = 0.22
+        axs[1][i].legend(loc='center', framealpha = 1.0, bbox_to_anchor=(horiz, vert))
+    plt.subplots_adjust(left=0.12, bottom=0.08, right=0.9, top=0.94)
+    plt.savefig(f'plotsX/all_sensitivity.pdf')
 
