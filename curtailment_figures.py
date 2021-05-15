@@ -52,7 +52,7 @@ def electro_cf_by_X(save, **kwargs):
         exit()
 
     plt.close()
-    fig, axs = plt.subplots(figsize=(9, 3), ncols=3, sharey=True)
+    fig, axs = plt.subplots(figsize=(9, 3*.95), ncols=3, sharey=True)
 
     ims = []
     css = []
@@ -68,39 +68,72 @@ def electro_cf_by_X(save, **kwargs):
             cols.append(f'electro_cf_{key}_{j}')
         m = dfs[c][cols]
 
-    
-        im = axs[i].imshow(m.T, aspect='auto', interpolation='none', origin='lower', vmax=1, vmin=0)
-        ims.append(im)
-
         n_levels = np.arange(0,1,.1)
         c_fmt = '%1.1f'
 
-        cs = axs[i].contour(m.T, n_levels, colors='k', linewidths=1)
+        # transform to CST (UTC-6) from UTC
+        if key == 'hour':
+            new_cols = []
+            for k in range(24):
+                new_cols.append(f'electro_cf_hour_{(k+6)%24}')
+            m2 = m[new_cols]
+            im = axs[i].imshow(m2.T, aspect='auto', interpolation='none', origin='lower', vmax=1, vmin=0)
+            cs = axs[i].contour(m2.T, n_levels, colors='k', linewidths=1)
+
+        else:
+            im = axs[i].imshow(m.T, aspect='auto', interpolation='none', origin='lower', vmax=1, vmin=0)
+            cs = axs[i].contour(m.T, n_levels, colors='k', linewidths=1)
+
+
+        ims.append(im)
+
+
         css.append(cs)
         # inline labels
         axs[i].clabel(cs, inline=1, fontsize=12, fmt=c_fmt)
         
-        axs[i].set_title(names[c], **{'fontsize':12.5})
+        if key == 'hour':
+            axs[i].set_title(names[c], **{'fontsize':12.5})
 
 
-    cbar = axs[2].figure.colorbar(ims[2])
-    cbar.ax.set_ylabel(f"electrolysis facility\ncapacity factor")
+
 
     if key == 'month':
         axs[0].set_yticklabels(('', 'Jan','Mar','May',
                 'July','Sept','Nov'))
+        axs[1].set_xlabel(kwargs['x_label'])
     if key == 'hour':
-        axs[0].set_ylabel('hour of day (UTC)')
+        axs[0].set_ylabel('hour of day (CST)')
     
-    axs[1].set_xlabel(kwargs['x_label'])
     for i in range(3):
         axs[i].xaxis.set_major_locator(matplotlib.ticker.FixedLocator([0, 20, 40, 60, 80, 100]))
-        axs[i].set_xticklabels(['0.0', '0.2', '0.4', '0.6', '0.8', '1.0'])
+        if key == 'month':
+            axs[i].set_xticklabels(['0.0', '0.2', '0.4', '0.6', '0.8', '1.0'])
+        else:
+            axs[i].set_xticklabels([])
+
+    for i, c in enumerate(cases):
+
+        #axs[i].set_title(names[c], **{'fontsize':12.5})
+        add = 3 if key == 'month' else 0
+        vert = 10 if key == 'month' else 21
+        axs[i].text(5, vert, f'{alphas[i+add]}', fontdict=font)
 
 
-    plt.subplots_adjust(top=.89, left=.11, bottom=.17, right=.91)
-    fig.savefig('{}/{}.png'.format(kwargs['save_dir'], save))
-    fig.savefig('{}/{}.pdf'.format(kwargs['save_dir'], save))
+    adj = 0.07
+    t_adj = 0 if key == 'hour' else adj
+    b_adj = adj if key == 'hour' else 0
+    fig.subplots_adjust(right=0.86)
+    cbar_ax = fig.add_axes([0.88, 0.17 - b_adj, 0.02, 1.-.17-.11+adj])
+    cbar = fig.colorbar(ims[2], cax=cbar_ax)
+    #cbar = axs[2].figure.colorbar(ims[2])
+    cbar.ax.set_ylabel(f"electrolysis facility\ncapacity factor")
+
+    #plt.subplots_adjust(top=.89, left=.11, bottom=.17, right=.91)
+    # by hour gets title, by month gets x-axis labels
+    plt.subplots_adjust(top=.89 + t_adj, left=.07, bottom=.17 - b_adj)
+    fig.savefig('{}/{}2.png'.format(kwargs['save_dir'], save))
+    fig.savefig('{}/{}2.pdf'.format(kwargs['save_dir'], save))
 
 def simple_plot(save, logY=False, ylims=[-1,-1], **kwargs):
 
@@ -595,6 +628,9 @@ if '__main__' in __name__:
                 )
         df.to_csv('resultsX/Results_{}_tmp.csv'.format(global_name))
         for i in range(len(df.index)):
+            if 'Case5' in global_name:
+                continue
+            #print(i, df.loc[i, 'case name'])
             if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
                 print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")
                 df = df.drop([i,])
@@ -658,7 +694,7 @@ if '__main__' in __name__:
     costs_plot(k, **kwargs)
     del kwargs['ALT']
     kwargs['save_name'] = 'costPlot' + m['app']
-    costs_plot_alt(k, **kwargs)
+    #costs_plot_alt(k, **kwargs)
     
 
 
@@ -666,7 +702,7 @@ if '__main__' in __name__:
     kwargs['y_label'] = 'total available generation (kW) /\nfirm load (kW)'
     kwargs['legend_app'] = ''
     kwargs['ylim'] = [0, 5]
-    stacked_plot(**kwargs)
+    #stacked_plot(**kwargs)
 
     
 
@@ -679,7 +715,7 @@ if '__main__' in __name__:
     kwargs['ALT'] = True
     if 'Case1' in kwargs['save_dir']:
         kwargs['ylim'] = [0, 2]
-    stacked_plot(**kwargs)
+    #stacked_plot(**kwargs)
     del kwargs['ALT']
 
     
@@ -689,8 +725,8 @@ if '__main__' in __name__:
 
     # EF system capacity factor ratios
     kwargs['y_label'] = 'capacity factor'
-    simple_plot('systemCFsEF' + m['app'],
-            False, ylims, **kwargs)
+    #simple_plot('systemCFsEF' + m['app'],
+    #        False, ylims, **kwargs)
         
     electro_cf_by_X('systemCFsEF_by_month' + m['app'],
             **kwargs)
