@@ -82,3 +82,4 @@ version="v8pgp"
 Date="20200805" # NatGas+CCS H2_ONLY
 version="v2"
 #./curtailment_figures.py "date_$Date" "Case_ALL" "version_$version" $ARGS H2_ONLY
+./singles_curtailment_figures.py "date_$Date" "Case_ALL" "version_$version" $ARGS H2_ONLY
