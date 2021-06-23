@@ -224,15 +224,18 @@ def stacked_plot(**kwargs):
                 axs[i].set_ylim(0, y_max)
                 axs[i].fill_between(x_vals, tot, tot+elec_load*dem_renew_frac, color=colors[0], linewidth=0, label=f'power to electric load - renew')
                 tot += elec_load*dem_renew_frac
-                axs[i].fill_between(x_vals, tot, tot+elec_load*(1. - dem_renew_frac), color=colors[0], linewidth=0, alpha=0.5, label=f'power to electric load - dispatch')
+                #axs[i].fill_between(x_vals, tot, tot+elec_load*(1. - dem_renew_frac), color=colors[0], linewidth=0, alpha=0.5, label=f'power to electric load - dispatch')
+                axs[i].fill_between(x_vals, tot, tot+elec_load*(1. - dem_renew_frac), color=colors[0], linewidth=0, label=f'power to electric load - dispatch')
                 tot += elec_load*(1. - dem_renew_frac)
                 axs[i].fill_between(x_vals, tot, tot+fuel_load*electro_renew_frac, color=colors[1], linewidth=0, label=f'power to flexible load - renew')
                 tot += fuel_load*electro_renew_frac
-                axs[i].fill_between(x_vals, tot, tot+fuel_load*(1. - electro_renew_frac), color=colors[1], linewidth=0, alpha=0.5, label=f'power to flexible load - dispatch')
+                #axs[i].fill_between(x_vals, tot, tot+fuel_load*(1. - electro_renew_frac), color=colors[1], linewidth=0, alpha=0.5, label=f'power to flexible load - dispatch')
+                axs[i].fill_between(x_vals, tot, tot+fuel_load*(1. - electro_renew_frac), color=colors[1], linewidth=0, label=f'power to flexible load - dispatch')
                 tot += fuel_load*(1. - electro_renew_frac)
                 axs[i].fill_between(x_vals, tot, tot+renewable_curt, color=colors[5], linewidth=0, label=f'curtailed - renew')
                 tot += renewable_curt
-                axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
+                #axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, alpha=0.5, label=f'unused - dispatch')
+                axs[i].fill_between(x_vals, tot, tot+nuclear_curt, color=colors[5], linewidth=0, label=f'unused - dispatch')
                 tot += nuclear_curt
                 #if i == 2:
                 #    print(i, c, "Tot avail gen / tot load")
