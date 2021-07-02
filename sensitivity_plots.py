@@ -291,7 +291,7 @@ def prep_csv(case, f_name_base):
     fixed = 'natgas_ccs'
     if case == 'Case5_WindSolarStorage':
         fixed = 'nuclear'
-    df = pd.read_csv(f'results_sens2/{f_name_base}.csv', index_col=False)
+    df = pd.read_csv(f'results_files/cost_sensitivity/{f_name_base}.csv', index_col=False)
     print(f'results_sens2/{f_name_base}.csv')
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
