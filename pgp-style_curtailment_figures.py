@@ -628,7 +628,7 @@ if '__main__' in __name__:
         print(f"\nPlotting using {fixed} as the dispatchable tech\n")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
-        df = pd.read_csv('resultsX/Results_{}_app.csv'.format(global_name), index_col=False)
+        df = pd.read_csv('results_files/Results_{}_app.csv'.format(global_name), index_col=False)
         df = df.sort_values('fuel demand (kWh)', axis=0)
         df = df.reset_index()
         df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -643,7 +643,7 @@ if '__main__' in __name__:
                 (df['dispatch from fuel h2 storage chem plant (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER) / \
                 ( (df['dispatch from fuel h2 storage chem plant (kW)'] / EFFICIENCY_FUEL_ELECTROLYZER) + 1. # electric power demand = 1 
                 )
-        df.to_csv('resultsX/Results_{}_tmp.csv'.format(global_name))
+        df.to_csv('results_files/Results_{}_tmp.csv'.format(global_name))
         for i in range(len(df.index)):
             if df.loc[i, 'fuel demand (kWh)'] == 0.0 or df.loc[i, 'mean demand (kW)'] == 0.0:
                 print(f"Dropping idx {i}: fuel {df.loc[i, 'fuel demand (kWh)']} elec {df.loc[i, 'mean demand (kW)']}")

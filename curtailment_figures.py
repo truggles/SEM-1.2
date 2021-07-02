@@ -615,7 +615,7 @@ if '__main__' in __name__:
         print(f"\nPlotting using {fixed} as the dispatchable tech\n")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
-        df = pd.read_csv('resultsX/Results_{}_app.csv'.format(global_name), index_col=False)
+        df = pd.read_csv('results_files/Results_{}_app.csv'.format(global_name), index_col=False)
         df = df.sort_values('fuel demand (kWh)', axis=0)
         df = df.reset_index()
         df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -626,7 +626,7 @@ if '__main__' in __name__:
         df['fuel load / total load'] = df['dispatch to fuel h2 storage (kW)'] / (
                 df['dispatch to fuel h2 storage (kW)'] + 1. # electric power demand = 1 
                 )
-        df.to_csv('resultsX/Results_{}_tmp.csv'.format(global_name))
+        df.to_csv('results_files/Results_{}_tmp.csv'.format(global_name))
         for i in range(len(df.index)):
             if 'Case5' in global_name:
                 continue
@@ -694,7 +694,7 @@ if '__main__' in __name__:
     costs_plot(k, **kwargs)
     del kwargs['ALT']
     kwargs['save_name'] = 'costPlot' + m['app']
-    #costs_plot_alt(k, **kwargs)
+    costs_plot_alt(k, **kwargs)
     
 
 
@@ -702,7 +702,7 @@ if '__main__' in __name__:
     kwargs['y_label'] = 'total available generation (kW) /\nfirm load (kW)'
     kwargs['legend_app'] = ''
     kwargs['ylim'] = [0, 5]
-    #stacked_plot(**kwargs)
+    stacked_plot(**kwargs)
 
     
 
@@ -715,7 +715,7 @@ if '__main__' in __name__:
     kwargs['ALT'] = True
     if 'Case1' in kwargs['save_dir']:
         kwargs['ylim'] = [0, 2]
-    #stacked_plot(**kwargs)
+    stacked_plot(**kwargs)
     del kwargs['ALT']
 
     
@@ -725,8 +725,8 @@ if '__main__' in __name__:
 
     # EF system capacity factor ratios
     kwargs['y_label'] = 'capacity factor'
-    #simple_plot('systemCFsEF' + m['app'],
-    #        False, ylims, **kwargs)
+    simple_plot('systemCFsEF' + m['app'],
+            False, ylims, **kwargs)
         
     electro_cf_by_X('systemCFsEF_by_month' + m['app'],
             **kwargs)

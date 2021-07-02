@@ -292,7 +292,7 @@ def prep_csv(case, f_name_base):
     if case == 'Case5_WindSolarStorage':
         fixed = 'nuclear'
     df = pd.read_csv(f'results_files/cost_sensitivity/{f_name_base}.csv', index_col=False)
-    print(f'results_sens2/{f_name_base}.csv')
+    print(f'results_files/cost_sensitivity/{f_name_base}.csv')
     df = df.sort_values('fuel demand (kWh)', axis=0)
     df = df.reset_index()
     df['fuel load / available power'] = df['dispatch to fuel h2 storage (kW)'] / (
@@ -320,7 +320,7 @@ def prep_csv(case, f_name_base):
             df = df.drop([i,])
     df = df.reset_index()
 
-    df.to_csv(f'results_sens2/{f_name_base}_tmp.csv', index=False)
+    df.to_csv(f'results_files/cost_sensitivity/{f_name_base}_tmp.csv', index=False)
 
 
 
@@ -404,8 +404,8 @@ if plot:
         for shift, tag in info['shifts'].items():
             print(f"Shift: {shift}, tag {tag}")
             f_name_base = f"Results_fuel_test_{date}_{info['version']}{tag}_{case}_1_1"
-            df = pd.read_csv(f'results_sens2/{f_name_base}_tmp.csv', index_col=False)
-            print(f'results_sens2/{f_name_base}_tmp.csv')
+            df = pd.read_csv(f'results_files/cost_sensitivity/{f_name_base}_tmp.csv', index_col=False)
+            print(f'results_files/cost_sensitivity/{f_name_base}_tmp.csv')
             df_map[case][shift] = df
 
 
