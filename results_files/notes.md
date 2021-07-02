@@ -21,3 +21,8 @@ The naming for the cost reductions is:
  * WIND = wind
 
 Thus, SOL0.75 means the solar capital costs were reduced to 75% of the basecase
+
+
+## Dispatch curve
+
+The dispatch curve figure (fig 4) can be recreated with the results files in `dispatch_curve`
