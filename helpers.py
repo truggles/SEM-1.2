@@ -352,7 +352,7 @@ if '__main__' in __name__:
     date = '20200805_v2'
     #date = '20201116_v5fullReli'
     #base = 'Output_Data/'
-    base = 'resultsX/' # For committed files
+    base = 'results_files/dispatch_curve/' # For committed files
     cases = {
             #"Case0_NuclearFlatDemand" : [['nuclear',], -1],
             #"Case1_Nuclear" : [['nuclear',], 2, 2],
